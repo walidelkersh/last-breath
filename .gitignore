@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+node_modules/
+__pycache__/
+test-results/
+playwright-report/
+.DS_Store
+*.user
+*.suo
