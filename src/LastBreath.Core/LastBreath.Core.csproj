@@ -1,3 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\config\dives.json" LogicalName="dives.json" />
+  </ItemGroup>
+
 </Project>
