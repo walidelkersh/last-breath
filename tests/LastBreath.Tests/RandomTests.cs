@@ -2,6 +2,7 @@ using LastBreath.Core;
 
 namespace LastBreath.Tests;
 
+[Trait("Category", "Common")]
 public sealed class RandomTests
 {
     [Fact]

@@ -66,9 +66,7 @@ public static class ConfigLoader
                 throw Invalid($"dive '{id}' landing numerators sum to {numerators}, more than {GameConfig.LandingDenominator}");
             if (dive.StartingClock < 1)
                 throw Invalid($"dive '{id}' starts with a clock of {dive.StartingClock}");
-            var landsTanks = dive.Landing.Any(entry =>
-                entry.Outcome is Outcome.TankPlus1 or Outcome.TankPlus2 or Outcome.TankPlus3);
-            if (landsTanks && dive.TankLimit is null)
+            if (dive.Landing.Any(entry => entry.Outcome.IsTank()) && dive.TankLimit is null)
                 throw Invalid($"dive '{id}' lands tanks but has no tank limit");
         }
     }

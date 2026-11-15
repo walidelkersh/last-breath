@@ -2,6 +2,12 @@ namespace LastBreath.Core;
 
 public enum Outcome { Empty, Crate, Bosun, Captain, TankPlus1, TankPlus2, TankPlus3 }
 
+public static class OutcomeExtensions
+{
+    public static bool IsTank(this Outcome outcome) =>
+        outcome is Outcome.TankPlus1 or Outcome.TankPlus2 or Outcome.TankPlus3;
+}
+
 public sealed record Jackpots
 {
     public required int Mini { get; init; }
