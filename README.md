@@ -1,6 +1,6 @@
 # Last Breath
 
-Last Breath is a hold-and-spin game with no reels and no base game. Each bet buys one dive, which is a full hold-and-spin round on an empty 5x3 board. Coins that land stay in their cell, and a clock of breaths decides when the round ends. I am writing it in C#, and I want the exact math to be the source of truth, with simulation used only to check the engine.
+Last Breath is a hold-and-spin game. Each bet buys one dive, which is a full round on an empty 5x3 board, so there is no base game to play first. Coins that land stay in their cell, and a clock of breaths decides when the round ends. I am writing it in C#, and I want the exact math to be the source of truth, with simulation used only to check the engine.
 
 ## Status
 
