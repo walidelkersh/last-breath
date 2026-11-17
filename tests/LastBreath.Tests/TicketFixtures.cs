@@ -18,6 +18,11 @@ internal static class TicketFixtures
         ("Tank", 1, 1_250), ("Tank", 4, 450), ("Tank", 54, 1_700), ("Tank", 21_694, 1_001_400),
     ];
 
+    public static readonly TicketValidator Validator = new(Config);
+
+    // The outcome roll of a +2 air tank, from the landing thresholds 93,120, 101,120 and 104,120.
+    public static readonly int[] Plus2 = [101_120];
+
     private static readonly string ConfigHash = Config.Hash();
 
     private static readonly Dictionary<string, Func<GameConfig, DiveConfig, IRandomSource, Round>> Engines = new()
@@ -37,6 +42,71 @@ internal static class TicketFixtures
         var round = Engines[feature](Config, Config.Dives[feature], random);
         return Ticket.FromRound(feature, round, id, seed, ConfigHash);
     }
+
+    // Classic: "150/3 200/3 0/2 0/1 0/0". Crates of 50 and 100 land in cells 0 and 1, then 200 in cell 2.
+    public static Ticket ClassicBase() => Scripted("Classic",
+    [
+        .. Rolls.Crate(0), .. Rolls.Crate(32_000), .. Rolls.Miss(13),
+        .. Rolls.Crate(58_000), .. Rolls.Miss(12),
+        .. Rolls.Miss(12), .. Rolls.Miss(12), .. Rolls.Miss(12),
+    ]);
+
+    // Static: "150/5 50/4 0/3 0/2 0/1 0/0". Crates of 50 and 100 land in cells 0 and 1, then 50 in cell 2.
+    public static Ticket StaticBase() => Scripted("Static",
+    [
+        .. Rolls.Crate(0), .. Rolls.Crate(50_005), .. Rolls.Miss(13),
+        .. Rolls.Crate(0), .. Rolls.Miss(12),
+        .. Rolls.Miss(12), .. Rolls.Miss(12), .. Rolls.Miss(12), .. Rolls.Miss(12),
+    ]);
+
+    // Tank: "50/5(+2@0) 100/4 0/3 0/2 0/1 0/0". A +2 tank in cell 0 and a 50 crate in cell 1, then
+    // cell 0 lands a 100 crate once the tank has cleared.
+    public static Ticket TankBase() => Scripted("Tank",
+    [
+        .. Plus2, .. Rolls.Crate(0), .. Rolls.Miss(13),
+        .. Rolls.Crate(50_000), .. Rolls.Miss(13),
+        .. Rolls.Miss(13), .. Rolls.Miss(13), .. Rolls.Miss(13), .. Rolls.Miss(13),
+    ]);
+
+    public static TicketTurn Turn(this Ticket ticket, int turnNumber) => ticket.FreeGamesTurns[turnNumber - 1];
+
+    public static void Put(this Ticket ticket, int turnNumber, int col, int row, string symbol, int value)
+    {
+        var turn = ticket.Turn(turnNumber);
+        turn.Symbols[col][row] = symbol;
+        turn.CashOnReels[col][row] = value;
+    }
+
+    // Adds a spin on top of the last board, landing cash crates given as (column, row, units).
+    public static Ticket Append(this Ticket ticket, int clockAfter, params (int Col, int Row, int Units)[] landed)
+    {
+        var last = ticket.FreeGamesTurns[^1];
+        var turn = new TicketTurn
+        {
+            Symbols = [.. last.Symbols.Select(column => column.ToArray())],
+            CashOnReels = [.. last.CashOnReels.Select(column => column.ToArray())],
+            TurnWin = landed.Sum(crate => crate.Units),
+            ClockAfter = clockAfter,
+        };
+        foreach (var (col, row, units) in landed)
+        {
+            turn.Symbols[col][row] = TicketSymbol.CashOnReel;
+            turn.CashOnReels[col][row] = units;
+        }
+        ticket.FreeGamesTurns.Add(turn);
+        return ticket;
+    }
+
+    public static Ticket WithoutLastTurn(this Ticket ticket)
+    {
+        ticket.FreeGamesTurns.RemoveAt(ticket.FreeGamesTurns.Count - 1);
+        return ticket;
+    }
+
+    public static void Passes(Ticket ticket) => Assert.Null(Record.Exception(() => Validator.ValidateTicket(ticket)));
+
+    public static void Fails(Ticket ticket, string message) =>
+        Assert.Equal(message, Assert.Throws<InvalidOperationException>(() => Validator.ValidateTicket(ticket)).Message);
 
     // Every field of a ticket on one line per turn, for comparing two tickets without trusting JSON.
     public static string Describe(Ticket ticket) => string.Join('\n',

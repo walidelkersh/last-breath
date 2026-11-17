@@ -12,6 +12,7 @@ The engines for the first three dives exist and can be played from the command l
 - the config loader, which refuses a file unless each weight table sums to 100,000, each dive's landing numerators sum to at most 1,000,000, money values are multiples of 50 units and bets are multiples of 0.20
 - the board, the landing draw with its fixed order of random numbers, settlement, and the round and turn model
 - one engine class per dive in `src/LastBreath.Core/Dives`, each playing a full round from an empty board: Classic has 3 breaths and refills them to 3 whenever anything lands, Drift plays exactly 6 spins with no refill (the config calls it `Static`), and Tank has 4 breaths with no refill, where an air tank adds 1, 2 or 3 breaths and then clears, at most 3 tanks per round
+- a ticket model that turns a finished round into JSON, and a validator for Classic, Drift and Tank tickets that checks every turn, replays the clock and refuses a pool with a repeated ticket id
 - a client page that shows the game name and nothing else
 
 All three engines end the round at once when the board is full, and a full board pays the Grand on top of the board total.
