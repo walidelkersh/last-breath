@@ -5,7 +5,7 @@ namespace LastBreath.Core;
 
 public static class ConfigLoader
 {
-    private const int UnitStep = 50;
+    internal const int UnitStep = 50;
     private const decimal BetStep = 0.20m;
 
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)

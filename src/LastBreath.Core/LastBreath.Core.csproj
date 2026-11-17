@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\config\dives.json" LogicalName="dives.json" />
+    <InternalsVisibleTo Include="LastBreath.Tests" />
   </ItemGroup>
 
 </Project>

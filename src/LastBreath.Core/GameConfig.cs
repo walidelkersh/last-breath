@@ -40,6 +40,9 @@ public sealed record DiveConfig
     public required int StartingClock { get; init; }
     public int? RefillTo { get; init; }
     public int? TankLimit { get; init; }
+
+    public double Chance(Outcome outcome) =>
+        (double)Landing.Where(entry => entry.Outcome == outcome).Sum(entry => entry.Numerator) / GameConfig.LandingDenominator;
 }
 
 // Everything in config/dives.json. All money is in units, where 1 unit is 1/1000 of the bet.
