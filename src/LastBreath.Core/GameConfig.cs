@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+
 namespace LastBreath.Core;
 
 public enum Outcome { Empty, Crate, Bosun, Captain, TankPlus1, TankPlus2, TankPlus3 }
@@ -55,6 +58,9 @@ public sealed record GameConfig
     public required Dictionary<string, DiveConfig> Dives { get; init; }
 
     public int TierCount => CashLadder.Length + 3;
+
+    // Fingerprint of the numbers in play, so a ticket can say which config made it.
+    public string Hash() => Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(this)));
 
     public int Units(int tier) => tier < CashLadder.Length
         ? CashLadder[tier]
