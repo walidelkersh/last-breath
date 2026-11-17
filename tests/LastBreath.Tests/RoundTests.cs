@@ -48,6 +48,19 @@ public sealed class RoundTests
     }
 
     [Fact]
+    public void EndTurnKeepsTheAirTanksOfTheSpinAndDefaultsToNone()
+    {
+        var round = NewRound("Tank");
+        var tank = new Landed(4, Outcome.TankPlus2, default);
+
+        round.EndTurn(5, [tank]);
+        round.EndTurn(4);
+
+        Assert.Equal([tank], round.Turns[0].AirTanks);
+        Assert.Empty(round.Turns[1].AirTanks);
+    }
+
+    [Fact]
     public void ClockAtZeroEndsTheRound()
     {
         var round = NewRound();

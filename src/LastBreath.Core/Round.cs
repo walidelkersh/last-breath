@@ -1,7 +1,8 @@
 namespace LastBreath.Core;
 
 // The board as it stood once the turn had fully resolved. TurnWin is how much the board total moved.
-public sealed record Turn(Cell[] Cells, int TurnWin, int ClockAfter);
+// An air tank is gone from the board by then, so AirTanks is the only record of where one landed.
+public sealed record Turn(Cell[] Cells, int TurnWin, int ClockAfter, Landed[] AirTanks);
 
 // State every dive shares. A dive engine fills the board and calls EndTurn once per spin.
 public sealed class Round
@@ -34,10 +35,10 @@ public sealed class Round
     // The cap never binds with the shipped config. It is applied anyway so a wrong config cannot overpay.
     public int Award => Math.Min(CoinWin + GrandWin, _config.Cap);
 
-    public void EndTurn(int clockAfter)
+    public void EndTurn(int clockAfter, Landed[]? airTanks = null)
     {
         var total = Board.Total;
-        _turns.Add(new Turn(Board.Snapshot(), total - _totalBeforeTurn, clockAfter));
+        _turns.Add(new Turn(Board.Snapshot(), total - _totalBeforeTurn, clockAfter, airTanks ?? []));
         _totalBeforeTurn = total;
         Clock = clockAfter;
     }

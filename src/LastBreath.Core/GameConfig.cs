@@ -6,6 +6,14 @@ public static class OutcomeExtensions
 {
     public static bool IsTank(this Outcome outcome) =>
         outcome is Outcome.TankPlus1 or Outcome.TankPlus2 or Outcome.TankPlus3;
+
+    public static int Breaths(this Outcome outcome) => outcome switch
+    {
+        Outcome.TankPlus1 => 1,
+        Outcome.TankPlus2 => 2,
+        Outcome.TankPlus3 => 3,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "only an air tank adds breaths"),
+    };
 }
 
 public sealed record Jackpots
