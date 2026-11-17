@@ -1,4 +1,6 @@
+using System.Text.Json;
 using LastBreath.Core;
+using LastBreath.Core.Analysis;
 using LastBreath.Core.Dives;
 
 const string usage = """
@@ -8,6 +10,9 @@ const string usage = """
       play --dive <classic|static|tank> --seed <number>
           Plays one round and prints every spin. Static is the Drift dive.
           Amounts are units, where one unit is a thousandth of the bet.
+      solve --dive <classic,static,tank> | --all
+          Solves each dive exactly and writes reports/solve-<dive>.json.
+          Money in a report is a multiple of the bet.
     """;
 
 if (args is ["-h" or "--help"])
@@ -18,6 +23,9 @@ if (args is ["-h" or "--help"])
 
 if (args is ["play", ..])
     return Play();
+
+if (args is ["solve", ..])
+    return Solve();
 
 if (args.Length > 0)
     Console.Error.WriteLine($"unknown command: {args[0]}");
@@ -72,5 +80,62 @@ int Play()
     }
 
     Console.WriteLine($"board {round.CoinWin}, grand {round.GrandWin}, award {round.Award}");
+    return 0;
+}
+
+int Solve()
+{
+    var config = ConfigLoader.LoadDefault();
+    var names = args.Contains("--all")
+        ? config.Dives.Keys.Select(key => key.ToLowerInvariant()).ToArray()
+        : Option("--dive")?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    if (names is null or [])
+    {
+        Console.Error.WriteLine(usage);
+        return 1;
+    }
+
+    var solved = new List<(string Name, Solution Solution)>();
+    foreach (var name in names)
+    {
+        Solution? solution = name.ToLowerInvariant() switch
+        {
+            "classic" => ClassicSolver.Solve(config, config.Dives["Classic"]),
+            "static" => DriftSolver.Solve(config, config.Dives["Static"]),
+            "tank" => TankSolver.Solve(config, config.Dives["Tank"]),
+            _ => null,
+        };
+        if (solution is null)
+        {
+            Console.Error.WriteLine($"no solver for dive: {name}");
+            return 1;
+        }
+        solved.Add((name.ToLowerInvariant(), solution));
+    }
+
+    Directory.CreateDirectory("reports");
+    foreach (var (name, solution) in solved)
+    {
+        var report = new
+        {
+            dive = name,
+            rtp = solution.Rtp,
+            e_a2 = solution.SecondMoment,
+            sd = solution.Sd,
+            hit_frequency = solution.HitFrequency,
+            mean_spins = solution.MeanSpins,
+            grand_probability = solution.GrandProbability,
+            reachable_max = solution.ReachableMax,
+            final_crate_probabilities = solution.FinalCrates,
+            mean_crates = solution.MeanCrates,
+            coin_mean = solution.CoinMean,
+            coin_variance = solution.CoinVariance,
+            config_hash = config.Hash(),
+        };
+        var path = Path.Combine("reports", $"solve-{name}.json");
+        File.WriteAllText(path, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+        Console.WriteLine($"{name}: rtp {solution.Rtp:F6}, sd {solution.Sd:F4}, hit {solution.HitFrequency:P3}, " +
+            $"spins {solution.MeanSpins:F4}, grand 1 in {1 / solution.GrandProbability:N0}, max {solution.ReachableMax:N0}x, wrote {path}");
+    }
     return 0;
 }

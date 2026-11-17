@@ -1,4 +1,4 @@
-// Landing numerators are first-pass values. They are not tuned and no RTP has been computed from them.
+// Landing numerators are first-pass values and are not tuned. reports/ holds what they give.
 {
   "cashLadder": [50, 100, 200, 250, 500, 1000, 2000, 3000],
   "jackpots": { "mini": 5000, "minor": 20000, "major": 100000 },

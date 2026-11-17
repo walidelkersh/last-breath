@@ -13,6 +13,7 @@ The engines for the first three dives exist and can be played from the command l
 - the board, the landing draw with its fixed order of random numbers, settlement, and the round and turn model
 - one engine class per dive in `src/LastBreath.Core/Dives`, each playing a full round from an empty board: Classic has 3 breaths and refills them to 3 whenever anything lands, Drift plays exactly 6 spins with no refill (the config calls it `Static`), and Tank has 4 breaths with no refill, where an air tank adds 1, 2 or 3 breaths and then clears, at most 3 tanks per round
 - a ticket model that turns a finished round into JSON, and a validator for Classic, Drift and Tank tickets that checks every turn, replays the clock and refuses a pool with a repeated ticket id
+- an exact solver per dive in `src/LastBreath.Core/Analysis`, by backward induction over (crates, breaths) for Classic, (crates, breaths, tanks used) for Tank, and a closed form for Drift that a second induction checks; `lab solve --dive classic,static,tank` (or `--all`) writes each result to `reports/solve-<dive>.json`
 - a client page that shows the game name and nothing else
 - `scripts/independent_check.py`, a Python check written from the rules alone that works out each dive's exact math in fractions and compares it with the solver reports once they exist: `python -I scripts/independent_check.py --dives classic,static,tank`, or `--self-test` for its hand-checked cases
 
@@ -26,9 +27,9 @@ To watch one round, give the lab a dive and a seed. The dive is `classic`, `stat
 dotnet run --project src/LastBreath.Lab -c Release -- play --dive tank --seed 54
 ```
 
-The tests check each rule of each dive against scripted random numbers, and a few full rounds from fixed seeds. The client does not play a round yet, and there is no simulator or exact solver.
+The tests check each rule of each dive against scripted random numbers, and a few full rounds from fixed seeds. The solver tests check hand-worked cases, the Drift closed form against its induction, Tank with no tanks and a refill against Classic, and each solver against 200,000 rounds of its engine. The client does not play a round yet, and there is no simulator.
 
-The numbers in the config are first-pass values, and I have not tuned or verified them. I make no claim about RTP or any other math figure yet, because I have nothing to back one up.
+The numbers in the config are first-pass values, and I have not tuned them. The solver reports show what they give, but I make no claim about RTP or any other math figure here until the full simulation backs them up.
 
 ## Build and test
 
@@ -40,7 +41,7 @@ dotnet test LastBreath.sln -c Release
 dotnet run --project src/LastBreath.Web
 ```
 
-The tests carry a category: `Common` for the core, and `Classic`, `Drift` and `Tank` for the engines. For example, `dotnet test LastBreath.sln -c Release --filter Category=Tank` runs only the Tank tests.
+The tests carry a category: `Common` for the core, `Classic`, `Drift` and `Tank` for the engines, and `Analysis` for the solvers. For example, `dotnet test LastBreath.sln -c Release --filter Category=Tank` runs only the Tank tests.
 
 ## License
 
