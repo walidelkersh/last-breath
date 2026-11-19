@@ -36,6 +36,7 @@ public sealed class SimulatorTests(ITestOutputHelper output)
         Assert.Equal(Rounds, report.AwardBuckets.Sum(bucket => bucket.Observed));
         Assert.Equal(Rounds, report.AwardBuckets.Sum(bucket => bucket.Expected), 1e-6);
         Assert.Equal(Rounds, report.FinalCrateCounts.Sum());
+        Assert.Equal((Rounds, 0), (report.TicketsChecked, report.TicketsInvalid));
     }
 
     [Fact]

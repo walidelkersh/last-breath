@@ -14,7 +14,7 @@ The engines for the first three dives exist and can be played from the command l
 - one engine class per dive in `src/LastBreath.Core/Dives`, each playing a full round from an empty board: Classic has 3 breaths and refills them to 3 whenever anything lands, Drift plays exactly 6 spins with no refill (the config calls it `Static`), and Tank has 4 breaths with no refill, where an air tank adds 1, 2 or 3 breaths and then clears, at most 3 tanks per round
 - a ticket model that turns a finished round into JSON, and a validator for Classic, Drift and Tank tickets that checks every turn, replays the clock and refuses a pool with a repeated ticket id
 - an exact solver per dive in `src/LastBreath.Core/Analysis`, by backward induction over (crates, breaths) for Classic, (crates, breaths, tanks used) for Tank, and a closed form for Drift that a second induction checks; `lab solve --dive classic,static,tank` (or `--all`) writes each result to `reports/solve-<dive>.json`
-- `lab simulate`, which plays rounds with the real engines from one PCG32 stream and checks them against the exact solve: the mean award (from the textbook standard error and from 100 batch means), hit frequency and mean spins within 3 standard errors, and chi-squares of the final crate count and of 12 award buckets, with the bucket edges taken from the exact distribution. It writes `reports/simulate-<dive>.json` and exits 1 if a check fails
+- `lab simulate`, which plays rounds with the real engines from one PCG32 stream and checks them against the exact solve: the mean award (from the textbook standard error and from 100 batch means), hit frequency and mean spins within 3 standard errors, and chi-squares of the final crate count and of 12 award buckets, with the bucket edges taken from the exact distribution. The first million rounds are also turned into tickets and validated. It writes `reports/simulate-<dive>.json` and exits 1 if a check fails
 - `lab export-pool`, which plays rounds from one seed, turns each into a ticket, validates every ticket and refuses to write the pool unless all of them pass. `reports/pool/<dive>/TicketPool.json` is too large to track (about 200 MB for 100,000 Classic tickets), so it is ignored, while `PoolReport.txt` next to it is tracked: the ticket count, seed, config hash, mean win against the exact mean with a 99% interval, a chi-square of the final crate count, an award histogram and the average win on each turn
 - `lab tune`, which searches the exact solver for the integer crate numerator that puts a dive closest to a 96% RTP and reports the old and new numerator. It only reports, and it never tunes by simulation
 - a client page that shows the game name and nothing else
@@ -30,7 +30,7 @@ To watch one round, give the lab a dive and a seed. The dive is `classic`, `stat
 dotnet run --project src/LastBreath.Lab -c Release -- play --dive tank --seed 54
 ```
 
-To check an engine against its exact solve, give the lab the dives, a number of rounds and a seed. Ten million rounds of one dive take about 13 seconds on my machine.
+To check an engine against its exact solve, give the lab the dives, a number of rounds and a seed. Ten million rounds of one dive take about 20 seconds on my machine.
 
 ```
 dotnet run --project src/LastBreath.Lab -c Release -- simulate --dive classic,static,tank --rounds 10000000 --seed 1

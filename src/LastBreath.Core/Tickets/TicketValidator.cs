@@ -32,6 +32,20 @@ public sealed class TicketValidator
         }
     }
 
+    // The first rule the ticket breaks, or null if it keeps them all.
+    public string? Problem(Ticket ticket)
+    {
+        try
+        {
+            ValidateTicket(ticket);
+            return null;
+        }
+        catch (Exception problem) when (problem is ArgumentException or InvalidOperationException)
+        {
+            return problem.Message;
+        }
+    }
+
     public void ValidateTicket(Ticket ticket)
     {
         if (ticket is null)

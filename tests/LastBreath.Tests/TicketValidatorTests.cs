@@ -32,6 +32,16 @@ public sealed class TicketValidatorTests
         Assert.Equal(award, ticket.TotalWin);
     }
 
+    [Fact]
+    public void ProblemIsNullForAValidTicketAndTheMessageOfTheFirstBrokenRuleOtherwise()
+    {
+        var ticket = Seeded("Tank", 54);
+
+        Assert.Null(Validator.Problem(ticket));
+        ticket.TotalWin += 50;
+        Assert.Contains("Total win mismatch", Validator.Problem(ticket));
+    }
+
     [Theory]
     [InlineData("Classic", false)]
     [InlineData("Static", false)]

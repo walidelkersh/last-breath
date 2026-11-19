@@ -1,5 +1,6 @@
 using System.Text.Json;
 using LastBreath.Core.Dives;
+using LastBreath.Core.Tickets;
 
 namespace LastBreath.Core.Analysis;
 
@@ -20,7 +21,10 @@ public sealed record SimulationReport(
     ChiSquare FinalCrates,
     long[] FinalCrateCounts,
     ChiSquare Award,
-    AwardBucket[] AwardBuckets)
+    AwardBucket[] AwardBuckets,
+    long TicketsChecked,
+    long TicketsInvalid,
+    string? FirstInvalidTicket)
 {
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -30,7 +34,7 @@ public sealed record SimulationReport(
 
     public bool Passed =>
         MeanAward.WithinThreeSe && MeanAwardByBatches.WithinThreeSe && HitFrequency.WithinThreeSe
-        && MeanSpins.WithinThreeSe && FinalCrates.Passed && Award.Passed;
+        && MeanSpins.WithinThreeSe && FinalCrates.Passed && Award.Passed && TicketsInvalid == 0;
 
     public string ToJson() => JsonSerializer.Serialize(this, Json) + "\n";
 }
@@ -40,6 +44,9 @@ public static class Simulator
     public const int Batches = 100;
 
     public const long MinimumRounds = 1_000;
+
+    // The first rounds of a run are also turned into tickets and validated.
+    public const long TicketRounds = 1_000_000;
 
     // One PCG32 stream plays every round back to back, as the client does. The exact solve is passed in
     // so a test can hand over a wrong one and see the checks fail.
@@ -51,7 +58,11 @@ public static class Simulator
         var play = Engines.For(id);
         var random = new Pcg32Random(seed);
         var tally = new Tally(config.Cap / ConfigLoader.UnitStep + 1);
+        var validator = new TicketValidator(config);
+        var hash = config.Hash();
         var batchMeans = new double[Batches];
+        long ticketsChecked = 0, ticketsInvalid = 0;
+        string? firstInvalid = null;
         for (var batch = 0; batch < Batches; batch++)
         {
             var size = rounds / Batches + (batch < rounds % Batches ? 1 : 0);
@@ -60,6 +71,13 @@ public static class Simulator
             {
                 var played = play(config, dive, random);
                 tally.Add(played.Award, played.Board.Occupied, played.Turns.Count);
+                if (ticketsChecked == TicketRounds) continue;
+                ticketsChecked++;
+                if (validator.Problem(Ticket.FromRound(id, played, "simulated", seed, hash)) is { } problem)
+                {
+                    ticketsInvalid++;
+                    firstInvalid ??= $"round {ticketsChecked}: {problem}";
+                }
             }
             batchMeans[batch] = (double)(tally.AwardUnits - before) / size / 1000;
         }
@@ -84,6 +102,9 @@ public static class Simulator
             tally.CratesAgainst(exact),
             tally.Crates,
             ChiSquare.Of(buckets),
-            buckets);
+            buckets,
+            ticketsChecked,
+            ticketsInvalid,
+            firstInvalid);
     }
 }

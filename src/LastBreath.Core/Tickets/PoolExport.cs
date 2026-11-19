@@ -146,14 +146,8 @@ public static class PoolExport
 
     private static string? Failure(TicketValidator validator, HashSet<string> ids, Ticket ticket)
     {
-        try
-        {
-            validator.ValidateTicket(ticket);
-            return ids.Add(ticket.TicketId) ? null : $"duplicate ticket id '{ticket.TicketId}'";
-        }
-        catch (Exception problem) when (problem is ArgumentException or InvalidOperationException)
-        {
-            return $"{ticket.TicketId}: {problem.Message}";
-        }
+        if (validator.Problem(ticket) is { } problem)
+            return $"{ticket.TicketId}: {problem}";
+        return ids.Add(ticket.TicketId) ? null : $"duplicate ticket id '{ticket.TicketId}'";
     }
 }

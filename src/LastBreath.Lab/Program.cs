@@ -21,8 +21,9 @@ const string usage = """
       simulate --dive <classic,static,tank> --rounds <number> --seed <number>
           Plays the rounds with the real engine and checks the result against the exact solve:
           the mean award, hit frequency and mean spins within 3 standard errors, and chi-squares
-          of the final crate count and of 12 award buckets. Writes reports/simulate-<dive>.json
-          and exits 1 if any check fails.
+          of the final crate count and of 12 award buckets. The first million rounds are also
+          turned into tickets and validated. Writes reports/simulate-<dive>.json and exits 1
+          if any check fails.
       export-pool --dive <classic,static,tank> --tickets <number> [--seed <number>]
           Plays the rounds, turns each into a ticket, validates every ticket and fails unless all pass.
           Writes reports/pool/<dive>/TicketPool.json and PoolReport.txt. The seed defaults to 96706.
@@ -195,6 +196,8 @@ int Simulate()
         Console.WriteLine($"  award SD {report.AwardSd:F4} (exact {report.ExactAwardSd:F4}), spins variance {report.SpinVariance:F6}");
         PrintChiSquare("final crate count", report.FinalCrates);
         PrintChiSquare("award in 12 buckets", report.Award);
+        Console.WriteLine($"  tickets: {report.TicketsChecked - report.TicketsInvalid:N0} of {report.TicketsChecked:N0} rounds validate" +
+            (report.FirstInvalidTicket is null ? "" : $", the first failure was {report.FirstInvalidTicket}"));
         Console.WriteLine("  bucket edges, in multiples of the bet, both ends included: " +
             string.Join(", ", report.AwardBuckets.Select(bucket => $"{bucket.From:0.##} to {bucket.To:0.##}")));
         Console.WriteLine($"  {(report.Passed ? "all checks pass" : "A CHECK FAILED")}, wrote {path}");
