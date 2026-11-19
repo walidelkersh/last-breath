@@ -1,7 +1,11 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using LastBreath.Core;
 using LastBreath.Core.Analysis;
 using LastBreath.Core.Dives;
+
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 const string usage = """
     usage: lab <command>
@@ -13,6 +17,11 @@ const string usage = """
       solve --dive <classic,static,tank> | --all
           Solves each dive exactly and writes reports/solve-<dive>.json.
           Money in a report is a multiple of the bet.
+      simulate --dive <classic,static,tank> --rounds <number> --seed <number>
+          Plays the rounds with the real engine and checks the result against the exact solve:
+          the mean award, hit frequency and mean spins within 3 standard errors, and chi-squares
+          of the final crate count and of 12 award buckets. Writes reports/simulate-<dive>.json
+          and exits 1 if any check fails.
     """;
 
 if (args is ["-h" or "--help"])
@@ -27,6 +36,9 @@ if (args is ["play", ..])
 if (args is ["solve", ..])
     return Solve();
 
+if (args is ["simulate", ..])
+    return Simulate();
+
 if (args.Length > 0)
     Console.Error.WriteLine($"unknown command: {args[0]}");
 Console.Error.WriteLine(usage);
@@ -38,31 +50,46 @@ string? Option(string name)
     return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
 }
 
+string? KeyOf(string name) => name.ToLowerInvariant() switch
+{
+    "classic" => "Classic",
+    "static" or "drift" => "Static",
+    "tank" => "Tank",
+    _ => null,
+};
+
+// The dives named in --dive as config keys, or null once the problem has been printed.
+string[]? ChosenDives()
+{
+    var names = Option("--dive")?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    if (names is null or [])
+    {
+        Console.Error.WriteLine(usage);
+        return null;
+    }
+
+    var keys = names.Select(KeyOf).ToArray();
+    var unknown = Array.FindIndex(keys, key => key is null);
+    if (unknown >= 0)
+    {
+        Console.Error.WriteLine($"unknown dive: {names[unknown]}");
+        return null;
+    }
+    return keys!;
+}
+
 int Play()
 {
-    var diveName = Option("--dive");
-    if (diveName is null || !ulong.TryParse(Option("--seed"), out var seed))
+    if (ChosenDives() is not { } chosen) return 1;
+    if (chosen is not [var key] || !ulong.TryParse(Option("--seed"), out var seed))
     {
         Console.Error.WriteLine(usage);
         return 1;
     }
 
     var config = ConfigLoader.LoadDefault();
-    (string Key, Func<GameConfig, DiveConfig, IRandomSource, Round> Engine)? chosen = diveName.ToLowerInvariant() switch
-    {
-        "classic" => ("Classic", ClassicDive.Play),
-        "static" or "drift" => ("Static", DriftDive.Play),
-        "tank" => ("Tank", TankDive.Play),
-        _ => null,
-    };
-    if (chosen is not var (key, engine))
-    {
-        Console.Error.WriteLine($"unknown dive: {diveName}");
-        return 1;
-    }
-
     var dive = config.Dives[key];
-    var round = engine(config, dive, new Pcg32Random(seed));
+    var round = Engines.For(key)(config, dive, new Pcg32Random(seed));
     var clockName = key == "Static" ? "spins" : "breaths";
 
     Console.WriteLine($"{dive.Name}, seed {seed}");
@@ -86,32 +113,10 @@ int Play()
 int Solve()
 {
     var config = ConfigLoader.LoadDefault();
-    var names = args.Contains("--all")
-        ? config.Dives.Keys.Select(key => key.ToLowerInvariant()).ToArray()
-        : Option("--dive")?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-    if (names is null or [])
-    {
-        Console.Error.WriteLine(usage);
-        return 1;
-    }
+    var keys = args.Contains("--all") ? [.. config.Dives.Keys] : ChosenDives();
+    if (keys is null) return 1;
 
-    var solved = new List<(string Name, Solution Solution)>();
-    foreach (var name in names)
-    {
-        Solution? solution = name.ToLowerInvariant() switch
-        {
-            "classic" => ClassicSolver.Solve(config, config.Dives["Classic"]),
-            "static" => DriftSolver.Solve(config, config.Dives["Static"]),
-            "tank" => TankSolver.Solve(config, config.Dives["Tank"]),
-            _ => null,
-        };
-        if (solution is null)
-        {
-            Console.Error.WriteLine($"no solver for dive: {name}");
-            return 1;
-        }
-        solved.Add((name.ToLowerInvariant(), solution));
-    }
+    var solved = keys.Select(key => (Name: key.ToLowerInvariant(), Solution: Solvers.Solve(key, config, config.Dives[key]))).ToList();
 
     Directory.CreateDirectory("reports");
     foreach (var (name, solution) in solved)
@@ -138,4 +143,55 @@ int Solve()
             $"spins {solution.MeanSpins:F4}, grand 1 in {1 / solution.GrandProbability:N0}, max {solution.ReachableMax:N0}x, wrote {path}");
     }
     return 0;
+}
+
+int Simulate()
+{
+    if (ChosenDives() is not { } keys) return 1;
+    if (!long.TryParse(Option("--rounds"), out var rounds) || rounds < Simulator.MinimumRounds
+        || !ulong.TryParse(Option("--seed"), out var seed))
+    {
+        Console.Error.WriteLine(usage);
+        return 1;
+    }
+
+    var config = ConfigLoader.LoadDefault();
+    Directory.CreateDirectory("reports");
+
+    // Each dive has its own stream, so running them side by side changes nothing but the time.
+    var runs = keys.AsParallel().AsOrdered().Select(key =>
+    {
+        var clock = Stopwatch.StartNew();
+        var report = Simulator.Run(key, config, Solvers.Solve(key, config, config.Dives[key]), rounds, seed);
+        return (Key: key, Report: report, Seconds: clock.Elapsed.TotalSeconds);
+    }).ToList();
+
+    foreach (var (key, report, seconds) in runs)
+    {
+        var path = Path.Combine("reports", $"simulate-{report.Dive}.json");
+        File.WriteAllText(path, report.ToJson());
+
+        Console.WriteLine($"{config.Dives[key].Name}, {report.Rounds:N0} rounds, seed {report.Seed}, {seconds:F1} s");
+        Console.WriteLine($"  {"",-24}{"simulated",12}{"exact",12}{"SE",11}{"z",8}");
+        PrintMeasure("mean award", report.MeanAward);
+        PrintMeasure("mean award, 100 batches", report.MeanAwardByBatches);
+        PrintMeasure("hit frequency", report.HitFrequency);
+        PrintMeasure("mean spins", report.MeanSpins);
+        Console.WriteLine($"  99% CI of the mean: textbook {report.MeanAward.Low99:F6} to {report.MeanAward.High99:F6}, " +
+            $"batch means {report.MeanAwardByBatches.Low99:F6} to {report.MeanAwardByBatches.High99:F6}");
+        Console.WriteLine($"  award SD {report.AwardSd:F4} (exact {report.ExactAwardSd:F4}), spins variance {report.SpinVariance:F6}");
+        PrintChiSquare("final crate count", report.FinalCrates);
+        PrintChiSquare("award in 12 buckets", report.Award);
+        Console.WriteLine("  bucket edges, in multiples of the bet, both ends included: " +
+            string.Join(", ", report.AwardBuckets.Select(bucket => $"{bucket.From:0.##} to {bucket.To:0.##}")));
+        Console.WriteLine($"  {(report.Passed ? "all checks pass" : "A CHECK FAILED")}, wrote {path}");
+    }
+
+    return runs.All(run => run.Report.Passed) ? 0 : 1;
+
+    static void PrintMeasure(string name, Measure measure) =>
+        Console.WriteLine($"  {name,-24}{measure.Simulated,12:F6}{measure.Exact,12:F6}{measure.StandardError,11:G3}{measure.Z,8:F2}  {(measure.WithinThreeSe ? "pass" : "FAIL")}");
+
+    static void PrintChiSquare(string name, ChiSquare test) =>
+        Console.WriteLine($"  {name}: chi-square {test.Statistic:F2} on {test.Freedom} df, limit {test.Limit} (0.001 level), {(test.Passed ? "pass" : "FAIL")}");
 }
