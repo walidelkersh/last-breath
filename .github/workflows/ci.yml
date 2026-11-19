@@ -17,3 +17,8 @@ jobs:
         run: dotnet build LastBreath.sln --configuration Release
       - name: Test
         run: dotnet test LastBreath.sln --configuration Release --no-build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Independent check
+        run: python -I scripts/independent_check.py --dives classic,static,tank
