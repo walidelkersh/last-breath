@@ -10,6 +10,7 @@ public sealed class ConfigTests
     private const string MinimalJson = """
         // comments are allowed
         {
+          "version": "0.0.1",
           "cashLadder": [50, 100],
           "jackpots": { "mini": 5000, "minor": 20000, "major": 100000 },
           "grand": 1000000,
@@ -37,6 +38,12 @@ public sealed class ConfigTests
         Assert.Equal(1_000_000, Default.Grand);
         Assert.Equal(5_000_000, Default.Cap);
         Assert.Equal([0.20m, 0.40m, 1.00m, 2.00m, 4.00m, 10.00m], Default.Bets);
+    }
+
+    [Fact]
+    public void TheConfigIsFrozenAtVersion030()
+    {
+        Assert.Equal("0.3.0", Default.Version);
     }
 
     [Fact]
@@ -149,6 +156,14 @@ public sealed class ConfigTests
     public void ParseRejectsAMissingProperty()
     {
         var json = MinimalJson.Replace("\"cap\": 5000000,", "");
+
+        Assert.ThrowsAny<System.Text.Json.JsonException>(() => ConfigLoader.Parse(json));
+    }
+
+    [Fact]
+    public void ParseRejectsAMissingVersion()
+    {
+        var json = MinimalJson.Replace("\"version\": \"0.0.1\",", "");
 
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => ConfigLoader.Parse(json));
     }

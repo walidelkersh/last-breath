@@ -1,0 +1,44 @@
+Ticket pool, Tank Dive. Amounts are multiples of the bet.
+tickets          100000
+seed             96706
+config hash      C54855C2AF0D292FCF6AB9FC829B6EC92738071B8694FA8967050FF2E893FDC1
+valid            100000 of 100000
+
+mean TotalWin    0.9464, standard error 0.0066, 99% CI 0.9293 to 0.9634
+exact mean       0.9600, inside the interval: yes
+hit frequency    0.99853, exact 0.99857
+mean turns       5.0098, exact 5.0089
+Grand tickets    0, expected 1.53
+largest ticket   103.35 (Tank-96706-C54855C2-0062982)
+final crate count: chi-square 8.60 on 14 df, limit 36.123 (0.001 level)
+
+award histogram, both ends included
+      from        to   tickets    expected
+      0.00      0.25     11155     10974.4
+      0.30      0.35      9550      9643.5
+      0.40      0.45     10905     10845.4
+      0.50      0.55     10381     10446.1
+      0.60      0.65      9439      9434.9
+      0.70      0.75      8065      8073.3
+      0.80      0.90      9341      9451.3
+      0.95      1.05      6461      6491.1
+      1.10      1.25      6225      6231.7
+      1.30      1.55      6611      6625.8
+      1.60      2.30      6062      6022.0
+      2.35   2500.00      5805      5760.5
+
+average win by turn
+  turn   tickets    mean win
+     1    100000      0.2340
+     2    100000      0.2033
+     3    100000      0.1917
+     4    100000      0.1697
+     5     46545      0.1590
+     6     26840      0.1452
+     7     15116      0.1324
+     8      7500      0.1132
+     9      3393      0.1389
+    10      1190      0.0924
+    11       340      0.0741
+    12        57      0.0667
+    13         3      0.1667

@@ -1,5 +1,6 @@
-// Landing numerators are first-pass values and are not tuned. reports/ holds what they give.
+// Landing numerators are frozen for Classic, Static and Tank (version 0.3.0): lab tune finds no closer integer to a 96% RTP. reports/solve-*.json, reports/simulate-*.json and reports/pool/*/PoolReport.txt hold what they give.
 {
+  "version": "0.3.0",
   "cashLadder": [50, 100, 200, 250, 500, 1000, 2000, 3000],
   "jackpots": { "mini": 5000, "minor": 20000, "major": 100000 },
   "grand": 1000000,

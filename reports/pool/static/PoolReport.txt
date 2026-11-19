@@ -1,0 +1,37 @@
+Ticket pool, Drift Dive. Amounts are multiples of the bet.
+tickets          100000
+seed             96706
+config hash      C54855C2AF0D292FCF6AB9FC829B6EC92738071B8694FA8967050FF2E893FDC1
+valid            100000 of 100000
+
+mean TotalWin    0.9603, standard error 0.0036, 99% CI 0.9512 to 0.9695
+exact mean       0.9600, inside the interval: yes
+hit frequency    0.99949, exact 0.99954
+mean turns       6.0000, exact 6.0000
+Grand tickets    0, expected 0.11
+largest ticket   25.35 (Static-96706-C54855C2-0045022)
+final crate count: chi-square 11.06 on 13 df, limit 34.528 (0.001 level)
+
+award histogram, both ends included
+      from        to   tickets    expected
+      0.00      0.30     11330     11321.9
+      0.35      0.40      9715      9796.6
+      0.45      0.50     11147     11045.4
+      0.55      0.60     10640     10665.6
+      0.65      0.70      9591      9525.3
+      0.75      0.80      8093      8046.5
+      0.85      0.95      9184      9259.1
+      1.00      1.10      6153      6246.0
+      1.15      1.35      7344      7327.8
+      1.40      1.65      5857      5978.3
+      1.70      2.45      5715      5615.4
+      2.50   1300.00      5231      5172.1
+
+average win by turn
+  turn   tickets    mean win
+     1    100000      0.1915
+     2    100000      0.1804
+     3    100000      0.1660
+     4    100000      0.1549
+     5    100000      0.1405
+     6    100000      0.1270

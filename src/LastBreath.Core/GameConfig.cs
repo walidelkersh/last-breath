@@ -52,6 +52,7 @@ public sealed record GameConfig
     public const int LandingDenominator = 1_000_000;
     public const int WeightTotal = 100_000;
 
+    public required string Version { get; init; }
     public required int[] CashLadder { get; init; }
     public required Jackpots Jackpots { get; init; }
     public required int Grand { get; init; }

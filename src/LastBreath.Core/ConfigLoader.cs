@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace LastBreath.Core;
 
@@ -32,6 +33,9 @@ public static class ConfigLoader
 
     public static void Validate(GameConfig config)
     {
+        if (!Regex.IsMatch(config.Version ?? "", @"^\d+\.\d+\.\d+$"))
+            throw Invalid($"version '{config.Version}' is not major.minor.patch");
+
         foreach (var units in config.CashLadder)
             RequireUnitStep($"cash ladder value {units}", units);
         RequireUnitStep("Mini", config.Jackpots.Mini);

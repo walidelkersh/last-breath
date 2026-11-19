@@ -24,6 +24,18 @@ public sealed class ConfigValidationTests
         Assert.Throws<InvalidDataException>(() => ConfigLoader.Validate(config)).Message;
 
     [Theory]
+    [InlineData("")]
+    [InlineData("1")]
+    [InlineData("1.2")]
+    [InlineData("1.2.3.4")]
+    [InlineData("v1.2.3")]
+    [InlineData("1.2.x")]
+    public void VersionThatIsNotMajorMinorPatchIsRejected(string version)
+    {
+        Assert.Contains("major.minor.patch", Rejection(Default with { Version = version }));
+    }
+
+    [Theory]
     [InlineData("ladder")]
     [InlineData("mini")]
     [InlineData("minor")]

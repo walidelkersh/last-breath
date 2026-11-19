@@ -1,0 +1,157 @@
+{
+  "dive": "static",
+  "rounds": 10000000,
+  "seed": 1,
+  "config_hash": "C54855C2AF0D292FCF6AB9FC829B6EC92738071B8694FA8967050FF2E893FDC1",
+  "mean_award": {
+    "simulated": 0.96000198,
+    "exact": 0.9600040169402027,
+    "standard_error": 0.0004853899500401181,
+    "critical": 2.5758293035488986,
+    "z": -0.004196502631446454,
+    "within_three_se": true,
+    "low99": 0.9587516983430385,
+    "high99": 0.9612522616569615
+  },
+  "mean_award_by_batches": {
+    "simulated": 0.96000198,
+    "exact": 0.9600040169402027,
+    "standard_error": 0.0004369646516757861,
+    "critical": 2.626405457279879,
+    "z": -0.00466156746274379,
+    "within_three_se": true,
+    "low99": 0.9588543336542004,
+    "high99": 0.9611496263457997
+  },
+  "hit_frequency": {
+    "simulated": 0.9995354,
+    "exact": 0.9995389824862722,
+    "standard_error": 6.788261755264614E-06,
+    "critical": 2.5758293035488986,
+    "z": -0.5277472203267307,
+    "within_three_se": true,
+    "low99": 0.9995179145964506,
+    "high99": 0.9995528854035494
+  },
+  "mean_spins": {
+    "simulated": 6,
+    "exact": 5.999999861977565,
+    "standard_error": 1E-07,
+    "critical": 2.5758293035488986,
+    "z": 1.3802243525873337,
+    "within_three_se": true,
+    "low99": 5.99999974241707,
+    "high99": 6.00000025758293
+  },
+  "award_sd": 1.5349377954821113,
+  "exact_award_sd": 1.5372472469158427,
+  "spin_variance": 0,
+  "final_crates": {
+    "statistic": 22.486305045196133,
+    "freedom": 15,
+    "limit": 37.697,
+    "passed": true
+  },
+  "final_crate_counts": [
+    4646,
+    46336,
+    216769,
+    628250,
+    1260881,
+    1853815,
+    2066893,
+    1776316,
+    1186780,
+    615711,
+    248583,
+    75257,
+    17000,
+    2526,
+    226,
+    11
+  ],
+  "award": {
+    "statistic": 13.596201686960196,
+    "freedom": 11,
+    "limit": 31.264,
+    "passed": true
+  },
+  "award_buckets": [
+    {
+      "from": 0,
+      "to": 0.3,
+      "expected": 1132192.7503115623,
+      "observed": 1134057
+    },
+    {
+      "from": 0.35,
+      "to": 0.4,
+      "expected": 979663.280903737,
+      "observed": 981317
+    },
+    {
+      "from": 0.45,
+      "to": 0.5,
+      "expected": 1104538.0116937403,
+      "observed": 1103465
+    },
+    {
+      "from": 0.55,
+      "to": 0.6,
+      "expected": 1066560.3466203297,
+      "observed": 1065913
+    },
+    {
+      "from": 0.65,
+      "to": 0.7,
+      "expected": 952525.003238842,
+      "observed": 952843
+    },
+    {
+      "from": 0.75,
+      "to": 0.8,
+      "expected": 804646.9224931832,
+      "observed": 804601
+    },
+    {
+      "from": 0.85,
+      "to": 0.95,
+      "expected": 925913.0592632794,
+      "observed": 923574
+    },
+    {
+      "from": 1,
+      "to": 1.1,
+      "expected": 624596.5414853722,
+      "observed": 624341
+    },
+    {
+      "from": 1.15,
+      "to": 1.35,
+      "expected": 732779.9699633187,
+      "observed": 732915
+    },
+    {
+      "from": 1.4,
+      "to": 1.65,
+      "expected": 597834.4364987703,
+      "observed": 597889
+    },
+    {
+      "from": 1.7,
+      "to": 2.45,
+      "expected": 561541.4276633133,
+      "observed": 561608
+    },
+    {
+      "from": 2.5,
+      "to": 1300,
+      "expected": 517208.2498645489,
+      "observed": 517477
+    }
+  ],
+  "tickets_checked": 1000000,
+  "tickets_invalid": 0,
+  "first_invalid_ticket": null,
+  "passed": true
+}
