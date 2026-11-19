@@ -15,6 +15,7 @@ The engines for the first three dives exist and can be played from the command l
 - a ticket model that turns a finished round into JSON, and a validator for Classic, Drift and Tank tickets that checks every turn, replays the clock and refuses a pool with a repeated ticket id
 - an exact solver per dive in `src/LastBreath.Core/Analysis`, by backward induction over (crates, breaths) for Classic, (crates, breaths, tanks used) for Tank, and a closed form for Drift that a second induction checks; `lab solve --dive classic,static,tank` (or `--all`) writes each result to `reports/solve-<dive>.json`
 - `lab simulate`, which plays rounds with the real engines from one PCG32 stream and checks them against the exact solve: the mean award (from the textbook standard error and from 100 batch means), hit frequency and mean spins within 3 standard errors, and chi-squares of the final crate count and of 12 award buckets, with the bucket edges taken from the exact distribution. It writes `reports/simulate-<dive>.json` and exits 1 if a check fails
+- `lab export-pool`, which plays rounds from one seed, turns each into a ticket, validates every ticket and refuses to write the pool unless all of them pass. `reports/pool/<dive>/TicketPool.json` is too large to track (about 200 MB for 100,000 Classic tickets), so it is ignored, while `PoolReport.txt` next to it is tracked: the ticket count, seed, config hash, mean win against the exact mean with a 99% interval, a chi-square of the final crate count, an award histogram and the average win on each turn
 - a client page that shows the game name and nothing else
 - `scripts/independent_check.py`, a Python check written from the rules alone that works out each dive's exact math in fractions and compares it with the solver reports once they exist: `python -I scripts/independent_check.py --dives classic,static,tank`, or `--self-test` for its hand-checked cases
 
@@ -34,7 +35,13 @@ To check an engine against its exact solve, give the lab the dives, a number of 
 dotnet run --project src/LastBreath.Lab -c Release -- simulate --dive classic,static,tank --rounds 10000000 --seed 1
 ```
 
-The tests check each rule of each dive against scripted random numbers, and a few full rounds from fixed seeds. The solver tests check hand-worked cases, the Drift closed form against its induction, Tank with no tanks and a refill against Classic, and each solver against 200,000 rounds of its engine. The simulator tests run 20,000 rounds of each dive with a pinned seed and check that a wrong exact value makes a check fail. The client does not play a round yet.
+A pool of tickets comes from the same engines, and the seed defaults to 96706.
+
+```
+dotnet run --project src/LastBreath.Lab -c Release -- export-pool --dive static --tickets 100000
+```
+
+The tests check each rule of each dive against scripted random numbers, and a few full rounds from fixed seeds. The solver tests check hand-worked cases, the Drift closed form against its induction, Tank with no tanks and a refill against Classic, and each solver against 200,000 rounds of its engine. The simulator tests run 20,000 rounds of each dive with a pinned seed and check that a wrong exact value makes a check fail, and the export tests check that 2,000 tickets validate and that one tampered ticket makes the export fail. The client does not play a round yet.
 
 The numbers in the config are first-pass values, and I have not tuned them. The solver reports show what they give, but I make no claim about RTP or any other math figure here until the full simulation backs them up.
 

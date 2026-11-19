@@ -4,6 +4,7 @@ using System.Text.Json;
 using LastBreath.Core;
 using LastBreath.Core.Analysis;
 using LastBreath.Core.Dives;
+using LastBreath.Core.Tickets;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -22,6 +23,9 @@ const string usage = """
           the mean award, hit frequency and mean spins within 3 standard errors, and chi-squares
           of the final crate count and of 12 award buckets. Writes reports/simulate-<dive>.json
           and exits 1 if any check fails.
+      export-pool --dive <classic,static,tank> --tickets <number> [--seed <number>]
+          Plays the rounds, turns each into a ticket, validates every ticket and fails unless all pass.
+          Writes reports/pool/<dive>/TicketPool.json and PoolReport.txt. The seed defaults to 96706.
     """;
 
 if (args is ["-h" or "--help"])
@@ -38,6 +42,9 @@ if (args is ["solve", ..])
 
 if (args is ["simulate", ..])
     return Simulate();
+
+if (args is ["export-pool", ..])
+    return ExportPool();
 
 if (args.Length > 0)
     Console.Error.WriteLine($"unknown command: {args[0]}");
@@ -194,4 +201,35 @@ int Simulate()
 
     static void PrintChiSquare(string name, ChiSquare test) =>
         Console.WriteLine($"  {name}: chi-square {test.Statistic:F2} on {test.Freedom} df, limit {test.Limit} (0.001 level), {(test.Passed ? "pass" : "FAIL")}");
+}
+
+int ExportPool()
+{
+    if (ChosenDives() is not { } keys) return 1;
+    ulong seed = 96706;
+    if (!long.TryParse(Option("--tickets"), out var count) || count < Simulator.MinimumRounds
+        || (Option("--seed") is { } given && !ulong.TryParse(given, out seed)))
+    {
+        Console.Error.WriteLine(usage);
+        return 1;
+    }
+
+    var config = ConfigLoader.LoadDefault();
+    foreach (var key in keys)
+    {
+        var directory = Path.Combine("reports", "pool", key.ToLowerInvariant());
+        var exact = Solvers.Solve(key, config, config.Dives[key]);
+        try
+        {
+            var report = PoolExport.Write(key, config, exact, PoolExport.Play(key, config, count, seed), seed, directory);
+            Console.WriteLine($"{report.DiveName}: {report.Valid} of {report.Count} valid, mean TotalWin {report.MeanTotalWin.Simulated:F4} " +
+                $"against exact {report.MeanTotalWin.Exact:F4}, hit frequency {report.HitFrequency.Simulated:F5}, wrote {directory}");
+        }
+        catch (InvalidDataException failure)
+        {
+            Console.Error.WriteLine($"{config.Dives[key].Name}: {failure.Message}");
+            return 1;
+        }
+    }
+    return 0;
 }
