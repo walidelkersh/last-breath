@@ -26,6 +26,9 @@ const string usage = """
       export-pool --dive <classic,static,tank> --tickets <number> [--seed <number>]
           Plays the rounds, turns each into a ticket, validates every ticket and fails unless all pass.
           Writes reports/pool/<dive>/TicketPool.json and PoolReport.txt. The seed defaults to 96706.
+      tune --dive <classic,static,tank>
+          Searches the exact solver for the integer crate numerator that puts each dive closest to a
+          96% RTP, and reports the old and new numerator. It does not change the config.
     """;
 
 if (args is ["-h" or "--help"])
@@ -45,6 +48,9 @@ if (args is ["simulate", ..])
 
 if (args is ["export-pool", ..])
     return ExportPool();
+
+if (args is ["tune", ..])
+    return Tune();
 
 if (args.Length > 0)
     Console.Error.WriteLine($"unknown command: {args[0]}");
@@ -230,6 +236,22 @@ int ExportPool()
             Console.Error.WriteLine($"{config.Dives[key].Name}: {failure.Message}");
             return 1;
         }
+    }
+    return 0;
+}
+
+int Tune()
+{
+    if (ChosenDives() is not { } keys) return 1;
+
+    var config = ConfigLoader.LoadDefault();
+    foreach (var key in keys)
+    {
+        var tuning = Tuner.Tune(key, config);
+        var change = tuning.New == tuning.Old ? "unchanged" : "changed";
+        Console.WriteLine($"{config.Dives[key].Name}: numerator {tuning.Old:N0} to {tuning.New:N0} ({change}), " +
+            $"RTP {tuning.RtpBefore * 100:F6}% to {tuning.RtpAfter * 100:F6}%, " +
+            $"distance from 96% {Math.Abs(tuning.RtpBefore - Tuner.Target) * 100:F6} pp to {Math.Abs(tuning.RtpAfter - Tuner.Target) * 100:F6} pp");
     }
     return 0;
 }
