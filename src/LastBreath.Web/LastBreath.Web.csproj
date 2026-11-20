@@ -5,4 +5,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.31" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\LastBreath.Core\LastBreath.Core.csproj" />
+    <EmbeddedResource Include="..\..\reports\solve-*.json" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\reports\simulate-*.json" LogicalName="%(Filename)%(Extension)" />
+    <InternalsVisibleTo Include="LastBreath.Tests" />
+  </ItemGroup>
+
 </Project>

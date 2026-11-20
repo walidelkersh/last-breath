@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\LastBreath.Core\LastBreath.Core.csproj" />
+    <ProjectReference Include="..\..\src\LastBreath.Web\LastBreath.Web.csproj" />
   </ItemGroup>
 
 </Project>
