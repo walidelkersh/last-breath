@@ -17,6 +17,19 @@ window.lastBreath = {
         return new URLSearchParams(location.search).get(name);
     },
 
+    // Shortcuts are page-wide. An open dialog takes its own keys, including Escape.
+    listenKeys(game) {
+        document.addEventListener("keydown", (event) => {
+            if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+            if (document.querySelector("dialog[open]")) return;
+            game.invokeMethodAsync("OnKey", event.key);
+        });
+    },
+
+    openDialog(dialog) {
+        if (!dialog.open) dialog.showModal();
+    },
+
     randomSeed() {
         const words = new Uint32Array(2);
         crypto.getRandomValues(words);

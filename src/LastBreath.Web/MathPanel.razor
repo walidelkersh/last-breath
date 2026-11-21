@@ -1,0 +1,77 @@
+@inject IJSRuntime JS
+@inject GameConfig Config
+
+<dialog @ref="dialog" class="math" aria-labelledby="math-title">
+    <div class="math-head">
+        <h2 id="math-title">Math</h2>
+        <form method="dialog"><button type="submit" class="primary">Close</button></form>
+    </div>
+
+    <p>The exact figures come from the solver in the repository. The simulated figure is the mean award of rounds played by the real engine, and it checks the engine against the exact one.</p>
+
+    <table>
+        <caption class="sr-only">Exact and simulated figures for each dive</caption>
+        <thead>
+            <tr>
+                <td></td>
+                @foreach (var dive in Dives)
+                {
+                    <th scope="col">@dive.Name</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            <tr><th scope="row">RTP, exact</th>@Cells(dive => Format.Percent(dive.Figures.Rtp, 4))</tr>
+            <tr><th scope="row">SD, in bets</th>@Cells(dive => Format.Number(dive.Figures.Sd))</tr>
+            <tr><th scope="row">Hit frequency</th>@Cells(dive => Format.Percent(dive.Figures.HitFrequency))</tr>
+            <tr><th scope="row">Mean spins</th>@Cells(dive => Format.Number(dive.Figures.MeanSpins))</tr>
+            <tr><th scope="row">Grand, 1 in</th>@Cells(dive => Format.Whole(dive.Figures.GrandOdds))</tr>
+            <tr>
+                <th scope="row">RTP, simulated</th>
+                @foreach (var dive in Dives)
+                {
+                    <td>@Format.Percent(dive.Figures.SimulatedRtp, 4)<span class="sub">@Format.Whole(dive.Figures.SimulatedRounds) rounds</span></td>
+                }
+            </tr>
+            <tr><th scope="row">Standard errors from exact</th>@Cells(dive => Format.Number(Math.Abs(dive.Figures.SimulatedZ)))</tr>
+        </tbody>
+    </table>
+
+    <p class="seed">
+        Session seed:
+        @if (Seed is { } seed && SeedDiveId is { } id)
+        {
+            <code data-testid="seed">@seed</code>
+            <span class="sub">The seed of the most recent round, a @Dives.First(dive => dive.Id == id).Name. The lab replays it with <code>play --dive @id.ToLowerInvariant() --seed @seed</code>.</span>
+        }
+        else
+        {
+            <span>no round yet</span>
+        }
+    </p>
+
+    <p class="links">
+        <a href="https://github.com/walidelkersh/last-breath" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+        <span class="sub">Config version @Config.Version</span>
+    </p>
+</dialog>
+
+@code {
+    private ElementReference dialog;
+
+    [Parameter, EditorRequired] public IReadOnlyList<DiveInfo> Dives { get; set; } = default!;
+    [Parameter] public ulong? Seed { get; set; }
+    [Parameter] public string? SeedDiveId { get; set; }
+
+    public async Task Open() => await JS.InvokeVoidAsync("lastBreath.openDialog", dialog);
+
+    private RenderFragment Cells(Func<DiveInfo, string> value) => builder =>
+    {
+        foreach (var dive in Dives)
+        {
+            builder.OpenElement(0, "td");
+            builder.AddContent(1, value(dive));
+            builder.CloseElement();
+        }
+    };
+}

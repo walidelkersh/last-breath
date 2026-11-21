@@ -4,10 +4,11 @@
 
 @if (ready)
 {
-    <div class="app" data-motion="@(reduceMotion ? "reduced" : "full")">
+    <div class="app">
         <header class="top">
             <h1>Last Breath</h1>
             <div class="wallet">
+                <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
                 <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
                 <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
             </div>
@@ -23,7 +24,7 @@
             }
             else
             {
-                <RoundView @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" ReduceMotion="reduceMotion"
+                <RoundView @ref="roundView" @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" ReduceMotion="reduceMotion"
                            CanDiveAgain="balance >= bet"
                            Announce="Say" Finished="Settle" DiveAgain="StartRound" ChangeDive="ChangeDive" />
             }
@@ -31,7 +32,15 @@
 
         <footer>
             <p>Demo only. The credits are play money, and nothing is paid out.</p>
+            <p>Keys: 1 to 3 choose a dive, S skips, M opens the math, Escape closes it.</p>
+            <label class="toggle">
+                <input type="checkbox" checked="@reduceMotion" disabled="@systemReducesMotion" @onchange="ToggleMotion" />
+                Reduce motion
+                @if (systemReducesMotion) { <span>(set by your system)</span> }
+            </label>
         </footer>
+
+        <MathPanel @ref="math" Dives="Dives" Seed="lastSeed" SeedDiveId="@lastSeedDive" />
 
         <div class="sr-only" aria-live="polite" aria-atomic="true">@announcement</div>
     </div>
@@ -40,10 +49,12 @@
 @code {
     private const string DiveKey = "lastbreath.dive";
     private const string BetKey = "lastbreath.bet";
+    private const string MotionKey = "lastbreath.reduce";
     private const decimal StartingBalance = 1000.00m;
 
     private bool ready;
-    private bool reduceMotion;
+    private bool systemReducesMotion;
+    private bool reduceMotionChoice;
     private bool returned;
     private bool roundActive;
     private decimal balance = StartingBalance;
@@ -54,6 +65,12 @@
     private int roundNumber;
     private ulong? fixedSeed;
     private string announcement = "";
+    private ulong? lastSeed;
+    private string? lastSeedDive;
+    private RoundView? roundView;
+    private MathPanel? math;
+
+    private bool reduceMotion => systemReducesMotion || reduceMotionChoice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,7 +86,9 @@
         if (ulong.TryParse(await JS.InvokeAsync<string?>("lastBreath.queryValue", "seed"), out var seed))
             fixedSeed = seed;
 
-        reduceMotion = await JS.InvokeAsync<bool>("lastBreath.prefersReducedMotion");
+        systemReducesMotion = await JS.InvokeAsync<bool>("lastBreath.prefersReducedMotion");
+        reduceMotionChoice = await JS.InvokeAsync<string?>("lastBreath.read", MotionKey) == "1";
+        await JS.InvokeVoidAsync("lastBreath.listenKeys", DotNetObjectReference.Create(this));
         ready = true;
     }
 
@@ -92,6 +111,8 @@
         var seed = fixedSeed is { } fixedStart
             ? unchecked(fixedStart + (ulong)roundNumber)
             : ulong.Parse(await JS.InvokeAsync<string>("lastBreath.randomSeed"), CultureInfo.InvariantCulture);
+        lastSeed = seed;
+        lastSeedDive = selectedDive;
         round = Engines.For(selectedDive)(Config, Config.Dives[selectedDive], new Pcg32Random(seed));
         roundBet = bet;
         balance -= bet;
@@ -116,6 +137,29 @@
     {
         balance = StartingBalance;
         Say($"Balance reset to {Format.Credits(balance)} credits.");
+    }
+
+    private async Task ToggleMotion(ChangeEventArgs change)
+    {
+        reduceMotionChoice = change.Value is true;
+        await JS.InvokeVoidAsync("lastBreath.write", MotionKey, reduceMotionChoice ? "1" : "0");
+    }
+
+    private async Task OpenMath()
+    {
+        if (math is not null) await math.Open();
+    }
+
+    [JSInvokable]
+    public async Task OnKey(string key)
+    {
+        if (round is null && int.TryParse(key, out var number) && number >= 1 && number <= Dives.Count)
+            await Pick(Dives[number - 1].Id);
+        else if (key.Equals("s", StringComparison.OrdinalIgnoreCase) && roundView is not null)
+            await roundView.Skip();
+        else if (key.Equals("m", StringComparison.OrdinalIgnoreCase))
+            await OpenMath();
+        StateHasChanged();
     }
 
     private void Say(string message) => announcement = message;

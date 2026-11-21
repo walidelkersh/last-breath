@@ -623,6 +623,108 @@ main {
     margin-top: var(--s4);
 }
 
+/* Footer toggle and the Math panel */
+
+footer p + p {
+    margin-top: var(--s1);
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+    margin-top: var(--s3);
+    cursor: pointer;
+}
+
+.toggle input {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--accent);
+}
+
+dialog.math {
+    width: min(46rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: var(--s5);
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+}
+
+dialog.math::backdrop {
+    background: rgb(0 0 0 / 0.65);
+}
+
+.math-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s4);
+}
+
+.math-head h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+}
+
+.math p {
+    margin: var(--s3) 0;
+    color: var(--muted);
+}
+
+.math table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+}
+
+.math th,
+.math td {
+    padding: var(--s2);
+    text-align: right;
+    vertical-align: top;
+    border-top: 1px solid var(--line);
+}
+
+.math thead th,
+.math thead td {
+    border-top: 0;
+}
+
+.math thead th {
+    font-family: var(--serif);
+}
+
+.math tbody th {
+    padding-left: 0;
+    color: var(--muted);
+    font-weight: 400;
+    text-align: left;
+}
+
+.math td {
+    font-weight: 600;
+}
+
+.sub {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+}
+
+.math .seed code {
+    color: var(--text);
+}
+
 /* Motion. The markup leaves these classes off when motion is reduced, and the media query is a second guard. */
 
 @keyframes tile-in {

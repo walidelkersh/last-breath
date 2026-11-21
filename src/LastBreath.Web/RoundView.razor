@@ -180,7 +180,7 @@
         }
     }
 
-    private async Task Skip()
+    public async Task Skip()
     {
         if (finished) return;
         await stop.CancelAsync();
