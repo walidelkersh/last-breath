@@ -53,7 +53,7 @@
                 </div>
                 break;
         }
-        <p class="total">Board <strong>@Format.Credits(Settlement.Credits(units, Bet))</strong></p>
+        <p class="total" title="@(Format.Multiple(units))× bet">Board <strong>@Format.Credits(Settlement.Credits(units, Bet))</strong><span class="sr-only"> credits, @(Format.Multiple(units)) times the bet</span></p>
     </div>
 
     <div class="board" role="group" aria-label="Board, five columns by three rows">
