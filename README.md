@@ -17,7 +17,7 @@ The first three dives (Classic, Drift and Tank) are built, solved exactly, check
 - `lab simulate`, which plays rounds with the real engines from one PCG32 stream and checks them against the exact solve: the mean award (from the textbook standard error and from 100 batch means), hit frequency and mean spins within 3 standard errors, and chi-squares of the final crate count and of 12 award buckets, with the bucket edges taken from the exact distribution. The first million rounds are also turned into tickets and validated. It writes `reports/simulate-<dive>.json` and exits 1 if a check fails
 - `lab export-pool`, which plays rounds from one seed, turns each into a ticket, validates every ticket and refuses to write the pool unless all of them pass. `reports/pool/<dive>/TicketPool.json` is too large to track (about 200 MB for 100,000 Classic tickets), so it is ignored, while `PoolReport.txt` next to it is tracked: the ticket count, seed, config hash, mean win against the exact mean with a 99% interval, a chi-square of the final crate count, an award histogram and the average win on each turn
 - `lab tune`, which searches the exact solver for the integer crate numerator that puts a dive closest to a 96% RTP and reports the old and new numerator. It only reports, and it never tunes by simulation. For all three dives it finds no closer integer than the numerator already in the config
-- a client page that shows the game name and nothing else
+- a Blazor WebAssembly client that plays all three dives in the browser with placeholder art. It has a selection screen, a round screen and a Math panel, and the cards and the Math panel read their figures from `reports/` when the site is built. The Playwright tests in `tests/e2e` play each dive by keyboard
 - `scripts/independent_check.py`, a Python check written from the rules alone that works out each dive's exact math in fractions and compares it with the solver reports: `python -I scripts/independent_check.py --dives classic,static,tank`, or `--self-test` for its hand-checked cases. It uses only the Python standard library, and CI runs it after the tests and fails on any difference
 
 All three engines end the round at once when the board is full, and a full board pays the Grand on top of the board total.
@@ -52,7 +52,7 @@ The numerators in the config are frozen for these three dives. `lab tune` search
 | Drift | 96.0004% | 1.54 | 99.95% | 6.00 | 96.0002% |
 | Tank | 96.0004% | 4.41 | 99.86% | 5.01 | 96.1743% |
 
-I checked the exact figures two ways. `scripts/independent_check.py` works them out again in exact fractions, by pushing probability forward from the empty board, and it matches the solver reports to 1e-12. The simulation plays the real engines. In each of the three runs the exact RTP is within 1.2 standard errors of the simulated mean, hit frequency and mean spins are within 3 standard errors, the chi-squares of the final crate count and of 12 award buckets are under their limits at the 0.001 level, and the first million rounds all validate as tickets. Classic's simulated RTP is 0.2 percentage points above the exact one, which is 1.0 standard error. That is one seed per dive, and I fixed the seed before I ran it. The 3-standard-error check on the mean is weak at 20,000 rounds for Classic and Tank, because the Grand carries most of their variance and usually does not land in a run that short, so the unit tests only show that the simulator runs and notices a wrong exact value. The 10 million round runs are the evidence. The engines, the solvers and the Python check all follow my reading of the rules, so none of them can show that I read a rule wrongly. The other three dives are not built, and the client does not play a round yet.
+I checked the exact figures two ways. `scripts/independent_check.py` works them out again in exact fractions, by pushing probability forward from the empty board, and it matches the solver reports to 1e-12. The simulation plays the real engines. In each of the three runs the exact RTP is within 1.2 standard errors of the simulated mean, hit frequency and mean spins are within 3 standard errors, the chi-squares of the final crate count and of 12 award buckets are under their limits at the 0.001 level, and the first million rounds all validate as tickets. Classic's simulated RTP is 0.2 percentage points above the exact one, which is 1.0 standard error. That is one seed per dive, and I fixed the seed before I ran it. The 3-standard-error check on the mean is weak at 20,000 rounds for Classic and Tank, because the Grand carries most of their variance and usually does not land in a run that short, so the unit tests only show that the simulator runs and notices a wrong exact value. The 10 million round runs are the evidence. The engines, the solvers and the Python check all follow my reading of the rules, so none of them can show that I read a rule wrongly. The other three dives are not built.
 
 ## Build and test
 
@@ -64,7 +64,15 @@ dotnet test LastBreath.sln -c Release
 dotnet run --project src/LastBreath.Web
 ```
 
-The tests carry a category: `Common` for the core, `Classic`, `Drift` and `Tank` for the engines, `Tickets` for the validator, `Analysis` for the solvers and the tuner, and `Simulate` for the simulator and the pool export. For example, `dotnet test LastBreath.sln -c Release --filter Category=Tank` runs only the Tank tests.
+The browser tests publish the client themselves, serve it on port 4173 and drive Chromium. They need Node 18 or newer, and `npx playwright install chromium` if Playwright has no browser yet.
+
+```
+cd tests/e2e
+npm install
+npx playwright test
+```
+
+The tests carry a category: `Common` for the core, `Classic`, `Drift` and `Tank` for the engines, `Tickets` for the validator, `Analysis` for the solvers and the tuner, `Simulate` for the simulator and the pool export, and `Client` for the figures and wording the client shows. For example, `dotnet test LastBreath.sln -c Release --filter Category=Tank` runs only the Tank tests.
 
 ## License
 
