@@ -13,4 +13,7 @@ public static class Format
     public static string Number(double value, int digits = 2) => value.ToString("F" + digits, Culture);
 
     public static string Whole(long value) => value.ToString("N0", Culture);
+
+    // A value in units as a multiple of the bet: 250 units is 0.25, 100,000 is 100.
+    public static string Multiple(int units) => (units / 1000m).ToString("#,0.##", Culture);
 }

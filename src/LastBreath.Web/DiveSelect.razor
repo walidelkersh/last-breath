@@ -1,0 +1,75 @@
+<section class="select" aria-labelledby="dives-title">
+    <h2 id="dives-title">Choose a dive</h2>
+    <div class="cards" role="radiogroup" aria-labelledby="dives-title">
+        @for (var i = 0; i < Dives.Count; i++)
+        {
+            var dive = Dives[i];
+            var key = i + 1;
+            <label class="card">
+                <input type="radio" name="dive" class="sr-only" value="@dive.Id"
+                       checked="@(Selected == dive.Id)" @onchange="() => SelectedChanged.InvokeAsync(dive.Id)"
+                       aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id facts-@dive.Id"
+                       aria-keyshortcuts="@key" />
+                <span class="card-body">
+                    <span class="card-top">
+                        <span class="key" aria-hidden="true">@key</span>
+                        <span class="name" id="name-@dive.Id">@dive.Name</span>
+                        <span class="mark" aria-hidden="true"></span>
+                    </span>
+                    <span class="rule" id="rule-@dive.Id">@dive.Rule</span>
+                    <span class="facts" id="facts-@dive.Id">
+                        <span class="fact"><span class="fact-name">Volatility</span> <span class="fact-value">@dive.Volatility</span></span>
+                        <span class="fact"><span class="fact-name">Hit frequency</span> <span class="fact-value">@Format.Percent(dive.Figures.HitFrequency)</span></span>
+                        <span class="fact"><span class="fact-name">Typical length</span> <span class="fact-value">@dive.Figures.TypicalLength</span></span>
+                        <span class="fact"><span class="fact-name">RTP</span> <span class="fact-value">@Format.Percent(dive.Figures.Rtp)</span></span>
+                    </span>
+                </span>
+            </label>
+        }
+    </div>
+
+    <div class="stake">
+        <div class="bets" role="radiogroup" aria-labelledby="bet-title">
+            <p id="bet-title" class="field-title">Bet, in credits</p>
+            <div class="chips">
+                @foreach (var amount in Bets)
+                {
+                    <label class="chip">
+                        <input type="radio" name="bet" class="sr-only" value="@Format.Credits(amount)"
+                               checked="@(Bet == amount)" @onchange="() => BetChanged.InvokeAsync(amount)" />
+                        <span>@Format.Credits(amount)</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="go">
+            <button type="button" class="primary dive" @ref="diveButton" disabled="@(!CanDive)" @onclick="OnDive">Dive</button>
+            @if (!CanDive)
+            {
+                <p class="note">Not enough credits for this bet. Choose a smaller bet or reset the balance.</p>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private ElementReference diveButton;
+
+    [Parameter, EditorRequired] public IReadOnlyList<DiveInfo> Dives { get; set; } = default!;
+    [Parameter, EditorRequired] public decimal[] Bets { get; set; } = default!;
+    [Parameter] public decimal Balance { get; set; }
+    [Parameter] public string Selected { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedChanged { get; set; }
+    [Parameter] public decimal Bet { get; set; }
+    [Parameter] public EventCallback<decimal> BetChanged { get; set; }
+    [Parameter] public bool FocusDive { get; set; }
+    [Parameter] public EventCallback OnDive { get; set; }
+
+    private bool CanDive => Balance >= Bet;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && FocusDive) await diveButton.FocusAsync();
+    }
+}

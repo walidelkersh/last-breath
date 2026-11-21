@@ -1,0 +1,122 @@
+@inject IJSRuntime JS
+@inject GameConfig Config
+@inject IReadOnlyList<DiveInfo> Dives
+
+@if (ready)
+{
+    <div class="app" data-motion="@(reduceMotion ? "reduced" : "full")">
+        <header class="top">
+            <h1>Last Breath</h1>
+            <div class="wallet">
+                <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
+                <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
+            </div>
+        </header>
+
+        <main>
+            @if (round is null)
+            {
+                <DiveSelect Dives="Dives" Bets="Config.Bets" Balance="balance"
+                            Selected="@selectedDive" SelectedChanged="Pick"
+                            Bet="bet" BetChanged="PickBet"
+                            FocusDive="returned" OnDive="StartRound" />
+            }
+            else
+            {
+                <RoundView @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" ReduceMotion="reduceMotion"
+                           CanDiveAgain="balance >= bet"
+                           Announce="Say" Finished="Settle" DiveAgain="StartRound" ChangeDive="ChangeDive" />
+            }
+        </main>
+
+        <footer>
+            <p>Demo only. The credits are play money, and nothing is paid out.</p>
+        </footer>
+
+        <div class="sr-only" aria-live="polite" aria-atomic="true">@announcement</div>
+    </div>
+}
+
+@code {
+    private const string DiveKey = "lastbreath.dive";
+    private const string BetKey = "lastbreath.bet";
+    private const decimal StartingBalance = 1000.00m;
+
+    private bool ready;
+    private bool reduceMotion;
+    private bool returned;
+    private bool roundActive;
+    private decimal balance = StartingBalance;
+    private string selectedDive = "Classic";
+    private decimal bet = 1.00m;
+    private decimal roundBet;
+    private Round? round;
+    private int roundNumber;
+    private ulong? fixedSeed;
+    private string announcement = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dive = await JS.InvokeAsync<string?>("lastBreath.read", DiveKey);
+        if (Dives.Any(info => info.Id == dive)) selectedDive = dive!;
+
+        var stored = await JS.InvokeAsync<string?>("lastBreath.read", BetKey);
+        if (decimal.TryParse(stored, NumberStyles.Number, CultureInfo.InvariantCulture, out var storedBet) && Config.Bets.Contains(storedBet))
+            bet = storedBet;
+
+        // A visitor can add ?seed=<number> to replay the same rounds: the first uses the seed, the next seed + 1, and so on.
+        // The tests use it to reach a Tank round that lands an air tank. Without it every round takes a fresh crypto seed.
+        if (ulong.TryParse(await JS.InvokeAsync<string?>("lastBreath.queryValue", "seed"), out var seed))
+            fixedSeed = seed;
+
+        reduceMotion = await JS.InvokeAsync<bool>("lastBreath.prefersReducedMotion");
+        ready = true;
+    }
+
+    private async Task Pick(string id)
+    {
+        selectedDive = id;
+        await JS.InvokeVoidAsync("lastBreath.write", DiveKey, id);
+    }
+
+    private async Task PickBet(decimal value)
+    {
+        bet = value;
+        await JS.InvokeVoidAsync("lastBreath.write", BetKey, value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private async Task StartRound()
+    {
+        if (roundActive || balance < bet) return;
+
+        var seed = fixedSeed is { } fixedStart
+            ? unchecked(fixedStart + (ulong)roundNumber)
+            : ulong.Parse(await JS.InvokeAsync<string>("lastBreath.randomSeed"), CultureInfo.InvariantCulture);
+        round = Engines.For(selectedDive)(Config, Config.Dives[selectedDive], new Pcg32Random(seed));
+        roundBet = bet;
+        balance -= bet;
+        roundActive = true;
+        returned = false;
+        roundNumber++;
+    }
+
+    private void Settle(decimal win)
+    {
+        balance += win;
+        roundActive = false;
+    }
+
+    private void ChangeDive()
+    {
+        round = null;
+        returned = true;
+    }
+
+    private void ResetBalance()
+    {
+        balance = StartingBalance;
+        Say($"Balance reset to {Format.Credits(balance)} credits.");
+    }
+
+    private void Say(string message) => announcement = message;
+}

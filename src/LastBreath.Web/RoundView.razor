@@ -1,0 +1,250 @@
+@implements IDisposable
+@inject GameConfig Config
+
+<section class="round" aria-labelledby="round-title">
+    <div class="round-head">
+        <h2 id="round-title">@dive.Name</h2>
+        <p class="bet">Bet @Format.Credits(Bet)</p>
+    </div>
+
+    <div class="hud">
+        @switch (DiveId)
+        {
+            case "Classic":
+                <div class="clock">
+                    <p class="clock-text">Oxygen <strong>@clock of @dive.RefillTo</strong></p>
+                    <span class="pips" aria-hidden="true">
+                        @for (var i = 0; i < dive.RefillTo; i++)
+                        {
+                            <span class="pip bottle @(i < clock ? "on" : "") @(lastBreath ? "low" : "")"></span>
+                        }
+                    </span>
+                    @if (lastBreath) { <p class="last">Last breath</p> }
+                </div>
+                break;
+            case "Static":
+                <div class="clock">
+                    <p class="clock-text">Spins left <strong>@clock of @dive.StartingClock</strong></p>
+                    <span class="pips" aria-hidden="true">
+                        @for (var i = 0; i < dive.StartingClock; i++)
+                        {
+                            <span class="pip segment @(i < clock ? "on" : "")"></span>
+                        }
+                    </span>
+                </div>
+                break;
+            default:
+                <div class="clock">
+                    <p class="clock-text">
+                        Air <strong>@clock</strong>
+                        @if (gain > 0)
+                        {
+                            <span class="gain @(ReduceMotion ? "" : "anim-fly")" data-testid="gain" @key="shown">+@gain</span>
+                        }
+                    </p>
+                    <p class="clock-text">Spare tanks <strong>@tanksLeft of @dive.TankLimit</strong></p>
+                    <span class="pips" aria-hidden="true">
+                        @for (var i = 0; i < dive.TankLimit; i++)
+                        {
+                            <span class="pip bottle @(i < tanksLeft ? "on" : "")"></span>
+                        }
+                    </span>
+                    @if (lastBreath) { <p class="last">Last breath</p> }
+                </div>
+                break;
+        }
+        <p class="total">Board <strong>@Format.Credits(Settlement.Credits(units, Bet))</strong></p>
+    </div>
+
+    <div class="board" role="group" aria-label="Board, five columns by three rows">
+        @for (var index = 0; index < Board.Size; index++)
+        {
+            var tile = TileAt(index);
+            <div class="tile tile-@tile.Kind @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
+                @if (tile.Kind != "empty")
+                {
+                    <span class="tile-label">@tile.Label</span>
+                    <span class="tile-value">@tile.Value</span>
+                }
+            </div>
+        }
+    </div>
+
+    <ul class="prizes" aria-label="Jackpots">
+        @foreach (var prize in Prizes())
+        {
+            <li class="prize @(prize.Hit ? "hit" : "")" aria-label="@prize.Name" title="@prize.Tip">
+                <span class="prize-name">@prize.Label</span>
+                <span class="prize-value">@prize.Value</span>
+                <span class="prize-state">@prize.State</span>
+            </li>
+        }
+    </ul>
+
+    @if (finished)
+    {
+        <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
+            <h3 id="summary-title">Round over</h3>
+            <dl>
+                <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
+                <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
+                <div><dt>Jackpots</dt><dd>@(outcome.Jackpots.Length == 0 ? "None" : string.Join(", ", outcome.Jackpots))</dd></div>
+                <div><dt>Grand</dt><dd>@(outcome.Grand ? $"Won, {Narration.Credits(Config.Grand, Bet)}" : "Not won")</dd></div>
+                <div class="win">
+                    <dt>Total win</dt>
+                    <dd title="@(Format.Multiple(outcome.Units))× bet"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits <span class="multiple">@(Format.Multiple(outcome.Units))× bet</span></dd>
+                </div>
+            </dl>
+            <div class="actions">
+                <button type="button" class="primary" disabled="@(!CanDiveAgain)" @onclick="DiveAgain">Dive again</button>
+                <button type="button" @onclick="ChangeDive">Change dive</button>
+            </div>
+            @if (!CanDiveAgain)
+            {
+                <p class="note">Not enough credits for another dive at this bet.</p>
+            }
+        </section>
+    }
+    else
+    {
+        <div class="actions">
+            <button type="button" @ref="skipButton" @onclick="Skip" aria-keyshortcuts="S">Skip</button>
+        </div>
+    }
+</section>
+
+@code {
+    private const int PaceMs = 700;
+
+    private readonly CancellationTokenSource stop = new();
+    private DiveConfig dive = default!;
+    private Spin[] spins = [];
+    private RoundSummary outcome = default!;
+    private int shown;
+    private bool finished;
+    private bool focusSummary;
+    private ElementReference skipButton;
+    private ElementReference summary;
+
+    [Parameter, EditorRequired] public Round Round { get; set; } = default!;
+    [Parameter, EditorRequired] public string DiveId { get; set; } = "";
+    [Parameter] public decimal Bet { get; set; }
+    [Parameter] public bool ReduceMotion { get; set; }
+    [Parameter] public bool CanDiveAgain { get; set; }
+    [Parameter] public EventCallback<string> Announce { get; set; }
+    [Parameter] public EventCallback<decimal> Finished { get; set; }
+    [Parameter] public EventCallback DiveAgain { get; set; }
+    [Parameter] public EventCallback ChangeDive { get; set; }
+
+    private Spin? current => shown > 0 ? spins[shown - 1] : null;
+    private int clock => current?.ClockAfter ?? dive.StartingClock;
+    private int tanksLeft => current?.TanksLeft ?? dive.TankLimit ?? 0;
+    private int units => current?.BoardUnits ?? 0;
+    private int gain => current?.AirTanks.Sum(tank => tank.Outcome.Breaths()) ?? 0;
+    private bool lastBreath => clock == 1 && !finished;
+
+    protected override void OnInitialized()
+    {
+        dive = Config.Dives[DiveId];
+        spins = Replay.Of(Round, dive);
+        outcome = Replay.Summary(Config, Round);
+        _ = Play();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await skipButton.FocusAsync();
+        if (focusSummary)
+        {
+            focusSummary = false;
+            await summary.FocusAsync();
+        }
+    }
+
+    private async Task Play()
+    {
+        try
+        {
+            while (shown < spins.Length)
+            {
+                await Task.Delay(PaceMs, stop.Token);
+                shown++;
+                StateHasChanged();
+                await Announce.InvokeAsync(Narration.Landing(Config, DiveId, Bet, spins[shown - 1]));
+            }
+            await Task.Delay(PaceMs, stop.Token);
+            await Finish(skipped: false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task Skip()
+    {
+        if (finished) return;
+        await stop.CancelAsync();
+        shown = spins.Length;
+        await Finish(skipped: true);
+    }
+
+    private async Task Finish(bool skipped)
+    {
+        finished = true;
+        focusSummary = true;
+        StateHasChanged();
+        await Announce.InvokeAsync(Narration.Result(Config, Bet, outcome, skipped));
+        await Finished.InvokeAsync(Settlement.Credits(outcome.Units, Bet));
+    }
+
+    public void Dispose() => stop.Dispose();
+
+    private sealed record Tile(string Kind, string Label, string Value, string Name, string Tip, bool IsNew);
+
+    private Tile TileAt(int index)
+    {
+        var place = $"Column {index / Board.Rows + 1}, row {index % Board.Rows + 1}";
+        var tank = current?.AirTanks.Where(landed => landed.Index == index).Select(landed => (Landed?)landed).FirstOrDefault();
+        if (tank is { } airTank)
+        {
+            var breaths = airTank.Outcome.Breaths();
+            return new Tile("tank", "Air", $"+{breaths}", $"{place}: air tank, plus {breaths} {(breaths == 1 ? "breath" : "breaths")}", $"+{breaths} breaths", true);
+        }
+
+        var cell = current?.Cells[index] ?? default;
+        if (cell.IsEmpty) return new Tile("empty", "", "", $"{place}: empty", "", false);
+
+        var label = Narration.Label(Config, cell);
+        var multiple = Format.Multiple(cell.Units);
+        var credits = Format.Credits(Settlement.Credits(cell.Units, Bet));
+        return new Tile(label.ToLowerInvariant(), label, credits,
+            $"{place}: {label}, {credits} credits, {multiple} times the bet", $"{multiple}× bet",
+            current!.NewCells.Contains(index));
+    }
+
+    private sealed record Prize(string Label, string Value, string State, string Name, string Tip, bool Hit);
+
+    private IEnumerable<Prize> Prizes()
+    {
+        var cells = current?.Cells ?? new Cell[Board.Size];
+        (string Label, int Units)[] jackpots =
+        [
+            ("Mini", Config.Jackpots.Mini), ("Minor", Config.Jackpots.Minor), ("Major", Config.Jackpots.Major),
+        ];
+        foreach (var (label, prizeUnits) in jackpots)
+        {
+            var count = cells.Count(cell => cell.Kind == CellKind.Jackpot && cell.Units == prizeUnits);
+            yield return PrizeFor(label, prizeUnits, count > 0 ? $"{count} landed" : "");
+        }
+
+        yield return PrizeFor("Grand", Config.Grand, cells.All(cell => !cell.IsEmpty) ? "Full board" : "");
+    }
+
+    private Prize PrizeFor(string label, int prizeUnits, string state)
+    {
+        var multiple = Format.Multiple(prizeUnits);
+        var credits = Format.Credits(Settlement.Credits(prizeUnits, Bet));
+        var name = $"{label}, {credits} credits, {multiple} times the bet" + (state == "" ? "" : $", {state}");
+        return new Prize(label, credits, state, name, $"{multiple}× bet", state != "");
+    }
+}
