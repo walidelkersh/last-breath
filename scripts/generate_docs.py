@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CELLS = 15
 DIVES = [("classic", "Classic"), ("drift", "Static"), ("tank", "Tank")]
 DOCS = {
+    "readme.md": "README.md",
     "math.md": "docs/math.md",
     "game-design.md": "docs/game-design.md",
     "par-sheet.md": "docs/par-sheet.md",
