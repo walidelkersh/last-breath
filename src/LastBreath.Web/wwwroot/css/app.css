@@ -83,6 +83,16 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+/* The water behind the page. The art script keeps every tone of it readable under the page text. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: url("../art/scene.svg") center bottom / cover no-repeat;
+    pointer-events: none;
+}
+
 h1, h2, h3, p, dl, dd, ul, ol {
     margin: 0;
 }
@@ -147,7 +157,6 @@ main {
     align-items: center;
     gap: var(--s2) var(--s4);
     padding-block: var(--s3);
-    background: var(--bg);
     border-bottom: 1px solid var(--line);
 }
 
@@ -187,7 +196,6 @@ footer {
     align-items: center;
     gap: var(--s2) var(--s5);
     padding-block: var(--s3) var(--s4);
-    background: var(--bg);
     border-top: 1px solid var(--line);
     color: var(--muted);
     font-size: var(--text-sm);
@@ -1149,6 +1157,20 @@ code {
     to { transform: scale(1); }
 }
 
+@keyframes rise {
+    0% { opacity: 0; transform: translate(0, 0); }
+    8% { opacity: 0.2; }
+    50% { transform: translate(1.2rem, -55vh); }
+    92% { opacity: 0.2; }
+    100% { opacity: 0; transform: translate(-0.6rem, -112vh); }
+}
+
+@keyframes drift {
+    0%, 100% { opacity: 0; transform: translateX(-30%); }
+    35%, 65% { opacity: 0.1; }
+    50% { transform: translateX(160%); }
+}
+
 @keyframes gain-fly {
     from { opacity: 0; transform: translateY(0.6rem); }
     25% { opacity: 1; }
@@ -1162,6 +1184,57 @@ code {
 .anim-fly {
     animation: gain-fly 0.6s ease-out both;
 }
+
+/* A few outlined bubbles climb behind the page, slowly and faintly. The markup leaves them out when motion is reduced. */
+.bubbles {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.bubbles span {
+    position: absolute;
+    bottom: -2rem;
+    width: var(--d);
+    height: var(--d);
+    border: 2px solid var(--art-plate-ink, var(--text));
+    border-radius: 50%;
+    opacity: 0;
+    animation: rise var(--t) linear infinite;
+    animation-delay: var(--delay);
+}
+
+.bubbles span:nth-child(1) { left: 6%; --d: 0.7rem; --t: 31s; --delay: -4s; }
+.bubbles span:nth-child(2) { left: 17%; --d: 1.1rem; --t: 38s; --delay: -19s; }
+.bubbles span:nth-child(3) { left: 33%; --d: 0.6rem; --t: 27s; --delay: -11s; }
+.bubbles span:nth-child(4) { left: 52%; --d: 0.9rem; --t: 35s; --delay: -26s; }
+.bubbles span:nth-child(5) { left: 66%; --d: 0.6rem; --t: 29s; --delay: -8s; }
+.bubbles span:nth-child(6) { left: 81%; --d: 1.2rem; --t: 41s; --delay: -31s; }
+.bubbles span:nth-child(7) { left: 93%; --d: 0.8rem; --t: 33s; --delay: -15s; }
+
+/* A faint streak crosses an empty well now and then. The board carries the class only when motion is allowed. */
+.tile-empty::after {
+    content: "";
+    position: absolute;
+    top: 16%;
+    left: 10%;
+    width: 30%;
+    height: 8%;
+    background: var(--art-plate-ink, var(--text));
+    border-radius: 1em;
+    opacity: 0;
+}
+
+.drifting .tile-empty::after {
+    animation: drift 12s ease-in-out infinite;
+}
+
+.drifting .tile:nth-child(4n + 2)::after { animation-delay: -3s; }
+.drifting .tile:nth-child(4n + 3)::after { animation-delay: -7s; }
+.drifting .tile:nth-child(4n + 4)::after { animation-delay: -10s; }
+.drifting .tile:nth-child(5n + 2)::after { animation-duration: 15s; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

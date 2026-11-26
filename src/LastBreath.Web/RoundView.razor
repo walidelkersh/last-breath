@@ -112,7 +112,7 @@
     </div>
 
     <div class="stage">
-        <div class="board" role="group" aria-label="Board, five columns by three rows">
+        <div class="board @(ReduceMotion ? "" : "drifting")" role="group" aria-label="Board, five columns by three rows">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
             @for (var index = 0; index < Board.Size; index++)
             {

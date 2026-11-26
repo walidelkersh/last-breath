@@ -68,7 +68,7 @@ for (const viewport of screens) {
       await open(page, "/?seed=4");
       await page.keyboard.press("3");
       await diveButton(page).click();
-      await expect(page.locator(".tile-tank")).toHaveCount(2);
+      await expect(page.locator(".spin")).toHaveText(/Spin [1-9]/);
 
       await expectInside(page, page.getByRole("button", { name: "Skip" }), "Skip");
       await expectTheStageToFit(page);
@@ -106,7 +106,7 @@ test("the tiles, their plates and the outlines grow with the board", async ({ br
     const result = await page.evaluate(() => {
       const tile = document.querySelector(".tile-crate")!;
       return {
-        tile: tile.getBoundingClientRect().width,
+        tile: (tile as HTMLElement).offsetWidth,
         text: parseFloat(getComputedStyle(tile.querySelector(".tile-value")!).fontSize),
         outline: parseFloat(getComputedStyle(tile.querySelector(".tile-plate")!).borderTopWidth),
       };

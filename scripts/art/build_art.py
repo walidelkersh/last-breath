@@ -1,5 +1,5 @@
 """Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals and the oxygen bottles,
-and the mark of the game, a bottle with a bubble, which is also written out as the favicon.
+the mark of the game, a bottle with a bubble, which is also written out as the favicon, and the water scene behind the page.
 
 Every symbol is flat and cel shaded. The rules sit in the data below, and the audit at the end of
 the script fails the build when a file or a colour breaks them. The sprite holds every symbol once.
@@ -34,8 +34,13 @@ LIGHT = (-0.2, -0.98)
 WOBBLE = {"warp": 0.45, "wavelength": 36.0, "jitter": 0.2, "step": 7.0}
 TILE = (115, 100)             # the aspect of a tile on the board, so a symbol fills it
 PANEL = (600, 330)
-# The total counts every file here and both renders, although a page loads the sprite and only one render.
-BUDGET = {"file_bytes": 6000, "render_bytes": 20_000, "total_bytes": 150_000}
+SCENE = (1600, 900)
+# The scene is one picture the size of a screen, so it has a budget of its own. The total counts every file here
+# and both renders, although a page loads the sprite, the scene and only one render.
+BUDGET = {"file_bytes": 6000, "scene_bytes": 8000, "render_bytes": 20_000, "total_bytes": 150_000}
+# The text colours of the page in app.css. The scene sits under text, so the audit keeps every tone of it readable under these.
+PAGE = {"dark": {"text": "#e8eff3", "muted": "#a7bbc7"}, "light": {"text": "#18252e", "muted": "#47565f"}}
+SCENE_MATERIALS = ("deep", "seabed", "rock", "kelp")
 RENDERS = ("air-tank-dark.webp", "air-tank-light.webp")
 WELLS = "abc"
 VARIANTS = "ab"
@@ -59,6 +64,11 @@ PALETTE = {
         "gem": ("#35c9d6", "#1c8b9c", "#a5f2f7"),
         "amber": ("#f0a63a", "#a2661a", "#ffd27a"),
         "empty": ("#31566d", "#1f3f52", "#4c748c"),
+        "deep": ("#112a38", "#0e222e", "#163446"),
+        "seabed": ("#13262f", "#0f1e26", "#1a3340"),
+        "rock": ("#1a2f3b", "#13242e", "#244150"),
+        "kelp": ("#123a38", "#0e2d2c", "#1a4d48"),
+        "shaft": "#ffffff0d",
     },
     "light": {
         "ink": "#0a2231",
@@ -75,11 +85,17 @@ PALETTE = {
         "gem": ("#1fb3c4", "#12788c", "#8eeaf2"),
         "amber": ("#d98a14", "#935305", "#f7c765"),
         "empty": ("#b5c7d2", "#98afbd", "#dce8ee"),
+        "deep": ("#d3e3ec", "#c6dbe6", "#e0ecf2"),
+        "seabed": ("#c8dbe5", "#bcd3df", "#d6e5ed"),
+        "rock": ("#c1d5e0", "#b8cfdb", "#d0e0e9"),
+        "kelp": ("#bfd9d8", "#b6d1d2", "#cde3e2"),
+        "shaft": "#ffffff59",
     },
 }
-NOT_MATERIALS = {"ink", "plate", "plate-ink"}
+NOT_MATERIALS = {"ink", "plate", "plate-ink", "shaft"}
 # New materials go at the end, so that the class names in a file already drawn do not change.
-MATERIALS = ("gold", "steel", "tank", "water", "well", "wood-high", "wood-low", "wood-mid", "verdigris", "gem", "amber", "empty")
+MATERIALS = ("gold", "steel", "tank", "water", "well", "wood-high", "wood-low", "wood-mid", "verdigris", "gem", "amber", "empty",
+             *SCENE_MATERIALS)
 CODES = {name: f"m{index}" for index, name in enumerate(MATERIALS)}
 
 
@@ -193,6 +209,11 @@ class Art:
         middle = via or ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
         points = [self.at(*p) for p in (start, middle, end)]
         self.items.append((material, f'<path class="g" d="{path_data(points, False)}"/>'))
+
+    def flat(self, points, material, cls, warp=False):
+        """A shape with no edge subdivision: the light shafts keep straight edges, and a ridge only warps the points it is given."""
+        placed = [self.at(*p) for p in points] if warp else points
+        self.items.append((material, f'<path class="{cls}" d="{path_data(placed, True)}"/>'))
 
     def strip(self, start, end, thickness, material, tone):
         length = math.dist(start, end)
@@ -500,6 +521,43 @@ def panel():
     return art
 
 
+def kelp(art, x, base, height, sway):
+    """A stalk that leans one way and back, thick at the foot and thin at the tip, with a lighter strip down its left."""
+    steps = 7
+    centre = [(x + sway * math.sin(t / steps * math.pi * 1.5), base - height * t / steps) for t in range(steps + 1)]
+    widths = [15 - 12 * t / steps for t in range(steps + 1)]
+    art.shape([(cx - w / 2, cy) for (cx, cy), w in zip(centre, widths)] + [(cx + w / 2, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "kelp", "b", outline=False)
+    art.shape([(cx - w / 2, cy) for (cx, cy), w in zip(centre, widths)] + [(cx - w / 2 + w * 0.3, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "kelp", "h", outline=False)
+
+
+def scene():
+    """The water behind the whole page: bands of tone with wavy edges, a few light shafts, and a seabed with rocks and kelp.
+    It sits under text, so it is quiet by rule: no outlines, and the audit keeps every tone readable under the page text."""
+    art = Art("scene", SCENE, scale=4.0)
+    w, h = SCENE
+    rng = art.rng
+
+    def ridge(base, lift):
+        phases = [rng.uniform(0, math.tau) for _ in range(2)]
+        line = [(x, base + lift * math.sin(x / 170 + phases[0]) + lift * 0.5 * math.sin(x / 66 + phases[1])) for x in range(-40, w + 81, 80)]
+        return line + [(w + 40, h + 40), (-40, h + 40)]
+
+    art.flat(box(-40, -40, w + 40, h + 40), "deep", "h")
+    art.flat(ridge(250, 26), "deep", "b", warp=True)
+    art.flat(ridge(520, 26), "deep", "s", warp=True)
+    for x, width, lean in ((140, 70, 120), (520, 110, 160), (880, 60, 100), (1240, 120, 170), (1500, 70, 110)):
+        art.flat([(x, -20), (x + width, -20), (x + width + lean + 90, 780), (x + lean, 780)], None, "v")
+    art.flat(ridge(715, 34), "seabed", "h", warp=True)
+    art.flat(ridge(790, 28), "seabed", "b", warp=True)
+    for x, base, height, sway in ((70, 800, 250, 16), (104, 810, 190, -14), (148, 800, 300, 18), (1450, 805, 280, -16), (1488, 810, 200, 14), (1534, 800, 260, -18), (840, 815, 150, 12)):
+        kelp(art, x, base, height, sway)
+    art.flat(ridge(852, 18), "seabed", "s", warp=True)
+    for cx, cy, rx, ry in ((250, 800, 70, 34), (620, 838, 54, 26), (1090, 826, 84, 38), (1330, 790, 46, 24), (1560, 848, 60, 30), (420, 862, 38, 18)):
+        art.blob(cx, cy, rx, ry, "rock", "b", corners=7)
+        art.blob(cx - rx * 0.18, cy - ry * 0.3, rx * 0.55, ry * 0.45, "rock", "h", corners=6)
+    return art
+
+
 def contrast(a, b):
     def luminance(hex_colour):
         channels = [int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
@@ -509,12 +567,14 @@ def contrast(a, b):
     return (hi + 0.05) / (lo + 0.05)
 
 
-def style(materials, with_plate):
+def style(materials, with_plate, shaft=False):
     def tokens(theme):
         p = PALETTE[theme]
         parts = [f"--art-ink:{p['ink']}"]
         if with_plate:
             parts += [f"--art-plate:{p['plate']}", f"--art-plate-ink:{p['plate-ink']}"]
+        if shaft:
+            parts.append(f"--art-shaft:{p['shaft']}")
         for material in sorted(materials):
             parts += [f"--art-{material}-{tone}:{colour}" for tone, colour in zip("bsh", p[material])]
         return ";".join(parts)
@@ -523,7 +583,8 @@ def style(materials, with_plate):
     weight = f"var(--ow,{num(2 * OUTLINE)}px)"
     rules = (f".o{{stroke:var(--art-ink);stroke-width:{weight};vector-effect:non-scaling-stroke;paint-order:stroke;stroke-linejoin:round}}"
              ".b{fill:var(--b)}.s{fill:var(--s)}.h{fill:var(--h)}.i{fill:var(--art-ink)}"
-             f".g{{fill:none;stroke:var(--h);stroke-width:calc({weight}*{GLINT});vector-effect:non-scaling-stroke;stroke-linecap:round}}")
+             f".g{{fill:none;stroke:var(--h);stroke-width:calc({weight}*{GLINT});vector-effect:non-scaling-stroke;stroke-linecap:round}}"
+             + (".v{fill:var(--art-shaft)}" if shaft else ""))
     uses = "".join(f".{CODES[m]}{{--b:var(--art-{m}-b);--s:var(--art-{m}-s);--h:var(--art-{m}-h)}}" for m in sorted(materials))
     return f":root{{{tokens('dark')}}}@media (prefers-color-scheme:light){{:root{{{tokens('light')}}}}}{rules}{uses}"
 
@@ -556,12 +617,15 @@ def build():
         parts.append(f'<symbol id="{name}" viewBox="{view_box(art)}"{slice_}>{art.body()}</symbol>')
     files["sprite.svg"] = "\n".join(parts) + "\n</svg>\n"
     files[FAVICON] = files["mark.svg"].replace("</style>", ":root{--ow:2px}</style>")
+    behind = scene()
+    files["scene.svg"] = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box(behind)}">'
+                          f"<style>{style(behind.materials(), False, shaft=True)}</style>{behind.body()}</svg>\n")
     return files
 
 
 def audit(files):
     problems = []
-    classes = {"b", "s", "h", "o", "i", "g", *CODES.values()}
+    classes = {"b", "s", "h", "o", "i", "g", "v", *CODES.values()}
     for name, text in files.items():
         body = re.sub(r"<style>.*?</style>", "", text, flags=re.S)
         if re.search(r"#[0-9a-fA-F]{3,8}\b|rgb|hsl", body):
@@ -578,7 +642,7 @@ def audit(files):
             length = sum(math.dist((0, 0), steps[i:i + 2]) for i in range(0, len(steps), 2))
             if not GLINT_LENGTH[0] - 1.5 <= length <= GLINT_LENGTH[1] + 1.5:
                 problems.append(f"{name}: a glint of length {length:.1f}")
-        if name != "sprite.svg" and len(text.encode()) > BUDGET["file_bytes"]:
+        if name != "sprite.svg" and len(text.encode()) > BUDGET["scene_bytes" if name == "scene.svg" else "file_bytes"]:
             problems.append(f"{name}: {len(text.encode())} bytes is over the file budget")
 
     for theme, colours in PALETTE.items():
@@ -594,6 +658,16 @@ def audit(files):
         for material in MATERIALS:
             if material.startswith(("wood", "tank")) and contrast(colours[material][0], colours["water"][0]) < 2.4:
                 problems.append(f"{theme} {material}: the silhouette does not stand out from the water")
+        shaft, alpha = colours["shaft"][:7], int(colours["shaft"][7:], 16) / 255
+        for material in SCENE_MATERIALS:
+            for tone in colours[material]:
+                for ink, ink_colour in PAGE[theme].items():
+                    if contrast(tone, ink_colour) < 4.5:
+                        problems.append(f"{theme} {material} {tone}: the page {ink} text is under 4.5 to 1 on it")
+        for tone in colours["deep"]:
+            lifted = "#" + "".join(f"{round(int(tone[i:i + 2], 16) * (1 - alpha) + int(shaft[i:i + 2], 16) * alpha):02x}" for i in (1, 3, 5))
+            if contrast(lifted, PAGE[theme]["muted"]) < 4.5:
+                problems.append(f"{theme} deep {tone}: a light shaft over it leaves the muted text under 4.5 to 1")
         for token in (colours["plate"], colours["plate-ink"], *colours["water"], *colours["well"]):
             red, blue = int(token[1:3], 16), int(token[5:7], 16)
             if contrast(token, "#000000") > 12 and blue < red:

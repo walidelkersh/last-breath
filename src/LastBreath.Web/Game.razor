@@ -5,6 +5,10 @@
 @if (ready)
 {
     <div class="app @(round is not null ? "staged" : "")">
+        @if (!reduceMotion)
+        {
+            <div class="bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        }
         <header class="top">
             <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
             <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
