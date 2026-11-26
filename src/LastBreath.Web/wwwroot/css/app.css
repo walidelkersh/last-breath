@@ -295,7 +295,7 @@ button.quiet:disabled {
 .select h2,
 .field-title {
     font-size: var(--text-lg);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .field-title {
@@ -428,7 +428,6 @@ button.quiet:disabled {
 
 .name {
     flex: 1;
-    font-family: var(--serif);
     font-size: var(--text-lg);
     font-weight: 700;
 }
@@ -592,8 +591,9 @@ main:has(> .select) {
 }
 
 .round-head h2 {
-    font-family: var(--serif);
-    font-size: var(--text-xl);
+    color: var(--muted);
+    font-size: var(--text-lg);
+    font-weight: 700;
 }
 
 .meta {
@@ -1014,8 +1014,6 @@ picture img {
             max-width: none;
         }
     }
-
-    /* The prizes are one slim row, with the medal beside the figures, and Grand on a gold-tinted surface. A narrow board stacks them again. */
 }
 
 .result {
@@ -1035,8 +1033,8 @@ picture img {
 }
 
 .summary h3 {
-    font-family: var(--serif);
     font-size: var(--text-lg);
+    font-weight: 700;
 }
 
 .big-win {
@@ -1131,8 +1129,8 @@ picture img {
 }
 
 .session h3 {
-    font-family: var(--serif);
     font-size: var(--text-base);
+    font-weight: 700;
 }
 
 .stats {
@@ -1160,31 +1158,53 @@ picture img {
     line-height: 1.2;
 }
 
+.stats dd .muted {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: 400;
+}
+
 .stats .sub {
     display: block;
 }
 
+/* Ten bets fill the strip, and one bet reaches a little under half. A bar is a share of the strip, less the room kept above it for a medal. */
 .bars {
-    --bet-line: 27%;
+    --bet-line: 43%;
+    --room: 0.74;
     position: relative;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 0.2rem;
-    height: clamp(3rem, 7dvh, 7rem);
+    height: clamp(4.25rem, 8dvh, 7rem);
+    margin-right: 1.7rem;
 }
 
 .bars::before {
     content: "";
     position: absolute;
-    right: 0;
-    bottom: var(--bet-line);
+    right: -1.7rem;
+    bottom: calc(var(--bet-line) * var(--room));
     left: 0;
     border-top: 1px dashed var(--muted);
-    opacity: 0.7;
+    opacity: 0.8;
     pointer-events: none;
 }
 
+.bars::after {
+    content: "bet";
+    position: absolute;
+    right: -1.7rem;
+    bottom: calc(var(--bet-line) * var(--room));
+    color: var(--muted);
+    font-size: var(--text-xs);
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-0.2rem);
+}
+
 .bars li {
+    position: relative;
     display: flex;
     align-items: flex-end;
     height: 100%;
@@ -1194,7 +1214,8 @@ picture img {
     display: block;
     box-sizing: border-box;
     width: 100%;
-    min-height: 0.2rem;
+    height: calc(var(--h) * var(--room));
+    min-height: 3px;
 }
 
 .bar-empty {
@@ -1202,57 +1223,62 @@ picture img {
 }
 
 .bar-nothing span {
+    height: 3px;
     background: var(--control);
 }
 
 .bar-under span {
-    background: transparent;
-    border: 2px solid var(--focus);
-    border-bottom: 0;
+    background: color-mix(in srgb, var(--amber) 35%, transparent);
+    border: 1px solid var(--accent-edge);
+    border-top-width: 2px;
 }
 
-.bar-over span {
-    background: var(--accent);
-}
-
+.bar-over span,
 .bar-big span {
-    background: var(--accent);
-    border-top: 0.3rem solid var(--warn);
+    background: var(--amber);
+    border: 1px solid var(--accent-edge);
+    border-top-width: 2px;
+}
+
+.bar-medal {
+    --ow: 1.5px;
+    position: absolute;
+    bottom: calc(var(--h) * var(--room) + 2px);
+    left: 50%;
+    width: auto;
+    height: calc((1 - var(--room)) * 100% - 3px);
+    max-height: 1.6rem;
+    aspect-ratio: 115 / 100;
+    transform: translateX(-50%);
 }
 
 .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 var(--s3);
+    align-items: center;
+    gap: 0 var(--s4);
     color: var(--muted);
     font-size: var(--text-xs);
 }
 
-.legend li::before {
+.legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.legend-under::before {
     content: "";
-    display: inline-block;
-    box-sizing: border-box;
-    width: 0.7em;
-    height: 0.7em;
-    margin-right: 0.35em;
+    width: 0.8em;
+    height: 0.8em;
+    background: color-mix(in srgb, var(--amber) 35%, transparent);
+    border-top: 2px solid var(--accent-edge);
 }
 
-.legend .bar-nothing::before {
-    height: 0.25em;
-    background: var(--control);
-}
-
-.legend .bar-under::before {
-    border: 2px solid var(--focus);
-}
-
-.legend .bar-over::before {
-    background: var(--accent);
-}
-
-.legend .bar-big::before {
-    background: var(--accent);
-    border-top: 0.25em solid var(--warn);
+.legend-big svg {
+    --ow: 1.2px;
+    width: 1.1rem;
+    height: 1rem;
 }
 
 .session .note {
@@ -1266,6 +1292,10 @@ picture img {
     display: flex;
     flex-wrap: wrap;
     gap: var(--s3);
+}
+
+.actions button {
+    flex: 1;
 }
 
 /* Footer toggle and the Math panel */
@@ -1313,8 +1343,8 @@ dialog.math::backdrop {
 }
 
 .math-head h2 {
-    font-family: var(--serif);
     font-size: var(--text-xl);
+    font-weight: 700;
 }
 
 .math-body {
@@ -1326,8 +1356,8 @@ dialog.math::backdrop {
 
 .math section h3 {
     margin-bottom: var(--s2);
-    font-family: var(--serif);
     font-size: var(--text-lg);
+    font-weight: 700;
 }
 
 .math p {
@@ -1355,8 +1385,8 @@ dialog.math::backdrop {
 }
 
 .math thead th {
-    font-family: var(--serif);
     font-size: var(--text-base);
+    font-weight: 700;
 }
 
 .math tbody th {
@@ -1652,14 +1682,12 @@ code {
         width: min(100%, calc((100dvh - var(--chrome) - var(--fixed)) / var(--fit)));
     }
 
-    /* The panel is as tall as what it holds, so a young round leaves the water showing under it, and it stops at the height of the window. */
     .side {
         display: flex;
         flex-direction: column;
         grid-column: 2;
         grid-row: 1;
-        align-self: start;
-        max-height: 100%;
+        align-self: stretch;
         gap: var(--s3);
         min-height: 0;
         padding: var(--s3) var(--s4);
@@ -1690,7 +1718,8 @@ code {
     }
 
     .side > .actions {
-        order: 1;
+        order: 4;
+        margin-top: auto;
     }
 
     .side > .session {
@@ -1701,7 +1730,7 @@ code {
 
     .side > .ticker {
         order: 3;
-        flex: 0 1 calc(var(--rows) * var(--row) + var(--s3));
+        flex: 1 1 0;
         min-height: 0;
         padding-top: var(--s3);
         container-type: size;

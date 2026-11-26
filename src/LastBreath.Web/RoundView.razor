@@ -88,7 +88,7 @@
             </div>
         }
 
-        <ol class="ticker" aria-label="Spins so far, newest first" style="--rows: @Math.Max(1, shown)">
+        <ol class="ticker" aria-label="Spins so far, newest first">
             @if (shown == 0)
             {
                 <li class="ticker-empty">No spin yet.</li>
@@ -100,7 +100,10 @@
             }
         </ol>
 
-        <SessionPanel Session="Session" Dive="info" />
+        @if (Session.Rounds > 0)
+        {
+            <SessionPanel Session="Session" Dive="info" />
+        }
 
         <div class="actions">
             @if (finished)

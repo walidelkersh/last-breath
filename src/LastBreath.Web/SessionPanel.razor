@@ -2,20 +2,21 @@
     <h3 id="session-title">This session</h3>
 
     <dl class="stats">
-        <div><dt>Rounds played</dt><dd data-testid="session-rounds">@Session.Rounds</dd></div>
+        <div><dt>Rounds</dt><dd data-testid="session-rounds">@Session.Rounds</dd></div>
         <div><dt>Total bet</dt><dd data-testid="session-bet">@Format.Credits(Session.Bet)</dd></div>
         <div><dt>Total returned</dt><dd data-testid="session-returned">@Format.Credits(Session.Returned)</dd></div>
         <div>
             <dt>Returned so far</dt>
             <dd data-testid="session-return">
-                @if (Session.Return is { } share)
+                @if (Session.Rounds >= Session.ReturnFromRound && Session.Return is { } share)
                 {
                     @Format.Percent(share, 1)
-                    <span class="sub">over @Session.Rounds @(Session.Rounds == 1 ? "round" : "rounds")</span>
+                    <span class="sub">over @Session.Rounds rounds</span>
                 }
                 else
                 {
-                    <span>none yet</span>
+                    <span class="muted">after @Session.ReturnFromRound rounds</span>
+                    <span class="sub">@Session.Rounds played</span>
                 }
             </dd>
         </div>
@@ -24,8 +25,9 @@
     <ol class="bars" aria-label="The last @Session.Shown rounds, oldest first" style="--bet-line: @Format.Share(Session.Height(1))">
         @foreach (var result in Session.Recent)
         {
-            <li class="bar bar-@result.Tier.ToString().ToLowerInvariant()" aria-label="@Name(result)" title="@Format.Times(result.Multiple)× bet">
-                <span style="height: @Format.Share(Session.Height(result.Multiple))"></span>
+            <li class="bar bar-@result.Tier.ToString().ToLowerInvariant()" aria-label="@Name(result)" title="@Format.Times(result.Multiple)× bet" style="--h: @Format.Share(Session.Height(result.Multiple))">
+                @if (result.Tier == Tier.Big) { <svg class="bar-medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-major" /></svg> }
+                <span></span>
             </li>
         }
         @for (var empty = Session.Recent.Count; empty < Session.Shown; empty++)
@@ -35,10 +37,8 @@
     </ol>
 
     <ul class="legend" aria-label="What the bars mean">
-        <li class="bar-nothing">Nothing</li>
-        <li class="bar-under">Under the bet</li>
-        <li class="bar-over">Over the bet</li>
-        <li class="bar-big" title="Ten times the bet or more">Big win, 10× or more</li>
+        <li class="legend-under">Under the bet</li>
+        <li class="legend-big"><svg viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-major" /></svg>Big win, 10× or more</li>
     </ul>
 
     <p class="note">The @Dive.Name returns @Format.Percent(Dive.Figures.Rtp) over millions of rounds. A short session says little.</p>

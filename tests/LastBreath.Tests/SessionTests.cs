@@ -78,13 +78,20 @@ public sealed class SessionTests
     }
 
     [Fact]
-    public void TheBarsBendLikeALogarithmAndAHundredBetsFillThem()
+    public void TheBarsBendLikeALogarithmAndTenBetsFillThem()
     {
         Assert.Equal(0, Session.Height(0));
+        Assert.Equal(1, Session.Height(10), 10);
         Assert.Equal(1, Session.Height(100));
         Assert.Equal(1, Session.Height(5_000));
-        Assert.Equal(Math.Log10(5) / Math.Log10(401), Session.Height(1), 10);
-        Assert.Equal(0.2685, Session.Height(1), 4);
-        Assert.True(Session.Height(0.25m) < Session.Height(1) && Session.Height(1) < Session.Height(10) && Session.Height(10) < Session.Height(100));
+        Assert.Equal(Math.Log10(5) / Math.Log10(41), Session.Height(1), 10);
+        Assert.Equal(0.4334, Session.Height(1), 4);
+        Assert.True(Session.Height(0.25m) < Session.Height(1) && Session.Height(1) < Session.Height(5) && Session.Height(5) < Session.Height(10));
+    }
+
+    [Fact]
+    public void TheReturnIsShownFromTheTenthRound()
+    {
+        Assert.Equal(10, Session.ReturnFromRound);
     }
 }

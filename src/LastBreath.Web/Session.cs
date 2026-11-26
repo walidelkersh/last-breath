@@ -26,6 +26,9 @@ public sealed class Session
 {
     public const int Shown = 12;
 
+    // A share of a few rounds says nothing, so the page shows the return only from this round on.
+    public const int ReturnFromRound = 10;
+
     private readonly List<RoundResult> recent = [];
 
     public int Rounds { get; private set; }
@@ -52,7 +55,7 @@ public sealed class Session
         recent.Clear();
     }
 
-    // The height of a bar, from 0 to 1, on a scale that bends like a logarithm: a hundred bets fill it and one bet reaches about a quarter.
+    // The height of a bar, from 0 to 1, on a scale that bends like a logarithm: ten bets fill it and one bet reaches a little under half.
     public static double Height(decimal multiple) =>
-        Math.Min(1, Math.Log10(1 + 4 * (double)multiple) / Math.Log10(1 + 4 * 100));
+        Math.Min(1, Math.Log10(1 + 4 * (double)multiple) / Math.Log10(1 + 4 * 10));
 }
