@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { diveButton, open, summary } from "./play";
+import { chooseBet, diveButton, open, summary } from "./play";
 
 // Wins of Classic rounds at a bet of 1.00, found with "lab play --dive classic --seed N" (units, 1,000 to the bet):
 // seed 1 pays 2,500, 2 pays 0, 3 pays 1,250, 4 pays 0, 5 pays 600, 6 pays 500, 7 pays 150, 8 pays 750, 9 pays 400,
@@ -88,11 +88,11 @@ test("rounds at different bets add up by their bets", async ({ page }) => {
   await open(page, "/?seed=1");
   const { rounds, bet, returned } = tally(page);
 
-  await page.getByRole("radio", { name: "4.00", exact: true }).check({ force: true });
+  await chooseBet(page, "4.00");
   await diveButton(page).click();
   await skipRound(page);
   await page.getByRole("button", { name: "Change dive" }).click();
-  await page.getByRole("radio", { name: "0.20", exact: true }).check({ force: true });
+  await chooseBet(page, "0.20");
   await diveButton(page).click();
   await skipRound(page);
 

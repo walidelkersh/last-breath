@@ -193,38 +193,36 @@ async function worstContrast(page: Page, selectors: string[]) {
     ).filter((item) => item.w > 4 && item.h > 4 && item.y >= 0 && item.y + item.h <= innerHeight && item.x >= 0 && item.x + item.w <= innerWidth),
     selectors);
   await page.addStyleTag({ content: "*, *::before, *::after { color: transparent !important; text-shadow: none !important; -webkit-text-fill-color: transparent !important; caret-color: transparent !important; }" });
-  const results: { sel: string; ratio: number }[] = [];
-  for (const item of items) {
-    const png = await page.screenshot({ clip: { x: item.x, y: item.y, width: item.w, height: item.h }, type: "png" });
-    const ratio = await page.evaluate(async ({ b64, color }) => {
-      const image = new Image();
-      image.src = `data:image/png;base64,${b64}`;
-      await image.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const context = canvas.getContext("2d")!;
-      context.drawImage(image, 0, 0);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      const luminance = (r: number, g: number, b: number) => {
-        const [R, G, B] = [r, g, b].map((channel) => {
-          const value = channel / 255;
-          return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-        });
-        return 0.2126 * R + 0.7152 * G + 0.0722 * B;
-      };
-      const numbers = (color.match(/[\d.]+/g) ?? []).map(Number).slice(0, 3);
-      const text = luminance(...(color.startsWith("color(") ? numbers.map((n) => n * 255) : numbers) as [number, number, number]);
+  // One photograph of the page serves every box. The round keeps playing, and an engine that is slow to photograph would otherwise find the next screen under a later box.
+  const png = await page.screenshot({ type: "png" });
+  return page.evaluate(async ({ b64, boxes }) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${b64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d")!;
+    context.drawImage(image, 0, 0);
+    const luminance = (r: number, g: number, b: number) => {
+      const [R, G, B] = [r, g, b].map((channel) => {
+        const value = channel / 255;
+        return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+    };
+    return boxes.map((item) => {
+      const pixels = context.getImageData(Math.round(item.x), Math.round(item.y), Math.max(1, Math.round(item.w)), Math.max(1, Math.round(item.h))).data;
+      const numbers = (item.color.match(/[\d.]+/g) ?? []).map(Number).slice(0, 3);
+      const text = luminance(...(item.color.startsWith("color(") ? numbers.map((n) => n * 255) : numbers) as [number, number, number]);
       let worst = Infinity;
       for (let i = 0; i < pixels.length; i += 4) {
         const back = luminance(pixels[i], pixels[i + 1], pixels[i + 2]);
         worst = Math.min(worst, (Math.max(text, back) + 0.05) / (Math.min(text, back) + 0.05));
       }
-      return worst;
-    }, { b64: png.toString("base64"), color: item.color });
-    results.push({ sel: item.sel, ratio });
-  }
-  return results;
+      return { sel: item.sel, ratio: worst };
+    });
+  }, { b64: png.toString("base64"), boxes: items });
 }
 
 const desktopText = [

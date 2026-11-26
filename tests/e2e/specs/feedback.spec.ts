@@ -109,6 +109,8 @@ test.describe("with prefers-reduced-motion", () => {
     await watchAnimations(page);
     await watchTotal(page);
     await playClassic(page, smallWin);
+    // The empty board's 0.00 is on screen for a frame or two, so the test waits to have seen it, and the skip cannot beat the sampler.
+    await expect.poll(async () => (await totals(page)).map(({ text }) => text)).toEqual(["0.00"]);
     await skipAndWaitForTheTotal(page, "2.50");
 
     expect((await totals(page)).map(({ text }) => text)).toEqual(["0.00", "2.50"]);

@@ -38,12 +38,14 @@ test("the number on the plate is set in the sans face with lining, tabular figur
   for (const viewport of [{ width: 1920, height: 1080 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport);
     await finish(page, 154);
+    // WebKit writes a computed font-family without the quotes round a name, so both sides are read without them.
     const found = await plate(page).locator(".plate-win").evaluate((element) => {
       const style = getComputedStyle(element);
       const root = getComputedStyle(document.documentElement);
+      const plain = (value: string) => value.replace(/["']/g, "");
       return {
-        family: style.fontFamily,
-        sans: root.getPropertyValue("--sans").trim(),
+        family: plain(style.fontFamily),
+        sans: plain(root.getPropertyValue("--sans").trim()),
         figures: style.fontVariantNumeric,
         weight: Number(style.fontWeight),
         credits: parseFloat(getComputedStyle(element.querySelector("span")!).fontSize),

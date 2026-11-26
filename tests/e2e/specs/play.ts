@@ -25,14 +25,25 @@ export async function balance(page: Page) {
   return cents(await page.getByTestId("balance").textContent());
 }
 
-// Tab until the target has focus, so a test that says keyboard only really never clicks.
+// Tab until the target has focus, so a test that says keyboard only really never clicks. Chromium wraps round through the browser's toolbar, but
+// Firefox and WebKit under test stop at the last control, so when a press moves nothing the helper goes back the other way.
 export async function tabTo(page: Page, target: ReturnType<Page["locator"]>) {
+  let key = "Tab";
   for (let presses = 0; presses < 15; presses++) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(key);
     if (await target.evaluate((element) => element === document.activeElement)) return;
+    const stuck = await page.evaluate(() => {
+      const before = (window as any).lastFocus;
+      (window as any).lastFocus = document.activeElement;
+      return before === document.activeElement;
+    });
+    if (stuck) key = "Shift+Tab";
   }
   throw new Error("the target never received focus by Tab");
 }
+
+// Chooses a bet by clicking its chip, as a visitor does. The radio itself is a one pixel input that sits just outside the chip.
+export const chooseBet = (page: Page, amount: string) => page.locator(".chips").getByText(amount, { exact: true }).click();
 
 // Records whether an animation class or a running animation ever existed, so a test can assert "never" and not just "not now".
 export async function watchAnimations(page: Page) {

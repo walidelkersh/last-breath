@@ -7,17 +7,20 @@ import { diveButton, open, summary } from "./play";
 test.use({ viewport: { width: 1280, height: 800 } });
 
 test("the serif face is on the wordmark and the result plate only, and the headings are bold sans", async ({ page }) => {
+  // WebKit writes a computed font-family without the quotes round a name, so both sides are read without them.
   const serifElements = () =>
     page.evaluate(() => {
-      const serif = getComputedStyle(document.documentElement).getPropertyValue("--serif").trim();
+      const plain = (value: string) => value.replace(/["']/g, "");
+      const serif = plain(getComputedStyle(document.documentElement).getPropertyValue("--serif").trim());
       return [...document.body.querySelectorAll("*")]
-        .filter((element) => getComputedStyle(element).fontFamily === serif)
+        .filter((element) => plain(getComputedStyle(element).fontFamily) === serif)
         .map((element) => ({ tag: element.tagName.toLowerCase(), where: element.closest(".brand") ? "brand" : element.closest(".result-plate") ? "plate" : "elsewhere" }));
     });
   const headings = () =>
     page.evaluate(() => {
-      const sans = getComputedStyle(document.documentElement).getPropertyValue("--sans").trim();
-      return [...document.querySelectorAll("h2, h3")].map((heading) => ({ text: heading.textContent!.trim(), sans: getComputedStyle(heading).fontFamily === sans, weight: Number(getComputedStyle(heading).fontWeight) }));
+      const plain = (value: string) => value.replace(/["']/g, "");
+      const sans = plain(getComputedStyle(document.documentElement).getPropertyValue("--sans").trim());
+      return [...document.querySelectorAll("h2, h3")].map((heading) => ({ text: heading.textContent!.trim(), sans: plain(getComputedStyle(heading).fontFamily) === sans, weight: Number(getComputedStyle(heading).fontWeight) }));
     });
 
   await open(page, "/?seed=154");

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { balance, cents, credits, diveButton, dives, open, summary, tabTo } from "./play";
+import { balance, cents, chooseBet, credits, diveButton, dives, open, summary, tabTo } from "./play";
 
 const screens = [
   { where: "", viewport: { width: 1280, height: 720 } },
@@ -47,7 +47,7 @@ test("a round that is left alone plays out by itself and ends with the same acco
 test("the dive and the bet are remembered after a reload", async ({ page }) => {
   await open(page);
   await page.keyboard.press("2");
-  await page.getByRole("radio", { name: "4.00", exact: true }).check({ force: true });
+  await chooseBet(page, "4.00");
 
   await page.reload();
   await expect(diveButton(page)).toBeVisible({ timeout: 60_000 });
