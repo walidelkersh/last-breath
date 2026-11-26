@@ -109,6 +109,7 @@ test("the tiles, their plates and the outlines grow with the board", async ({ br
         tile: (tile as HTMLElement).offsetWidth,
         text: parseFloat(getComputedStyle(tile.querySelector(".tile-value")!).fontSize),
         outline: parseFloat(getComputedStyle(tile.querySelector(".tile-plate")!).borderTopWidth),
+        grain: parseFloat(getComputedStyle(tile).getPropertyValue("--grain")),
       };
     });
     await context.close();
@@ -120,6 +121,8 @@ test("the tiles, their plates and the outlines grow with the board", async ({ br
   expect(large.tile).toBeGreaterThan(small.tile * 1.8);
   expect(large.text).toBeGreaterThan(small.text * 1.5);
   expect(large.outline).toBeGreaterThan(small.outline * 1.5);
+  expect(large.grain).toBe(1);
+  expect(small.grain, "a smaller tile quiets the wood grain").toBeLessThan(large.grain);
 });
 
 test.describe("on a phone", () => {
@@ -177,6 +180,7 @@ test.describe("on a phone", () => {
     await expect(tile.locator(".tile-value")).toBeVisible();
     await expect(tile).toHaveAttribute("aria-label", /: Crate, \d+\.\d\d credits, [\d.]+ times the bet$/);
     await expect(tile).toHaveAttribute("title", /^[\d.]+× bet$/);
+    expect(await tile.evaluate((element) => getComputedStyle(element).getPropertyValue("--grain").trim())).toBe("0.3");
   });
 });
 

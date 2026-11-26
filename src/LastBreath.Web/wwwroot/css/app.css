@@ -349,6 +349,7 @@ button.quiet {
 
 .pic {
     --ow: 3px;
+    --grain: 0.5;
     display: block;
     width: 100%;
     height: auto;
@@ -469,6 +470,7 @@ button.quiet {
 
 .step-pic {
     --ow: 2.2px;
+    --grain: 0.35;
     flex: none;
     width: clamp(6.5rem, 12vw, 11rem);
     height: auto;
@@ -700,6 +702,23 @@ main:has(> .select) {
     border-radius: clamp(0.4rem, 1cqw, 1.1rem);
     text-align: center;
     line-height: 1.15;
+}
+
+/* The wood grain is drawn as a few long strokes. A smaller tile quiets them, so that they read as grain and not as scratches. */
+.tile {
+    --grain: 1;
+}
+
+@container (max-width: 52rem) {
+    .tile {
+        --grain: 0.55;
+    }
+}
+
+@container (max-width: 30rem) {
+    .tile {
+        --grain: 0.3;
+    }
 }
 
 .art {

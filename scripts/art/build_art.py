@@ -191,8 +191,8 @@ class Art:
             out += [(p[0] + (q[0] - p[0]) * t / parts, p[1] + (q[1] - p[1]) * t / parts) for t in range(parts)]
         return [self.at(*p) for p in out]
 
-    def shape(self, points, material, tone="b", outline=True):
-        classes = tone + (" o" if outline else "")
+    def shape(self, points, material, tone="b", outline=True, extra=""):
+        classes = tone + (" o" if outline else "") + (f" {extra}" if extra else "")
         self.items.append((material, f'<path class="{classes}" d="{path_data(self.edge(points), True)}"/>'))
 
     def shade(self, points, material, depth, toward_light=False):
@@ -215,11 +215,11 @@ class Art:
         placed = [self.at(*p) for p in points] if warp else points
         self.items.append((material, f'<path class="{cls}" d="{path_data(placed, True)}"/>'))
 
-    def strip(self, start, end, thickness, material, tone):
+    def strip(self, start, end, thickness, material, tone, extra=""):
         length = math.dist(start, end)
         nx, ny = (end[1] - start[1]) / length * thickness / 2, (start[0] - end[0]) / length * thickness / 2
         quad = [(start[0] + nx, start[1] + ny), (end[0] + nx, end[1] + ny), (end[0] - nx, end[1] - ny), (start[0] - nx, start[1] - ny)]
-        self.shape(quad, material, tone, outline=False)
+        self.shape(quad, material, tone, outline=False, extra=extra)
 
     def blob(self, cx, cy, rx, ry, material, tone="b", outline=False, corners=8):
         points = []
@@ -259,10 +259,11 @@ CRATE = {
 
 
 def grain(art, material, tone, x0, x1, y0, y1, count):
-    """Short, thin strokes along the planks, in the tone next to the plank's own."""
+    """Long, thin strokes along the planks, in the tone next to the plank's own. They carry the class gr, whose
+    opacity is --grain, so a small tile can quiet them without changing the drawing."""
     for _ in range(count):
-        x, y = art.rng.uniform(x0 + 3, x1 - 20), art.rng.uniform(y0 + 2.5, y1 - 2.5)
-        art.strip((x, y), (x + art.rng.uniform(8, 18), y + art.rng.uniform(-0.6, 0.6)), 0.9, material, tone)
+        x, y = art.rng.uniform(x0 + 3, x1 - 36), art.rng.uniform(y0 + 2.5, y1 - 2.5)
+        art.strip((x, y), (x + art.rng.uniform(18, 30), y + art.rng.uniform(-0.6, 0.6)), 0.9, material, tone, extra="gr")
 
 
 def crate(tier, variant):
@@ -295,9 +296,9 @@ def crate(tier, variant):
     spans = ((ay + 3, rows[0] - 1.5), (rows[0] + 2, rows[1] - 1.5), (rows[1] + 2, dy - 2))
     for share, (y0, y1) in zip(plan["joints"], spans):
         art.strip((ax + share * (bx - ax), y0), (ax + share * (bx - ax) + 0.4, y1), 1.4, wood, "s")
-    grain(art, wood, "s", ax, bx, ay + 5, rows[0], 2)
-    grain(art, wood, "s", ax, bx, rows[0], rows[1], 2)
-    grain(art, wood, "b", ax + 6, bx + 8, ay - 11, ay - 3, 2)
+    grain(art, wood, "s", ax, bx, ay + 5, rows[0], 1)
+    grain(art, wood, "s", ax, bx, rows[0], rows[1], 1)
+    grain(art, wood, "b", ax + 6, bx + 8, ay - 11, ay - 3, 1)
     for (nx, ny), row in zip(plan["nails"], (ay, ay, rows[0], rows[0])):
         x = ax + nx if nx > 0 else bx + nx
         art.blob(x + jitter(r, 0.6), row + ny + jitter(r, 0.6), 1.3, 1.2, wood, "s", corners=6)
@@ -323,7 +324,7 @@ def plain_details(art, a, b, d, rows, variant):
     brace = [(x + 5, a[1] + 1.5), (x + 15, a[1] + 1.5), (b[0] - 5, d[1] - 1.5), (b[0] - 15, d[1] - 1.5)]
     art.shape(brace, wood, "b")
     art.shade(brace, wood, 5)
-    grain(art, wood, "s", x + 22, b[0] - 22, a[1] + 14, d[1] - 14, 2)
+    grain(art, wood, "s", x + 12, b[0] - 12, a[1] + 14, d[1] - 14, 1)
     for nx, ny in ((x + 10, a[1] + 6), (b[0] - 10, d[1] - 6)):
         art.blob(nx, ny, 1.4, 1.3, wood, "s", corners=6)
 
@@ -422,12 +423,24 @@ def rim_glint(art, cx, cy, radius, material):
     art.glint(at(205), at(240), material, via=at(222.5))
 
 
-def feather(art, base, end, width, material):
-    nx, ny = -(end[1] - base[1]), end[0] - base[0]
-    norm = math.hypot(nx, ny)
-    nx, ny = nx / norm * width / 2, ny / norm * width / 2
-    mid = ((base[0] + end[0]) / 2, (base[1] + end[1]) / 2)
-    art.shape([base, (mid[0] + nx, mid[1] + ny), end, (mid[0] - nx, mid[1] - ny)], material, "s")
+# How a feather swells and narrows along its length: (share of the length, share of the width).
+FEATHER = ((0.0, 0.35), (0.18, 0.8), (0.4, 1.0), (0.65, 0.85), (0.88, 0.5), (1.0, 0.0))
+
+
+def feather(art, base, side, degrees, length, width, material, tone):
+    """One leaf of a wing, pointed, widest a third of the way out, with a quill down it and a glint on its upper edge."""
+    angle = math.radians(degrees)
+    ux, uy = side * math.cos(angle), -math.sin(angle)
+    nx, ny = -uy, ux
+    edge = lambda sign: [(base[0] + ux * length * t + sign * nx * width / 2 * w, base[1] + uy * length * t + sign * ny * width / 2 * w) for t, w in FEATHER]
+    left, right = edge(1), edge(-1)
+    leaf = left + right[::-1]
+    art.shape(leaf, material, tone)
+    art.shade(leaf, material, width * 0.3)
+    art.strip((base[0] + ux * length * 0.12, base[1] + uy * length * 0.12), (base[0] + ux * length * 0.82, base[1] + uy * length * 0.82), 0.9, material, "s")
+    upper = min((left, right), key=lambda line: line[3][1])
+    if tone == "b" and GLINT_LENGTH[0] <= math.dist(upper[2], upper[3]) <= GLINT_LENGTH[1]:
+        art.glint(upper[2], upper[3], material)
 
 
 def medal(kind):
@@ -435,12 +448,16 @@ def medal(kind):
     cx = 57.5
     if kind == "mini":
         cy, m = 42, "steel"
-        face = disc(cx, cy, 30)
+        edge = scallop(cx, cy, 31, 1.8, 30, per=3)
+        art.shape(edge, m, "b")
+        art.shade(edge, m, 8)
+        art.shape(disc(cx, cy, 25), m, "s")
+        face = disc(cx, cy, 21)
         art.shape(face, m, "b")
-        art.shade(face, m, 8)
-        art.shape(disc(cx, cy, 21.5), m, "s", outline=False)
-        art.blob(cx, cy - 1, 5.5, 5.5, m, "h", corners=9)
-        rim_glint(art, cx, cy, 26, m)
+        art.shade(face, m, 5)
+        art.shape([(cx, cy - 11), (cx + 9.5, cy + 6.5), (cx - 9.5, cy + 6.5)], m, "h")
+        art.glint((cx - 17, cy - 3), (cx - 12, cy - 13), m, via=(cx - 16, cy - 8))
+        rim_glint(art, cx, cy, 28, m)
     elif kind == "minor":
         cy, m = 43, "verdigris"
         face = scallop(cx, cy, 36, 3.0, 14)
@@ -462,10 +479,8 @@ def medal(kind):
     else:
         cy, m = 56, "gold"
         for side in (-1, 1):
-            for tip, length, width in ((-12, 27, 9), (10, 31, 10), (32, 25, 9)):
-                angle = math.radians(tip + art.rng.uniform(-3, 3))
-                base = (cx + side * 23, cy - 3)
-                feather(art, base, (base[0] + side * length * math.cos(angle), base[1] - length * math.sin(angle)), width, m)
+            for degrees, length, width, tone, lift in ((44, 31, 12, "s", 6), (24, 36, 13, "s", 3), (6, 37, 13, "b", 0), (-13, 32, 12, "b", -3)):
+                feather(art, (cx + side * 18, cy - 2 - lift), side, degrees + art.rng.uniform(-2, 2), length, width, m, tone)
         face = disc(cx, cy, 28)
         art.shape(face, m, "b")
         art.shade(face, m, 8)
@@ -582,7 +597,7 @@ def style(materials, with_plate, shaft=False):
     # Only the outer half of a stroke shows, so the stroke is twice the weight. The weight is in pixels so that it does not shrink with a small tile.
     weight = f"var(--ow,{num(2 * OUTLINE)}px)"
     rules = (f".o{{stroke:var(--art-ink);stroke-width:{weight};vector-effect:non-scaling-stroke;paint-order:stroke;stroke-linejoin:round}}"
-             ".b{fill:var(--b)}.s{fill:var(--s)}.h{fill:var(--h)}.i{fill:var(--art-ink)}"
+             ".b{fill:var(--b)}.s{fill:var(--s)}.h{fill:var(--h)}.i{fill:var(--art-ink)}.gr{opacity:var(--grain,1)}"
              f".g{{fill:none;stroke:var(--h);stroke-width:calc({weight}*{GLINT});vector-effect:non-scaling-stroke;stroke-linecap:round}}"
              + (".v{fill:var(--art-shaft)}" if shaft else ""))
     uses = "".join(f".{CODES[m]}{{--b:var(--art-{m}-b);--s:var(--art-{m}-s);--h:var(--art-{m}-h)}}" for m in sorted(materials))
@@ -625,7 +640,7 @@ def build():
 
 def audit(files):
     problems = []
-    classes = {"b", "s", "h", "o", "i", "g", "v", *CODES.values()}
+    classes = {"b", "s", "h", "o", "i", "g", "v", "gr", *CODES.values()}
     for name, text in files.items():
         body = re.sub(r"<style>.*?</style>", "", text, flags=re.S)
         if re.search(r"#[0-9a-fA-F]{3,8}\b|rgb|hsl", body):
@@ -642,6 +657,8 @@ def audit(files):
             length = sum(math.dist((0, 0), steps[i:i + 2]) for i in range(0, len(steps), 2))
             if not GLINT_LENGTH[0] - 1.5 <= length <= GLINT_LENGTH[1] + 1.5:
                 problems.append(f"{name}: a glint of length {length:.1f}")
+        if name.startswith("medal-") and '<path class="g"' not in body:
+            problems.append(f"{name}: a medal needs its highlight")
         if name != "sprite.svg" and len(text.encode()) > BUDGET["scene_bytes" if name == "scene.svg" else "file_bytes"]:
             problems.append(f"{name}: {len(text.encode())} bytes is over the file budget")
 
