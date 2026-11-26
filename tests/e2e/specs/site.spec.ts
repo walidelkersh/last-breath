@@ -55,8 +55,8 @@ for (const colorScheme of ["dark", "light"] as const) {
       const card = document.querySelector(".card-body")!;
       const chosen = document.querySelector(".card input:checked + .card-body")!;
       const chip = document.querySelector(".chip input:checked + span")!;
-      const box = document.createElement("section");
-      box.className = "summary";
+      const box = document.createElement("div");
+      box.className = "side";
       document.body.append(box);
       const bigWin = probe("big-win", box, box);
       box.remove();

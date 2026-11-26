@@ -27,13 +27,17 @@ public static class Narration
         return string.Join(' ', parts.OfType<string>());
     }
 
-    // What the status column says of the latest spin. A spin that only landed an air tank did land something.
-    public static string Latest(GameConfig config, decimal bet, Spin spin)
+    // The short line the ticker shows for one spin. A spin that only landed an air tank did land something.
+    public static string Brief(GameConfig config, decimal bet, Spin spin)
     {
-        var placed = Placed(config, bet, spin);
-        var tanks = Tanks(spin);
-        if (placed is null && tanks is null) return "Nothing landed.";
-        return string.Join(' ', new[] { placed is null ? null : $"Landed: {placed}.", tanks is null ? null : $"{tanks}." }.OfType<string>());
+        var parts = new List<string>();
+        var crates = spin.NewCells.Where(index => spin.Cells[index].Kind == CellKind.Cash).ToArray();
+        if (crates.Length > 0)
+            parts.Add($"{Plural(crates.Length, "crate")}, {Format.Credits(Settlement.Credits(crates.Sum(index => spin.Cells[index].Units), bet))}");
+        parts.AddRange(spin.NewCells.Where(index => spin.Cells[index].Kind == CellKind.Jackpot)
+            .Select(index => $"{Label(config, spin.Cells[index])}, {Format.Credits(Settlement.Credits(spin.Cells[index].Units, bet))}"));
+        if (Tanks(spin) is { } tanks) parts.Add(tanks);
+        return parts.Count == 0 ? "Nothing landed" : string.Join("; ", parts);
     }
 
     private static string? Placed(GameConfig config, decimal bet, Spin spin)

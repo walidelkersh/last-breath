@@ -47,14 +47,20 @@ public sealed class ReplayTests
     }
 
     [Fact]
-    public void TheStatusColumnNamesWhatLandedAndDoesNotCallAnAirTankNothing()
+    public void TheTickerNamesWhatLandedAndDoesNotCallAnAirTankNothing()
     {
         var spins = Replay.Of(TankRoundWithOneTank(), Default.Dives["Tank"]);
         var tankOnly = new Spin(1, new Cell[Board.Size], [], spins[0].AirTanks, 4, 5, 2);
+        var cells = new Cell[Board.Size];
+        cells[3] = new Cell(CellKind.Jackpot, 5_000);
+        cells[4] = new Cell(CellKind.Cash, 250);
+        cells[7] = new Cell(CellKind.Cash, 100);
+        var mixed = new Spin(2, cells, [3, 4, 7], [], 3, 3, 0);
 
-        Assert.Equal("Landed: 1 crate worth 0.05 credits. Air tank, plus 2 breaths.", Narration.Latest(Default, 1.00m, spins[0]));
-        Assert.Equal("Air tank, plus 2 breaths.", Narration.Latest(Default, 1.00m, tankOnly));
-        Assert.Equal("Nothing landed.", Narration.Latest(Default, 1.00m, spins[1]));
+        Assert.Equal("1 crate, 0.05; Air tank, plus 2 breaths", Narration.Brief(Default, 1.00m, spins[0]));
+        Assert.Equal("Air tank, plus 2 breaths", Narration.Brief(Default, 1.00m, tankOnly));
+        Assert.Equal("Nothing landed", Narration.Brief(Default, 1.00m, spins[1]));
+        Assert.Equal("2 crates, 0.70; Mini, 10.00", Narration.Brief(Default, 2.00m, mixed));
     }
 
     [Fact]

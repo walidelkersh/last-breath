@@ -4,7 +4,7 @@
 
 @if (ready)
 {
-    <div class="app">
+    <div class="app @(round is not null ? "staged" : "")">
         <header class="top">
             <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
             <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>

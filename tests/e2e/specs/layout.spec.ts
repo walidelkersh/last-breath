@@ -9,6 +9,14 @@ const rounds = [
   { name: "Tank", key: "3", seed: 4 },
 ];
 
+const screens = [
+  { width: 1024, height: 700 },
+  { width: 1280, height: 800 },
+  { width: 1366, height: 768 },
+  { width: 1920, height: 1080 },
+  { width: 2560, height: 1440 },
+];
+
 async function expectInside(page: Page, target: Locator, what: string) {
   const box = await target.boundingBox();
   const view = page.viewportSize()!;
@@ -19,6 +27,20 @@ async function expectInside(page: Page, target: Locator, what: string) {
   expect(box!.y + box!.height, `${what} ends inside the bottom edge`).toBeLessThanOrEqual(view.height);
 }
 
+// Nothing may run under the footer and the page must not scroll, so the stage fills the height and no more.
+async function expectTheStageToFit(page: Page) {
+  const fit = await page.evaluate(() => ({
+    scrollHeight: document.documentElement.scrollHeight,
+    innerHeight,
+    stageBottom: document.querySelector(".stage")!.getBoundingClientRect().bottom,
+    sideBottom: document.querySelector(".side")!.getBoundingClientRect().bottom,
+    footerTop: document.querySelector("footer")!.getBoundingClientRect().top,
+  }));
+  expect(fit.scrollHeight, "the page does not scroll").toBeLessThanOrEqual(fit.innerHeight);
+  expect(fit.stageBottom, "the stage ends above the footer").toBeLessThanOrEqual(fit.footerTop);
+  expect(fit.sideBottom, "the side panel ends above the footer").toBeLessThanOrEqual(fit.footerTop);
+}
+
 async function playToTheEnd(page: Page, round: (typeof rounds)[number]) {
   await open(page, `/?seed=${round.seed}`);
   await page.keyboard.press(round.key);
@@ -27,7 +49,7 @@ async function playToTheEnd(page: Page, round: (typeof rounds)[number]) {
   await expect(summary(page)).toBeVisible();
 }
 
-for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 700 }]) {
+for (const viewport of screens) {
   test.describe(`${viewport.width} by ${viewport.height}`, () => {
     test.use({ viewport });
 
@@ -38,12 +60,67 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1024, height: 700
         await expectInside(page, summary(page), "the summary");
         await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again");
         await expectInside(page, page.getByRole("button", { name: "Change dive" }), "Change dive");
-        const { scrollHeight, innerHeight } = await page.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, innerHeight }));
-        expect(scrollHeight).toBeLessThanOrEqual(innerHeight);
+        await expectTheStageToFit(page);
       });
     }
+
+    test("a round in play fits too, with the tallest clock the game has", async ({ page }) => {
+      await open(page, "/?seed=4");
+      await page.keyboard.press("3");
+      await diveButton(page).click();
+      await expect(page.locator(".tile-tank")).toHaveCount(2);
+
+      await expectInside(page, page.getByRole("button", { name: "Skip" }), "Skip");
+      await expectTheStageToFit(page);
+    });
   });
 }
+
+test("the board grows with the window: at 1920 by 1080 it is more than 55% wider than at 1280 by 800", async ({ browser }) => {
+  const widthAt = async (width: number, height: number) => {
+    const context = await browser.newContext({ viewport: { width, height } });
+    const page = await context.newPage();
+    await open(page, "/?seed=4");
+    await page.keyboard.press("3");
+    await diveButton(page).click();
+    const box = (await page.locator(".board").boundingBox())!;
+    await context.close();
+    return box.width;
+  };
+  const small = await widthAt(1280, 800);
+  const large = await widthAt(1920, 1080);
+  const huge = await widthAt(2560, 1440);
+
+  expect(small).toBeGreaterThan(690);
+  expect(large).toBeGreaterThan(small * 1.55);
+  expect(huge).toBeGreaterThan(large);
+});
+
+test("the tiles, their plates and the outlines grow with the board", async ({ browser }) => {
+  const measure = async (width: number, height: number) => {
+    const context = await browser.newContext({ viewport: { width, height } });
+    const page = await context.newPage();
+    await open(page, "/?seed=1");
+    await diveButton(page).click();
+    await expect(page.locator(".tile-crate").first()).toBeVisible();
+    const result = await page.evaluate(() => {
+      const tile = document.querySelector(".tile-crate")!;
+      return {
+        tile: tile.getBoundingClientRect().width,
+        text: parseFloat(getComputedStyle(tile.querySelector(".tile-value")!).fontSize),
+        outline: parseFloat(getComputedStyle(tile.querySelector(".tile-plate")!).borderTopWidth),
+      };
+    });
+    await context.close();
+    return result;
+  };
+  const small = await measure(1280, 800);
+  const large = await measure(2560, 1440);
+
+  expect(large.tile).toBeGreaterThan(small.tile * 1.8);
+  expect(large.text).toBeGreaterThan(small.text * 1.5);
+  expect(large.outline).toBeGreaterThan(small.outline * 1.5);
+});
 
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -103,15 +180,33 @@ test.describe("on a phone", () => {
   });
 });
 
-test("the status column names the spin and what it landed", async ({ page }) => {
+test("the head counts the spin and the ticker names what each spin landed, newest first", async ({ page }) => {
   await open(page, "/?seed=4");
   await page.keyboard.press("3");
   await diveButton(page).click();
 
-  const landing = page.locator(".landing");
-  await expect(landing).toContainText("Spin 0");
-  await expect(landing).toContainText("Nothing has landed yet.");
-  await expect(landing).toContainText("Spin 1");
-  await expect(landing).toContainText("Air tanks, plus 1 and plus 2 breaths.");
-  await expect(landing).not.toContainText("Nothing landed");
+  await expect(page.locator(".spin")).toHaveText("Spin 0");
+  await expect(page.locator(".ticker-empty")).toHaveText("No spin yet.");
+  await expect(page.locator(".spin")).toHaveText("Spin 1");
+  const newest = page.locator(".ticker li").first();
+  await expect(newest).toContainText("Spin 1");
+  await expect(newest).toContainText("Air tanks, plus 1 and plus 2 breaths");
+  await expect(newest).not.toContainText("Nothing landed");
+  await expect(page.locator("[aria-live] .ticker")).toHaveCount(0);
+});
+
+test("after a skip the ticker still holds every spin, newest on top, and shows only whole rows", async ({ page }) => {
+  await playToTheEnd(page, rounds[0]);
+
+  const items = page.locator(".ticker li");
+  await expect(items).toHaveCount(18);
+  await expect(items.first()).toContainText("Spin 18");
+  await expect(items.last()).toContainText("Spin 1");
+  const rows = await page.evaluate(() => {
+    const ticker = document.querySelector(".ticker")!.getBoundingClientRect();
+    const shown = [...document.querySelectorAll(".ticker li")].filter((row) => row.getBoundingClientRect().left < ticker.right - 2);
+    return { count: shown.length, whole: shown.every((row) => row.getBoundingClientRect().bottom <= ticker.bottom + 1) };
+  });
+  expect(rows.count).toBeGreaterThan(0);
+  expect(rows.whole).toBe(true);
 });
