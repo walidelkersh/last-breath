@@ -52,4 +52,4 @@ The client is a demo with play money. It is a Blazor WebAssembly app that runs t
 
 The dive cards and the Math panel read their figures from the reports when the site is built, so they show the numbers in [par-sheet.md](par-sheet.md). The Math panel also shows the seed of the most recent round, and `lab play --dive <dive> --seed <seed>` replays that round in the console. Opening the site with `?seed=<number>` makes the rounds repeatable, which the browser tests use.
 
-The browser tests run in Chromium only, so I have not tested the client in any other browser. Free, Wreck and Crew are not built, and nothing in this repository computes them.
+The browser tests run in Chromium by default, and setting `E2E_BROWSERS=all` runs them in Firefox and in WebKit, the engine behind Safari, where they pass as well. I have not tried the client on a real Mac or iPhone, and I have not tried it with a screen reader. Free, Wreck and Crew are not built, and nothing in this repository computes them.
