@@ -1653,8 +1653,9 @@ code {
 }
 
 @keyframes ring-pulse {
-    from { opacity: 0.95; transform: scale(1); }
-    to { opacity: 0; transform: scale(1.18); }
+    0% { opacity: 1; transform: scale(1); }
+    45% { opacity: 0.85; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.32); }
 }
 
 @keyframes gain-fly {
@@ -1676,8 +1677,9 @@ code {
     content: "";
     position: absolute;
     inset: -2px;
-    border: 3px solid var(--ring, var(--amber));
+    border: 4px solid var(--ring, var(--amber));
     border-radius: inherit;
+    box-shadow: 0 0 0.9rem var(--ring, var(--amber));
     animation: ring-pulse 0.7s ease-out 1 both;
     pointer-events: none;
 }
