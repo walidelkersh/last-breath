@@ -63,6 +63,21 @@ test.describe("on a phone", () => {
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again at the foot of the page");
   });
 
+  test("the header is two short lines: the title and Math, then the balance and Reset balance", async ({ page }) => {
+    await open(page);
+    const box = async (target: Locator) => (await target.boundingBox())!;
+    const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+    const title = await box(page.getByRole("heading", { name: "Last Breath" }));
+    const math = await box(page.getByRole("button", { name: "Math" }));
+    const balance = await box(page.locator(".balance"));
+    const reset = await box(page.getByRole("button", { name: "Reset balance" }));
+
+    expect(Math.abs(middle(title) - middle(math))).toBeLessThan(10);
+    expect(Math.abs(middle(balance) - middle(reset))).toBeLessThan(10);
+    expect(balance.y).toBeGreaterThan(title.y + title.height - 4);
+    expect((await box(page.locator("header"))).height).toBeLessThan(125);
+  });
+
   test("a tile shows only its value on the plate, and the word stays in its name and tooltip", async ({ page }) => {
     await open(page, "/?seed=1");
     await diveButton(page).click();

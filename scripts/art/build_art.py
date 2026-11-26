@@ -1,4 +1,5 @@
-"""Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals, the air tank and the oxygen bottles.
+"""Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals, the air tank and the oxygen bottles,
+and the mark of the game, a bottle with a bubble, which is also written out as the favicon.
 
 Every symbol is flat and cel shaded. The rules sit in the data below, and the audit at the end of
 the script fails the build when a file or a colour breaks them. The sprite holds every symbol once.
@@ -17,7 +18,9 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "src" / "LastBreath.Web" / "wwwroot" / "art"
+SITE = ROOT / "src" / "LastBreath.Web" / "wwwroot"
+OUT = SITE / "art"
+FAVICON = "../favicon.svg"     # named from the art folder, written beside it
 
 # Style rules. One light from above and a little to the left, one outline weight, one highlight shape.
 SEED = 7319
@@ -32,6 +35,7 @@ BUDGET = {"file_bytes": 6000, "total_bytes": 150_000}
 WELLS = "abc"
 VARIANTS = "ab"
 BOTTLE = (20, 40)
+MARK = (40, 40)
 
 # A ramp is (base, shade, highlight). Shade is always darker than the base and highlight lighter.
 PALETTE = {
@@ -472,16 +476,31 @@ def medal(kind):
     return art
 
 
-def bottle(state):
+def draw_bottle(art, state, left=0.0, top=0.0, size=1.0):
     body_material, cap = {"full": ("tank", "gold"), "empty": ("empty", "steel"), "low": ("amber", "gold")}[state]
-    art = Art(f"bottle-{state}", BOTTLE, seed="bottle")
-    body = arc(10, 18, 7.5, 6, 180, 360, 6) + arc(10, 31, 7.5, 6, 0, 180, 6)
+    put = lambda points: [(left + size * x, top + size * y) for x, y in points]
+    body = put(arc(10, 18, 7.5, 6, 180, 360, 6) + arc(10, 31, 7.5, 6, 0, 180, 6))
     art.shape(body, body_material, "b")
     art.shade(body, body_material, 5)
-    art.shape(box(7, 6, 13, 13.5), "steel", "b")
-    art.shape(rounded_box(4.5, 1.5, 15.5, 7.5, 1.5), cap, "b")
+    art.shape(put(box(7, 6, 13, 13.5)), "steel", "b")
+    art.shape(put(rounded_box(4.5, 1.5, 15.5, 7.5, 1.5)), cap, "b")
     if state != "empty":
-        art.glint((5.4, 19), (5.4, 27), body_material)
+        art.glint(*put([(5.4, 19), (5.4, 27)]), body_material)
+
+
+def bottle(state):
+    art = Art(f"bottle-{state}", BOTTLE, seed="bottle")
+    draw_bottle(art, state)
+    return art
+
+
+def mark():
+    """A full bottle and three bubbles rising beside it, on a tile of water: the mark in the header and the favicon."""
+    art = Art("mark", MARK, seed="bottle", scale=0.5)
+    art.shape(rounded_box(1.5, 1.5, MARK[0] - 1.5, MARK[1] - 1.5, 8, steps=8), "water", "b")
+    draw_bottle(art, "full", left=6, top=4.8, size=0.78)
+    for cx, cy, radius in ((28, 31, 1.9), (31, 22.5, 2.6), (27.5, 12.5, 3.4)):
+        art.shape(disc(cx, cy, radius, 14), "steel", "h")
     return art
 
 
@@ -532,6 +551,7 @@ def symbols():
     drawn.update({f"well-{v}": well(v) for v in WELLS})
     drawn.update({f"medal-{kind}": medal(kind) for kind in ("mini", "minor", "major", "grand")})
     drawn.update({f"bottle-{state}": bottle(state) for state in ("full", "empty", "low")})
+    drawn["mark"] = mark()
     drawn["panel"] = panel()
     return drawn
 
@@ -553,6 +573,7 @@ def build():
         slice_ = ' preserveAspectRatio="xMidYMid slice"' if name == "panel" else ""
         parts.append(f'<symbol id="{name}" viewBox="{view_box(art)}"{slice_}>{art.body()}</symbol>')
     files["sprite.svg"] = "\n".join(parts) + "\n</svg>\n"
+    files[FAVICON] = files["mark.svg"].replace("</style>", ":root{--ow:2px}</style>")
     return files
 
 

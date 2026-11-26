@@ -42,3 +42,18 @@ test("the sprite follows the theme through the page's variables", async ({ page 
   await page.waitForFunction(() => document.querySelector("symbol#crate-low-a") !== null);
   expect(await plate("dark")).not.toEqual(await plate("light"));
 });
+
+test("the title, the favicon and the mark in the header all come from the game", async ({ page }) => {
+  await open(page);
+  await page.waitForFunction(() => document.querySelector("symbol#mark") !== null);
+
+  await expect(page).toHaveTitle("Last Breath, a hold-and-spin game");
+  await expect(page.locator("header .logo use")).toHaveAttribute("href", "#mark");
+  expect(await page.evaluate(() => document.querySelectorAll("symbol#mark path").length)).toBeGreaterThan(0);
+
+  const href = await page.locator('link[rel="icon"]').evaluate((link) => (link as HTMLLinkElement).href);
+  const icon = await page.request.get(href);
+  expect(icon.ok()).toBe(true);
+  expect(icon.headers()["content-type"]).toContain("image/svg+xml");
+  expect(await icon.text()).toContain("<path");
+});

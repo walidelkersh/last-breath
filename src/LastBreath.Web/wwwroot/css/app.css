@@ -127,26 +127,28 @@ main {
 /* Header and footer */
 
 .top {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--s2) var(--s5);
-    padding: var(--s4) 0;
+    gap: var(--s2) var(--s4);
+    padding: var(--s3) 0;
     border-bottom: 1px solid var(--line);
 }
 
-.top h1 {
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
     font-family: var(--serif);
     font-size: var(--text-xl);
     font-weight: 700;
 }
 
-.wallet {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s1) var(--s4);
+.logo {
+    --ow: 2.2px;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
 }
 
 .balance {
@@ -157,6 +159,10 @@ main {
     margin-left: var(--s1);
     color: var(--text);
     font-size: var(--text-lg);
+}
+
+.top .quiet {
+    justify-self: end;
 }
 
 footer {
@@ -954,6 +960,11 @@ code {
 /* Wider screens */
 
 @media (min-width: 46rem) {
+    .top {
+        grid-template-columns: 1fr auto auto auto;
+        gap: var(--s4);
+    }
+
     .cards {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }

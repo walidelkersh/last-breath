@@ -6,12 +6,10 @@
 {
     <div class="app">
         <header class="top">
-            <h1>Last Breath</h1>
-            <div class="wallet">
-                <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
-                <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
-                <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
-            </div>
+            <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
+            <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
+            <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
+            <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
         </header>
 
         <main>
