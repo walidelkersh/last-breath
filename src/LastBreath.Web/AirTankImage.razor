@@ -1,6 +1,9 @@
+@* Both renders are sources, and the img holds a blank pixel. Blazor sets an img's src before it puts the img in the picture,
+   and WebKit fetches that src at once, so a real src here would download the light render for a visitor on the dark theme. *@
 <picture class="@Class">
     <source media="(prefers-color-scheme: dark)" srcset="art/air-tank-dark.webp" />
-    <img src="art/air-tank-light.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async" />
+    <source srcset="art/air-tank-light.webp" />
+    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" aria-hidden="true" width="256" height="256" decoding="async" />
 </picture>
 
 @code {
