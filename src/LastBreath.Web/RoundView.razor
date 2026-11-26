@@ -143,18 +143,21 @@
                     }
                 </div>
             }
-            <div class="board-foot @(finished ? "result-plate" : "status")">
+            <div class="board-foot @(finished ? $"result-plate {outcome.Kind}" : "status")">
                 @if (finished)
                 {
                     <div class="plate-main">
+                        @if (outcome.BigWin) { <svg class="plate-medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-major" /></svg> }
                         @if (outcome.Units == 0)
                         {
                             <p class="plate-zero">Surfaced with nothing</p>
                         }
                         else
                         {
-                            <p class="plate-win">@Format.Credits(Settlement.Credits(outcome.Units, Bet)) <span>credits</span></p>
-                            <p class="plate-times">@(Format.Multiple(outcome.Units))× bet</p>
+                            <div class="plate-figures">
+                                <p class="plate-win">@Format.Credits(Settlement.Credits(outcome.Units, Bet)) <span>credits</span></p>
+                                <p class="plate-times">@PlateTimes</p>
+                            </div>
                         }
                     </div>
                     <div class="plate-note">
@@ -222,6 +225,10 @@
             return Odds.Line(info.Name, info.Figures.Rtp, filled, info.Figures.FinalCrates[filled]);
         }
     }
+
+    private string PlateTimes => outcome.Kind == "under"
+        ? $"Returned {Format.Credits(Settlement.Credits(outcome.Units, Bet))} of your {Format.Credits(Bet)} bet"
+        : $"{Format.Multiple(outcome.Units)}× bet";
 
     private Spin? current => shown > 0 ? spins[shown - 1] : null;
     private int clock => current?.ClockAfter ?? dive.StartingClock;

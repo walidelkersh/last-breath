@@ -905,10 +905,9 @@ picture img {
     border-radius: 0.3em;
 }
 
-/* The foot of the board is a plate like the ones under the coins. It shows the last landing while the round runs and the result when it ends,
-   so it is always there and the board never changes shape. */
+/* The foot of the board keeps its height whatever it shows, so nothing moves when the round ends. While the round runs it is a line of text
+   on the water, and at the end it is a plate in the colours of the board, the same in both themes. */
 .board-foot {
-    --ow: clamp(3px, 0.6cqw, 9px);
     position: relative;
     grid-column: 1 / -1;
     grid-row: 4;
@@ -918,11 +917,18 @@ picture img {
     gap: var(--s1) var(--s4);
     height: clamp(5.25rem, 9cqw, 9rem);
     padding: 0.4em 0.9em;
-    color: var(--art-plate-ink, var(--text));
-    background: var(--art-plate, var(--surface));
-    border: calc(var(--ow) * 0.55) solid var(--art-ink, var(--line));
+    color: var(--on-board);
     border-radius: clamp(0.4rem, 1cqw, 1.1rem);
     font-size: clamp(var(--text-sm), 1.9cqw, 1.5rem);
+}
+
+.board-foot.result-plate {
+    background: var(--board-well);
+    box-shadow: inset 0 0 0 1px var(--board-line);
+}
+
+.board-foot.result-plate.big {
+    box-shadow: inset 0 0 0 3px var(--amber);
 }
 
 .board-foot p {
@@ -937,21 +943,47 @@ picture img {
     font-weight: 600;
 }
 
+.plate-main {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    min-width: 0;
+}
+
+.plate-medal {
+    --ow: clamp(2.2px, 0.4cqw, 5px);
+    flex: none;
+    height: clamp(3rem, 6.5cqw, 5.5rem);
+    width: auto;
+    aspect-ratio: 115 / 100;
+}
+
+/* The number is in the sans face with lining, tabular figures: the old-style figures of the serif read as letters. */
 .plate-win {
-    font-family: var(--serif);
+    color: var(--amber);
+    font-family: var(--sans);
     font-size: clamp(var(--text-2xl), 3.4cqw, 3.2rem);
-    font-weight: 700;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-weight: 800;
     line-height: 1.05;
 }
 
 .plate-win span {
-    font-family: var(--sans);
-    font-size: 0.4em;
-    font-weight: 400;
+    color: var(--on-board);
+    font-size: max(0.4em, var(--text-xs));
+    font-weight: 500;
+}
+
+.result-plate.big .plate-win {
+    font-size: clamp(var(--text-2xl), 4cqw, 3.8rem);
+}
+
+.result-plate.under .plate-win {
+    color: color-mix(in srgb, var(--on-board) 72%, var(--board-well));
 }
 
 .plate-times {
-    opacity: 0.8;
+    color: color-mix(in srgb, var(--on-board) 82%, var(--board-well));
 }
 
 .plate-zero {
@@ -1118,7 +1150,7 @@ picture img {
 }
 
 .big-win {
-    color: var(--accent-text);
+    color: var(--amber);
     font-family: var(--serif);
     font-size: 1.3em;
     font-weight: 700;
@@ -1864,7 +1896,7 @@ code {
     :root {
         --chrome: 4.5rem;
         --fit: 0.71;
-        --fixed: 1.55rem;
+        --fixed: 2.25rem;
         --side: 15rem;
     }
 
@@ -1925,17 +1957,31 @@ code {
 
     .board-foot {
         grid-template-columns: auto minmax(0, 1fr);
-        height: 2.6rem;
+        height: 3.3rem;
         padding: 0.15em 0.6em;
+        column-gap: 0.6em;
+        row-gap: 0;
     }
 
     .plate-main {
+        gap: 0.4em;
+    }
+
+    .plate-figures {
         display: flex;
         align-items: baseline;
         gap: 0.5em;
     }
 
+    .plate-medal {
+        height: 1.9rem;
+    }
+
     .plate-win {
+        font-size: var(--text-lg);
+    }
+
+    .result-plate.big .plate-win {
         font-size: var(--text-lg);
     }
 
@@ -1943,17 +1989,21 @@ code {
         font-size: var(--text-base);
     }
 
-    .odds {
-        display: none;
-    }
-
+    /* The odds line takes a row of its own under the figures, across the whole plate. */
     .plate-note {
-        flex-direction: row;
-        align-items: center;
+        display: contents;
     }
 
     .big-win {
+        justify-self: end;
         font-size: var(--text-base);
+    }
+
+    .odds {
+        grid-column: 1 / -1;
+        max-width: none;
+        font-size: var(--text-xs);
+        text-align: left;
     }
 
     .summary dl {

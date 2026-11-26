@@ -105,6 +105,18 @@ public sealed class ReplayTests
         Assert.Equal(bigWin, new RoundSummary(7, 3, [], false, units).BigWin);
     }
 
+    [Theory]
+    [InlineData(0, "zero")]
+    [InlineData(50, "under")]
+    [InlineData(950, "under")]
+    [InlineData(1_000, "over")]
+    [InlineData(9_950, "over")]
+    [InlineData(10_000, "big")]
+    public void TheResultPlateIsInOneOfFourStates(int units, string kind)
+    {
+        Assert.Equal(kind, new RoundSummary(7, 3, [], false, units).Kind);
+    }
+
     [Fact]
     public void AFullBoardIsSummarisedWithTheGrand()
     {

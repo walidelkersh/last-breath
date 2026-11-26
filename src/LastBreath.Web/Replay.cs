@@ -23,6 +23,11 @@ public sealed record RoundSummary(int Spins, int Crates, string[] Jackpots, bool
     public const int BigWinUnits = 10_000;
 
     public bool BigWin => Units >= BigWinUnits;
+
+    // One bet. The result plate has four states: nothing, less than the bet, the bet or more, and a big win.
+    public const int BetUnits = 1_000;
+
+    public string Kind => Units == 0 ? "zero" : BigWin ? "big" : Units < BetUnits ? "under" : "over";
 }
 
 public static class Replay
