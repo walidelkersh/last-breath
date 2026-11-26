@@ -258,6 +258,11 @@ button.quiet {
     text-decoration: underline;
 }
 
+button.quiet:disabled {
+    opacity: 0.75;
+    text-decoration: none;
+}
+
 .note {
     margin-top: var(--s2);
     color: var(--muted);
@@ -919,11 +924,16 @@ picture img {
     font-size: var(--text-sm);
 }
 
+.ticker {
+    --row: 2.4rem;
+}
+
 .ticker li {
     display: flex;
     gap: var(--s3);
+    align-items: center;
     width: 100%;
-    padding: var(--s1) 0;
+    height: calc(var(--row) - var(--s1));
     border-bottom: 1px solid var(--line);
 }
 
@@ -935,6 +945,9 @@ picture img {
 
 .ticker-what {
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ticker-empty {
@@ -1479,11 +1492,14 @@ code {
         width: min(100%, calc((100dvh - var(--chrome)) / var(--fit)));
     }
 
+    /* The panel is as tall as what it holds, so a young round leaves the water showing under it, and it stops at the height of the window. */
     .side {
         display: flex;
         flex-direction: column;
         grid-column: 2;
         grid-row: 1;
+        align-self: start;
+        max-height: 100%;
         gap: var(--s3);
         min-height: 0;
         padding: var(--s3) var(--s4);
@@ -1525,14 +1541,14 @@ code {
 
     .side > .ticker {
         order: 3;
-        flex: 1 1 0;
+        flex: 0 1 calc(var(--rows) * var(--row) + var(--s3));
         min-height: 0;
         padding-top: var(--s3);
         container-type: size;
     }
 
     /* When not even one row fits, none is shown, rather than the top half of one. */
-    @container (max-height: 2.25rem) {
+    @container (max-height: 2.1rem) {
         .ticker li {
             display: none;
         }
@@ -1547,6 +1563,13 @@ code {
 
     .summary dl > .win {
         padding-bottom: var(--s2);
+    }
+}
+
+/* In a window taller than it is wide the board goes to the top, beside the panel, and the water shows under it. */
+@media (orientation: portrait) and (min-width: 56rem) {
+    .stage {
+        align-self: start;
     }
 }
 
@@ -1590,6 +1613,28 @@ code {
 
     .keys {
         display: none;
+    }
+
+    .stake {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--s4);
+        padding-block: var(--s1);
+    }
+
+    .bets {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+    }
+
+    .field-title {
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .select-body {
+        margin-block: 0;
     }
 
     .app.staged main {

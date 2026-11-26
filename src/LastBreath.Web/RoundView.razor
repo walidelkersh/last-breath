@@ -85,14 +85,15 @@
             </div>
         }
 
-        <ol class="ticker" aria-label="Spins so far, newest first">
+        <ol class="ticker" aria-label="Spins so far, newest first" style="--rows: @Math.Max(1, shown)">
             @if (shown == 0)
             {
                 <li class="ticker-empty">No spin yet.</li>
             }
             @for (var number = shown; number >= 1; number--)
             {
-                <li @key="number"><span class="ticker-spin">Spin @number</span> <span class="ticker-what">@Narration.Brief(Config, Bet, spins[number - 1])</span></li>
+                var brief = Narration.Brief(Config, Bet, spins[number - 1]);
+                <li @key="number" title="@brief"><span class="ticker-spin">Spin @number</span> <span class="ticker-what">@brief</span></li>
             }
         </ol>
 

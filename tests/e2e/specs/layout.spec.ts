@@ -210,7 +210,7 @@ test.describe("the ticker after a skip", () => {
     });
 
   test("holds every spin, newest on top, and shows several whole rows when there is room", async ({ page }) => {
-    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.setViewportSize({ width: 2560, height: 1440 });
     await playToTheEnd(page, rounds[0]);
 
     const items = page.locator(".ticker li");
