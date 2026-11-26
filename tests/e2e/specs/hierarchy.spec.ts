@@ -140,3 +140,22 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }
     expect(found.filter((item) => item.over)).toEqual([]);
   });
 }
+
+for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test(`the Board total of a Drift round keeps to the right edge even when the segments wrap, at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page, "/?seed=11");
+    await page.keyboard.press("2");
+    await diveButton(page).click();
+    await expect(page.locator(".spin")).toHaveText(/^Spin [1-9]/, { timeout: 15_000 });
+
+    const found = await page.evaluate(() => {
+      const hud = document.querySelector(".hud")!.getBoundingClientRect();
+      const total = document.querySelector(".total")!.getBoundingClientRect();
+      const clock = document.querySelector(".clock")!.getBoundingClientRect();
+      return { hud: hud.right, total: total.right, wrapped: total.top >= clock.bottom - 1, margin: getComputedStyle(document.querySelector(".total")!).marginLeft };
+    });
+    expect(Math.abs(found.total - found.hud), "flush with the right edge of the head").toBeLessThan(1.5);
+    expect(found.margin).not.toBe("0px");
+  });
+}

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { open } from "./play";
+import { diveButton, open } from "./play";
 
 test("each card draws its rule from symbols that are in the sprite", async ({ page }) => {
   await open(page);
@@ -137,6 +137,24 @@ test("the chosen card and the hovered card differ from the others by more than c
   await body("Tank Dive").hover();
   await expect.poll(() => body("Tank Dive").evaluate((element) => getComputedStyle(element).transform)).not.toBe("none");
   expect(await body("Classic Dive").evaluate((element) => getComputedStyle(element).transform)).toBe("none");
+});
+
+test("on a first visit the Dive button has focus without the page having moved, so Enter starts a round", async ({ page }) => {
+  await open(page);
+
+  await expect(diveButton(page)).toBeFocused();
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Skip" })).toBeVisible();
+});
+
+test("the Dive button does not take focus from a control that already has it", async ({ page }) => {
+  await open(page);
+  await page.getByRole("radio", { name: "4.00", exact: true }).focus();
+
+  await page.evaluate(() => (window as any).lastBreath.focusIfIdle(document.querySelector(".dive")));
+
+  await expect(page.getByRole("radio", { name: "4.00", exact: true })).toBeFocused();
 });
 
 test("keyboard focus on a card shows a ring that stands off the card", async ({ page }) => {

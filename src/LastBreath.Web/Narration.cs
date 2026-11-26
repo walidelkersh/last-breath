@@ -40,6 +40,31 @@ public static class Narration
         return parts.Count == 0 ? "Nothing landed" : string.Join("; ", parts);
     }
 
+    // A spin that landed nothing at all, not even an air tank.
+    public static bool IsEmpty(Spin spin) => spin.NewCells.Length == 0 && spin.AirTanks.Length == 0;
+
+    public sealed record TickerRow(string Key, string Label, string What);
+
+    // The rows of the ticker, newest first. A spin that landed something has a row of its own, and a run of spins that landed nothing is one row.
+    public static IEnumerable<TickerRow> Ticker(GameConfig config, decimal bet, Spin[] spins, int shown)
+    {
+        var number = shown;
+        while (number >= 1)
+        {
+            if (!IsEmpty(spins[number - 1]))
+            {
+                yield return new TickerRow($"spin{number}", $"Spin {number}", Brief(config, bet, spins[number - 1]));
+                number--;
+                continue;
+            }
+
+            var last = number;
+            while (number >= 1 && IsEmpty(spins[number - 1])) number--;
+            var first = number + 1;
+            yield return new TickerRow($"empty{first}", first == last ? $"Spin {first}" : $"Spins {first} to {last}", "Nothing landed");
+        }
+    }
+
     private static string? Placed(GameConfig config, decimal bet, Spin spin)
     {
         var landed = new List<string>();

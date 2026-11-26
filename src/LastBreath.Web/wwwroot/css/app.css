@@ -732,6 +732,18 @@ main:has(> .select) {
     --ow: 2.6px;
 }
 
+/* The spare tanks are the render of the air tank, small, and a tank that is used is faded. The words beside them say the same. */
+.tank-pip {
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+}
+
+.tank-pip.spent {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
 .segment {
     width: 2rem;
     height: 0.6rem;
@@ -745,6 +757,7 @@ main:has(> .select) {
 }
 
 .total {
+    margin-left: auto;
     color: var(--muted);
     text-align: right;
 }
@@ -824,6 +837,7 @@ main:has(> .select) {
    the same and they do not fade. */
 .board {
     isolation: isolate;
+    scroll-margin: var(--s3) 0 6rem;
 }
 
 .board::before {
@@ -1206,24 +1220,7 @@ picture img {
     flex-direction: column;
 }
 
-.summary dl > .win {
-    grid-column: 1 / -1;
-    padding-bottom: var(--s3);
-    border-bottom: 1px solid var(--line);
-}
-
 .summary dt {
-    color: var(--muted);
-    font-size: var(--text-sm);
-}
-
-.summary .win dd strong {
-    font-size: var(--text-2xl);
-    line-height: 1.1;
-}
-
-.multiple {
-    margin-left: var(--s2);
     color: var(--muted);
     font-size: var(--text-sm);
 }
@@ -1267,6 +1264,28 @@ picture img {
 
 .ticker-empty {
     color: var(--muted);
+}
+
+/* After the round the spins fold into a line that opens on request. Opened, the list scrolls inside the panel and never pushes the actions out. */
+.spinlog {
+    order: 5;
+    font-size: var(--text-sm);
+}
+
+.spinlog summary {
+    padding: var(--s2) 0;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.spinlog .ticker {
+    display: block;
+    max-height: min(16rem, 40dvh);
+    overflow-y: auto;
+}
+
+.spinlog .ticker li {
+    margin-bottom: var(--s1);
 }
 
 /* The session panel: what the page has seen so far, in numbers and in a strip of bars. */
@@ -1367,6 +1386,11 @@ picture img {
     min-height: 3px;
 }
 
+/* When the round is over the list has folded away, and the strip takes some of the room it left. */
+.over .bars {
+    height: clamp(5.5rem, 13dvh, 9.5rem);
+}
+
 .bar-empty {
     border-bottom: 1px solid var(--line);
 }
@@ -1414,6 +1438,15 @@ picture img {
     display: flex;
     align-items: center;
     gap: 0.4em;
+}
+
+.legend-over::before {
+    content: "";
+    width: 0.8em;
+    height: 0.8em;
+    background: var(--amber);
+    border: 1px solid var(--accent-edge);
+    border-top-width: 2px;
 }
 
 .legend-under::before {
@@ -1796,7 +1829,7 @@ code {
         flex: 1;
     }
 
-    .ticker li:nth-child(n + 7) {
+    .side > .ticker li:nth-child(n + 7) {
         display: none;
     }
 }
@@ -1916,7 +1949,8 @@ code {
 
     .hud,
     .result,
-    .ticker {
+    .ticker,
+    .spinlog {
         padding-top: var(--s3);
         border-top: 1px solid var(--line);
     }
@@ -1925,10 +1959,6 @@ code {
         grid-template-columns: repeat(4, auto);
         justify-content: space-between;
         gap: var(--s2) var(--s3);
-    }
-
-    .summary dl > .win {
-        grid-column: 1 / -1;
     }
 
     .side > .actions {
@@ -1950,9 +1980,16 @@ code {
         container-type: size;
     }
 
+    .side > .spinlog {
+        order: 3;
+        flex: 0 1 auto;
+        min-height: 0;
+        overflow: auto;
+    }
+
     /* When not even one row fits, none is shown, rather than the top half of one. */
     @container (max-height: 2.1rem) {
-        .ticker li {
+        .side > .ticker li {
             display: none;
         }
     }
@@ -1962,10 +1999,6 @@ code {
         padding: var(--s2);
         background: none;
         border: 0;
-    }
-
-    .summary dl > .win {
-        padding-bottom: var(--s2);
     }
 }
 
@@ -2022,13 +2055,13 @@ code {
         height: 1.5rem;
     }
 
-    .total strong,
-    .summary .win dd strong {
-        font-size: var(--text-xl);
+    .tank-pip {
+        width: 1.5rem;
+        height: 1.5rem;
     }
 
-    .summary dl > div:not(.win) {
-        display: none;
+    .total strong {
+        font-size: var(--text-xl);
     }
 
     .round-head h2 {
@@ -2221,7 +2254,8 @@ code {
     }
 
     .session,
-    .ticker {
+    .ticker,
+    .spinlog {
         display: none;
     }
 }

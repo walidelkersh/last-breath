@@ -122,6 +122,8 @@
     </div>
 </section>
 
+@inject IJSRuntime JS
+
 @code {
     private ElementReference diveButton;
 
@@ -139,6 +141,10 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && FocusDive) await diveButton.FocusAsync();
+        if (!firstRender) return;
+        // Coming back from a round the button takes focus. On a first visit it takes focus only if nothing else has it, so that Enter starts a round
+        // and a visitor who has already clicked somewhere keeps their place. It never scrolls the page.
+        if (FocusDive) await diveButton.FocusAsync(preventScroll: true);
+        else await JS.InvokeVoidAsync("lastBreath.focusIfIdle", diveButton);
     }
 }

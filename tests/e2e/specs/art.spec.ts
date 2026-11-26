@@ -29,7 +29,9 @@ test("the art loads on a round with no failed request, and every symbol a tile u
   expect(await page.evaluate(() => document.querySelectorAll("symbol#air-tank").length)).toBe(0);
   expect(await page.locator(".tile-tank picture img").count()).toBe(2);
   expect(tiles.filter((tile) => tile.href.startsWith("#well-")).length).toBeGreaterThan(0);
-  expect(tiles.map((tile) => tile.href)).toContain("#bottle-full");
+  // The spare tanks in the head are the render of the air tank, so a Tank round draws no oxygen bottle.
+  expect(tiles.map((tile) => tile.href)).not.toContain("#bottle-full");
+  expect(await page.locator(".pips .tank-pip img").count()).toBe(3);
   expect(tiles.map((tile) => tile.href)).toContain("#medal-grand");
   expect(tiles.every((tile) => tile.drawn)).toBe(true);
   expect(plates).toEqual(["+1", "+2"]);
@@ -122,3 +124,31 @@ test("the title, the favicon and the mark in the header all come from the game",
   expect(icon.headers()["content-type"]).toContain("image/svg+xml");
   expect(await icon.text()).toContain("<path");
 });
+
+for (const colorScheme of ["dark", "light"] as const) {
+  test(`the spare tanks of a Tank round are drawn as the air tank of the ${colorScheme} theme, and the words say the same`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await open(page, "/?seed=4");
+    await page.keyboard.press("3");
+    await page.getByRole("button", { name: "Dive", exact: true }).click();
+    await expect(page.locator(".spin")).toHaveText(/^Spin [1-9]/, { timeout: 15_000 });
+
+    const found = await page.evaluate(() => {
+      const pips = [...document.querySelectorAll(".pips .tank-pip")];
+      return {
+        count: pips.length,
+        spent: pips.filter((pip) => pip.classList.contains("spent")).length,
+        sources: pips.map((pip) => new URL((pip.querySelector("img") as HTMLImageElement).currentSrc).pathname.split("/").pop()),
+        bottles: document.querySelectorAll(".pips .bottle").length,
+        text: [...document.querySelectorAll(".clock-text")].map((line) => line.textContent!.replace(/\s+/g, " ").trim()),
+        size: (pips[0].getBoundingClientRect().width),
+      };
+    });
+    expect(found.count).toBe(3);
+    expect(found.spent, "two of the three tanks are not spare after the first spin").toBe(2);
+    expect(new Set(found.sources)).toEqual(new Set([`air-tank-${colorScheme}.webp`]));
+    expect(found.bottles, "no oxygen bottle stands for a tank").toBe(0);
+    expect(found.text.join(" ")).toContain("Spare tanks 1 of 3");
+    expect(found.size).toBeGreaterThanOrEqual(20);
+  });
+}

@@ -51,7 +51,7 @@ test("after two scripted rounds the panel has the exact rounds, bet and returned
   await expect(rounds).toHaveText("1");
   await expect(bet).toHaveText("1.00");
   await expect(returned).toHaveText("21.65");
-  await expect(share).toHaveText(/^after 10 rounds\s*1 played$/);
+  await expect(share).toHaveText(/^—\s*from round 10$/);
   await expect(share).not.toContainText("%");
 
   await page.getByRole("button", { name: "Dive again" }).click();
@@ -59,7 +59,7 @@ test("after two scripted rounds the panel has the exact rounds, bet and returned
   await expect(rounds).toHaveText("2");
   await expect(bet).toHaveText("2.00");
   await expect(returned).toHaveText("21.65");
-  await expect(share).toHaveText(/^after 10 rounds\s*2 played$/);
+  await expect(share).toHaveText(/^—\s*from round 10$/);
 });
 
 test("the percentage returned appears from the tenth round, with the number of rounds it stands on", async ({ page }) => {
@@ -69,7 +69,7 @@ test("the percentage returned appears from the tenth round, with the number of r
 
   await playRounds(page, 9);
   await expect(rounds).toHaveText("9");
-  await expect(share).toHaveText(/^after 10 rounds\s*9 played$/);
+  await expect(share).toHaveText(/^—\s*from round 10$/);
 
   await page.getByRole("button", { name: "Dive again" }).click();
   await skipRound(page);
@@ -179,8 +179,9 @@ test("a Big win bar fills the strip to the room under its medal, and has the med
   expect(found.fill).toBe("rgb(224, 169, 74)");
   expect(found.medalBottom).toBeLessThanOrEqual(found.top + 1);
   expect(found.medalTop).toBeGreaterThanOrEqual(found.stripTop - 1);
-  await expect(page.locator(".legend li")).toHaveCount(2);
+  await expect(page.locator(".legend li")).toHaveCount(3);
   await expect(page.locator(".legend")).toContainText("Under the bet");
+  await expect(page.locator(".legend")).toContainText("Bet or more");
   await expect(page.locator(".legend")).toContainText("Big win, 10");
 });
 

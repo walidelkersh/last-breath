@@ -42,9 +42,17 @@ window.lastBreath = {
         element.countFrame = requestAnimationFrame(step);
     },
 
-    // Scrolls only as far as needed, and leaves room under the block for the bar at the foot, so that a block is whole or starts at the top and is never cut in two.
+    // Brings a block into view only as far as it needs. A block that fits above the bar at the foot is shown whole, and one that does not fit starts at the top
+    // of the screen, so that it is never cut off at the top.
     reveal(element) {
-        element.scrollIntoView({ block: "nearest" });
+        const room = innerHeight - 96;
+        element.scrollIntoView({ block: element.getBoundingClientRect().height <= room ? "nearest" : "start" });
+    },
+
+    // Moves focus to a control only when nothing has focus yet, so that a visitor who has already clicked or tabbed somewhere keeps their place.
+    focusIfIdle(element) {
+        const active = document.activeElement;
+        if (!active || active === document.body || active === document.documentElement) element.focus({ preventScroll: true });
     },
 
     openDialog(dialog) {

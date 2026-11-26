@@ -49,7 +49,7 @@
                         <span class="pips" aria-hidden="true">
                             @for (var i = 0; i < dive.TankLimit; i++)
                             {
-                                <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < tanksLeft, false))" /></svg>
+                                <AirTankImage Class="@(i < tanksLeft ? "pip tank-pip" : "pip tank-pip spent")" />
                             }
                         </span>
                         <p class="last @(lastBreath ? "" : "off")">Last breath</p>
@@ -65,10 +65,6 @@
                 <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
                     <h3 id="summary-title">Round over</h3>
                     <dl>
-                        <div class="win">
-                            <dt>Total win</dt>
-                            <dd title="@(Format.Multiple(outcome.Units))× bet"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits <span class="multiple">@(Format.Multiple(outcome.Units))× bet</span></dd>
-                        </div>
                         <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
                         <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
                         @if (outcome.Jackpots.Length > 0)
@@ -88,17 +84,19 @@
             </div>
         }
 
-        <ol class="ticker" aria-label="Spins so far, newest first">
-            @if (shown == 0)
-            {
-                <li class="ticker-empty">No spin yet.</li>
-            }
-            @for (var number = shown; number >= 1; number--)
-            {
-                var brief = Narration.Brief(Config, Bet, spins[number - 1]);
-                <li @key="number" title="@brief"><span class="ticker-spin">Spin @number</span> <span class="ticker-what">@brief</span></li>
-            }
-        </ol>
+        @if (!finished)
+        {
+            <ol class="ticker" aria-label="Spins so far, newest first">
+                @if (shown == 0)
+                {
+                    <li class="ticker-empty">No spin yet.</li>
+                }
+                @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
+                {
+                    <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
+                }
+            </ol>
+        }
 
         @if (Session.Rounds > 0)
         {
@@ -116,10 +114,23 @@
                 <button type="button" @ref="skipButton" @onclick="Skip" aria-keyshortcuts="S">Skip</button>
             }
         </div>
+
+        @if (finished)
+        {
+            <details class="spinlog">
+                <summary>Spin by spin (@spins.Length)</summary>
+                <ol class="ticker" aria-label="Spin by spin, newest first">
+                    @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
+                    {
+                        <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
+                    }
+                </ol>
+            </details>
+        }
     </div>
 
     <div class="stage">
-        <div class="board @(showsBreathBand ? "last-breath" : "")" role="group" aria-label="Board, five columns by three rows">
+        <div class="board @(showsBreathBand ? "last-breath" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
             @if (DiveId != "Static") { <p class="breath-band @(showsBreathBand ? "" : "off")" aria-hidden="true">Last breath</p> }
             @for (var index = 0; index < Board.Size; index++)
@@ -151,11 +162,12 @@
                         @if (outcome.Units == 0)
                         {
                             <p class="plate-zero">Surfaced with nothing</p>
+                            <span class="sr-only">Total win <strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits</span>
                         }
                         else
                         {
                             <div class="plate-figures">
-                                <p class="plate-win">@Format.Credits(Settlement.Credits(outcome.Units, Bet)) <span>credits</span></p>
+                                <p class="plate-win"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
                                 <p class="plate-times">@PlateTimes</p>
                             </div>
                         }
@@ -204,6 +216,7 @@
     private int countedUnits;
     private ElementReference skipButton;
     private ElementReference summary;
+    private ElementReference boardRef;
     private ElementReference totalValue;
 
     [Parameter, EditorRequired] public Round Round { get; set; } = default!;
@@ -280,7 +293,7 @@
         {
             focusSummary = false;
             await summary.FocusAsync(preventScroll: true);
-            await JS.InvokeVoidAsync("lastBreath.reveal", summary);
+            await JS.InvokeVoidAsync("lastBreath.reveal", boardRef);
         }
     }
 

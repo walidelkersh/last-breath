@@ -241,7 +241,7 @@ for (const dive of [
     const kind = dive.name.replace(" Dive", "");
     for (const seed of dive.seeds) {
       await finish(page, seed, dive.key);
-      const win = await summary(page).getByTestId("win").textContent();
+      const win = await page.getByTestId("win").textContent();
       const units = Math.round(Number(win!.replace(/,/g, "")) * 1000);
 
       await expect(plate(page).locator(".odds"), `${kind} seed ${seed}, ${units} units`).toHaveText(expectedLine(dive.slug, kind, units));

@@ -142,9 +142,6 @@ test.describe("on a phone", () => {
 
     await page.keyboard.press("s");
     await expect(summary(page)).toBeFocused();
-    const shown = (await summary(page).boundingBox())!;
-    const again = (await page.getByRole("button", { name: "Dive again" }).boundingBox())!;
-    expect(shown.y + shown.height, "the summary ends above the bar").toBeLessThanOrEqual(again.y);
     await page.evaluate(() => scrollTo(0, 0));
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again");
     await expectInside(page, page.getByRole("button", { name: "Change dive" }), "Change dive");
@@ -152,28 +149,41 @@ test.describe("on a phone", () => {
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again at the foot of the page");
   });
 
-  test("the summary takes focus without a jump, the ring is drawn inside it, and it is whole above the bar or starts at the top of the screen", async ({ page }) => {
+  test("at the end the summary takes focus without a jump, its ring is drawn inside it, and the whole board stays in view, or starts at the top of the screen", async ({ page }) => {
     for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 640 }, { width: 375, height: 560 }]) {
       await page.setViewportSize(viewport);
       await open(page, "/?seed=154");
       await diveButton(page).click();
-      const before = await page.evaluate(() => scrollY);
-      expect(before).toBe(0);
+      expect(await page.evaluate(() => scrollY)).toBe(0);
       await page.keyboard.press("s");
       await expect(summary(page)).toBeFocused();
 
       const found = await page.evaluate(() => {
-        const box = document.querySelector(".summary")!.getBoundingClientRect();
+        const board = document.querySelector(".board")!.getBoundingClientRect();
+        const first = document.querySelector(".tile")!.getBoundingClientRect();
         const bar = document.querySelector(".actions")!.getBoundingClientRect();
-        const style = getComputedStyle(document.querySelector(".summary")!);
-        return { top: box.top, bottom: box.bottom, height: box.height, bar: bar.top, offset: style.outlineOffset, scrollMargin: style.scrollMarginBottom };
+        return { top: board.top, bottom: board.bottom, firstTile: first.top, height: board.height, bar: bar.top, offset: getComputedStyle(document.querySelector(".summary")!).outlineOffset };
       });
       const label = `${viewport.width} by ${viewport.height}`;
       expect(found.offset, label).toBe("-3px");
-      expect(found.top, `${label}: the summary is not cut at the top`).toBeGreaterThanOrEqual(0);
-      if (found.height + 12 <= found.bar) expect(found.bottom, `${label}: it fits, so it ends above the bar`).toBeLessThanOrEqual(found.bar);
+      expect(found.top, `${label}: the top of the board is not cut off`).toBeGreaterThanOrEqual(0);
+      expect(found.firstTile, `${label}: the top row of tiles is in view`).toBeGreaterThanOrEqual(0);
+      if (found.height + 12 <= found.bar) expect(found.bottom, `${label}: it fits, so the whole board is above the bar`).toBeLessThanOrEqual(found.bar);
       else expect(found.top, `${label}: it does not fit, so it starts at the top of the screen`).toBeLessThanOrEqual(16);
     }
+  });
+
+  test("a round that ended while the page was scrolled down brings the board back whole", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, "/?seed=154");
+    await diveButton(page).click();
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    await page.keyboard.press("s");
+    await expect(summary(page)).toBeFocused();
+
+    await expect.poll(() => page.evaluate(() => document.querySelector(".board")!.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
+    const board = await page.evaluate(() => ({ top: document.querySelector(".board")!.getBoundingClientRect().top, bottom: document.querySelector(".board")!.getBoundingClientRect().bottom, bar: document.querySelector(".actions")!.getBoundingClientRect().top }));
+    expect(board.bottom).toBeLessThanOrEqual(board.bar);
   });
 
   test("a round starts at the top of the page even when the selection screen was scrolled", async ({ page }) => {
@@ -230,31 +240,89 @@ test("the head counts the spin and the ticker names what each spin landed, newes
   await expect(page.locator("[aria-live] .ticker")).toHaveCount(0);
 });
 
-test.describe("the ticker after a skip", () => {
-  const visibleRows = (page: Page) =>
-    page.evaluate(() => {
-      const ticker = document.querySelector(".ticker")!.getBoundingClientRect();
-      const shown = [...document.querySelectorAll<HTMLElement>(".ticker li")].filter((row) => row.offsetParent !== null && row.getBoundingClientRect().left < ticker.right - 2);
-      return { count: shown.length, whole: shown.every((row) => row.getBoundingClientRect().bottom <= ticker.bottom + 1) };
-    });
+// The ticker lists only what landed, and folds a run of empty spins into one row. Seed 33 is a sparse Classic round with long runs of nothing.
+test.describe("the ticker", () => {
+  const rows = (page: Page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll(".ticker li:not(.ticker-empty)")].map((row) => ({
+        label: row.querySelector(".ticker-spin")!.textContent!.trim(),
+        what: row.querySelector(".ticker-what")!.textContent!.trim(),
+      })),
+    );
 
-  test("holds every spin, newest on top, and shows several whole rows when there is room", async ({ page }) => {
-    await page.setViewportSize({ width: 2560, height: 1440 });
-    await playToTheEnd(page, rounds[0]);
+  test("has one row for each spin that landed something and one for each run of empty spins", async ({ page }) => {
+    test.setTimeout(60_000);
+    await open(page, "/?seed=33");
+    await page.keyboard.press("1");
+    await diveButton(page).click();
+    await expect(page.locator(".spin")).toHaveText(/^Spin ([6-9]|\d\d)$/, { timeout: 30_000 });
 
-    const items = page.locator(".ticker li");
-    await expect(items).toHaveCount(18);
-    await expect(items.first()).toContainText("Spin 18");
-    await expect(items.last()).toContainText("Spin 1");
-    const rows = await visibleRows(page);
-    expect(rows.count).toBeGreaterThan(5);
-    expect(rows.whole).toBe(true);
+    const list = await rows(page);
+    const spins = Number((await page.locator(".spin").textContent())!.replace("Spin ", ""));
+    expect(list.length).toBeLessThan(spins);
+    for (let index = 1; index < list.length; index++)
+      expect(list[index].what === "Nothing landed" && list[index - 1].what === "Nothing landed", `rows ${index - 1} and ${index} are both empty runs`).toBe(false);
+    // Every spin is in some row: the rows cover 1 to the spin on show, once each.
+    const covered: number[] = [];
+    for (const row of list) {
+      const match = /^Spins? (\d+)(?: to (\d+))?$/.exec(row.label)!;
+      for (let n = Number(match[1]); n <= Number(match[2] ?? match[1]); n++) covered.push(n);
+    }
+    expect(covered.sort((a, b) => a - b)).toEqual(Array.from({ length: spins }, (_, index) => index + 1));
+    expect(list.filter((row) => row.what === "Nothing landed").some((row) => row.label.includes(" to "))).toBe(true);
+    expect(list.filter((row) => row.what !== "Nothing landed").every((row) => /^Spin \d+$/.test(row.label))).toBe(true);
   });
 
   test("shows no half row when the window is short", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.setViewportSize({ width: 1024, height: 700 });
+    await open(page, "/?seed=33");
+    await page.keyboard.press("1");
+    await diveButton(page).click();
+    await expect(page.locator(".spin")).toHaveText(/^Spin ([8-9]|\d\d)$/, { timeout: 30_000 });
+
+    const shown = await page.evaluate(() => {
+      const ticker = document.querySelector(".ticker")!.getBoundingClientRect();
+      const visible = [...document.querySelectorAll<HTMLElement>(".ticker li")].filter((row) => row.offsetParent !== null && row.getBoundingClientRect().left < ticker.right - 2);
+      return visible.every((row) => row.getBoundingClientRect().bottom <= ticker.bottom + 1);
+    });
+    expect(shown).toBe(true);
+  });
+
+  test("after the round it folds into a line, closed, that says how many spins and opens on request", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await playToTheEnd(page, rounds[0]);
 
-    expect((await visibleRows(page)).whole).toBe(true);
+    const log = page.locator(".spinlog");
+    await expect(log.locator("summary")).toHaveText("Spin by spin (18)");
+    expect(await log.evaluate((element) => (element as HTMLDetailsElement).open)).toBe(false);
+    await expect(log.locator(".ticker")).toBeHidden();
+    await expect(page.locator("main .ticker")).toHaveCount(1);
+
+    await log.locator("summary").click();
+    await expect(log.locator(".ticker")).toBeVisible();
+    const list = await rows(page);
+    expect(list.length).toBeLessThan(18);
+    expect(list[0].label).toMatch(/^Spins? 1[0-8]/);
+    // The panel keeps its actions at the foot and the opened list scrolls inside it.
+    const fit = await page.evaluate(() => ({
+      actions: document.querySelector(".actions")!.getBoundingClientRect().bottom,
+      footer: document.querySelector("footer")!.getBoundingClientRect().top,
+      scroll: document.documentElement.scrollHeight <= innerHeight,
+    }));
+    expect(fit.actions).toBeLessThanOrEqual(fit.footer);
+    expect(fit.scroll).toBe(true);
   });
+});
+
+test("after the round the total is on the plate and not said again in the summary, which keeps the counts", async ({ page }) => {
+  await playToTheEnd(page, rounds[0]);
+
+  await expect(summary(page).getByText("Total win")).toHaveCount(0);
+  await expect(summary(page).getByTestId("win")).toHaveCount(0);
+  await expect(page.locator(".result-plate").getByTestId("win")).toHaveText("21.65");
+  await expect(summary(page).getByText("Spins", { exact: true })).toBeVisible();
+  await expect(summary(page).getByText("Crates", { exact: true })).toBeVisible();
+  // The live total in the head shows the board while the round runs, and is hidden at the end.
+  await expect(page.locator(".hud")).toBeHidden();
 });
