@@ -61,14 +61,14 @@ test("a round of ten times the bet or more says Big win, and a smaller one does 
   await playClassic(page, bigWin);
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
-  await expect(summary(page).getByText("Big win")).toBeVisible();
+  await expect(page.locator(".result-plate").getByText("Big win")).toBeVisible();
   await expect(page.getByTestId("win")).toHaveText("21.65");
 
   // The next round takes seed 155, a Classic round that pays nothing.
   await page.getByRole("button", { name: "Dive again" }).click();
   await page.keyboard.press("s");
   await expect(page.getByTestId("win")).toHaveText("0.00");
-  await expect(summary(page).getByText("Big win")).toHaveCount(0);
+  await expect(page.locator(".result-plate").getByText("Big win")).toHaveCount(0);
 });
 
 test("a round under ten times the bet has no Big win line", async ({ page }) => {
@@ -77,7 +77,7 @@ test("a round under ten times the bet has no Big win line", async ({ page }) => 
   await expect(summary(page)).toBeVisible();
 
   await expect(page.getByTestId("win")).toHaveText("2.50");
-  await expect(summary(page).getByText("Big win")).toHaveCount(0);
+  await expect(page.locator(".result-plate").getByText("Big win")).toHaveCount(0);
 });
 
 test("the board total counts up to its new value over about 300 ms", async ({ page }) => {
@@ -123,7 +123,7 @@ test.describe("with prefers-reduced-motion", () => {
     await expect(summary(page)).toBeVisible();
 
     await expect(page.locator(".prize.hit .badge")).toHaveText("1 landed");
-    await expect(summary(page).getByText("Big win")).toBeVisible();
+    await expect(page.locator(".result-plate").getByText("Big win")).toBeVisible();
     await expect(page.locator(".anim-in, .anim-fly")).toHaveCount(0);
     expect(await sawAnimation(page)).toBe(false);
   });

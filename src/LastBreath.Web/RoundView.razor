@@ -63,10 +63,7 @@
         {
             <div class="result">
                 <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
-                    <div class="summary-head">
-                        <h3 id="summary-title">Round over</h3>
-                        @if (outcome.BigWin) { <p class="big-win">Big win</p> }
-                    </div>
+                    <h3 id="summary-title">Round over</h3>
                     <dl>
                         <div class="win">
                             <dt>Total win</dt>
@@ -74,8 +71,14 @@
                         </div>
                         <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
                         <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
-                        <div><dt>Jackpots</dt><dd>@(outcome.Jackpots.Length == 0 ? "None" : string.Join(", ", outcome.Jackpots))</dd></div>
-                        <div><dt>Grand</dt><dd>@(outcome.Grand ? $"Won, {Narration.Credits(Config.Grand, Bet)}" : "Not won")</dd></div>
+                        @if (outcome.Jackpots.Length > 0)
+                        {
+                            <div><dt>Jackpots</dt><dd>@string.Join(", ", outcome.Jackpots)</dd></div>
+                        }
+                        @if (outcome.Grand)
+                        {
+                            <div><dt>Grand</dt><dd>Won, @Narration.Credits(Config.Grand, Bet)</dd></div>
+                        }
                     </dl>
                     @if (!CanDiveAgain)
                     {
@@ -97,7 +100,7 @@
             }
         </ol>
 
-        <SessionPanel Session="Session" Dive="Dives.First(info => info.Id == DiveId)" />
+        <SessionPanel Session="Session" Dive="info" />
 
         <div class="actions">
             @if (finished)
@@ -136,16 +139,43 @@
                     }
                 </div>
             }
+            <div class="board-foot @(finished ? "result-plate" : "status")">
+                @if (finished)
+                {
+                    <div class="plate-main">
+                        @if (outcome.Units == 0)
+                        {
+                            <p class="plate-zero">Surfaced with nothing</p>
+                        }
+                        else
+                        {
+                            <p class="plate-win">@Format.Credits(Settlement.Credits(outcome.Units, Bet)) <span>credits</span></p>
+                            <p class="plate-times">@(Format.Multiple(outcome.Units))× bet</p>
+                        }
+                    </div>
+                    <div class="plate-note">
+                        @if (outcome.BigWin) { <p class="big-win">Big win</p> }
+                        @if (OddsLine is { } line) { <p class="odds">@line</p> }
+                    </div>
+                }
+                else
+                {
+                    <p class="foot-spin">Spin @shown</p>
+                    <p class="foot-what">@(current is { } landed ? Narration.Brief(Config, Bet, landed) : "Nothing has landed yet")</p>
+                }
+            </div>
         </div>
 
         <ul class="prizes" aria-label="Jackpots">
             @foreach (var prize in Prizes())
             {
-                <li class="prize @(prize.Hit ? "hit" : "") @(prize.IsNew && !ReduceMotion ? "anim-in" : "")" aria-label="@prize.Name" title="@prize.Tip">
+                <li class="prize @(prize.Hit ? "hit" : "") @(prize.Label == "Grand" ? "grand" : "") @(prize.IsNew && !ReduceMotion ? "anim-in" : "")" aria-label="@prize.Name" title="@prize.Tip">
                     <svg class="medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-@(prize.Label.ToLowerInvariant())" /></svg>
-                    <span class="prize-name">@prize.Label</span>
-                    <span class="prize-value">@prize.Value</span>
-                    <span class="prize-state">@if (prize.Hit) { <span class="badge">@prize.State</span> }</span>
+                    <span class="prize-text">
+                        <span class="prize-name">@prize.Label</span>
+                        <span class="prize-value">@prize.Value</span>
+                        @if (prize.Hit) { <span class="prize-state"><span class="badge">@prize.State</span></span> }
+                    </span>
                 </li>
             }
         </ul>
@@ -178,6 +208,17 @@
     [Parameter] public EventCallback<decimal> Finished { get; set; }
     [Parameter] public EventCallback DiveAgain { get; set; }
     [Parameter] public EventCallback ChangeDive { get; set; }
+
+    private DiveInfo info => Dives.First(dive => dive.Id == DiveId);
+
+    private string? OddsLine
+    {
+        get
+        {
+            var filled = outcome.Crates + outcome.Jackpots.Length;
+            return Odds.Line(info.Name, info.Figures.Rtp, filled, info.Figures.FinalCrates[filled]);
+        }
+    }
 
     private Spin? current => shown > 0 ? spins[shown - 1] : null;
     private int clock => current?.ClockAfter ?? dive.StartingClock;

@@ -13,7 +13,8 @@ public sealed record Figures(
     double GrandProbability,
     double SimulatedRtp,
     double SimulatedZ,
-    long SimulatedRounds)
+    long SimulatedRounds,
+    IReadOnlyList<double> FinalCrates)
 {
     public string TypicalLength => $"about {Math.Round(MeanSpins, MidpointRounding.AwayFromZero):0} spins";
 
@@ -56,7 +57,8 @@ public static class Catalog
             exact.GetProperty("grand_probability").GetDouble(),
             mean.GetProperty("simulated").GetDouble(),
             mean.GetProperty("z").GetDouble(),
-            simulate.RootElement.GetProperty("rounds").GetInt64());
+            simulate.RootElement.GetProperty("rounds").GetInt64(),
+            [.. exact.GetProperty("final_crate_probabilities").EnumerateArray().Select(chance => chance.GetDouble())]);
     }
 
     private static string Resource(string name)

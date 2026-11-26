@@ -8,7 +8,8 @@ public sealed class CatalogTests
 {
     private const string Solve = """
         { "dive": "x", "rtp": 0.96, "sd": 6.5, "hit_frequency": 0.8, "mean_spins": 7.5,
-          "grand_probability": 0.0001, "mean_crates": 3 }
+          "grand_probability": 0.0001, "mean_crates": 3,
+          "final_crate_probabilities": [0.5, 0.3, 0.2] }
         """;
 
     private const string Simulate = """
@@ -27,6 +28,7 @@ public sealed class CatalogTests
         Assert.Equal(0.97, figures.SimulatedRtp);
         Assert.Equal(1.5, figures.SimulatedZ);
         Assert.Equal(10_000_000, figures.SimulatedRounds);
+        Assert.Equal([0.5, 0.3, 0.2], figures.FinalCrates);
     }
 
     [Fact]

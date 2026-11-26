@@ -11,6 +11,7 @@ const rounds = [
 
 // The last of these is a phone on its side, which also gets the stage, with a smaller board.
 const screens = [
+  { width: 667, height: 375 },
   { width: 844, height: 390 },
   { width: 1024, height: 700 },
   { width: 1280, height: 800 },
@@ -157,19 +158,20 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => scrollY)).toBe(0);
   });
 
-  test("the header is two short lines: the title and Math, then the balance and Reset balance", async ({ page }) => {
+  test("the header is one row, with the title, the balance and Math, and Reset balance is in the footer", async ({ page }) => {
     await open(page);
     const box = async (target: Locator) => (await target.boundingBox())!;
     const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
     const title = await box(page.getByRole("heading", { name: "Last Breath" }));
-    const math = await box(page.getByRole("button", { name: "Math" }));
     const balance = await box(page.locator(".balance"));
-    const reset = await box(page.getByRole("button", { name: "Reset balance" }));
+    const math = await box(page.getByRole("button", { name: "Math" }));
 
+    expect(Math.abs(middle(title) - middle(balance))).toBeLessThan(10);
     expect(Math.abs(middle(title) - middle(math))).toBeLessThan(10);
-    expect(Math.abs(middle(balance) - middle(reset))).toBeLessThan(10);
-    expect(balance.y).toBeGreaterThan(title.y + title.height - 4);
-    expect((await box(page.locator("header"))).height).toBeLessThan(125);
+    expect(balance.x + balance.width).toBeLessThanOrEqual(math.x);
+    expect((await box(page.locator("header"))).height).toBeLessThan(75);
+    await expect(page.locator("footer").getByRole("button", { name: "Reset balance" })).toBeVisible();
+    await expect(page.locator("header").getByRole("button", { name: "Reset balance" })).toHaveCount(0);
   });
 
   test("a tile shows only its value on the plate, and the word stays in its name and tooltip", async ({ page }) => {

@@ -11,9 +11,8 @@
         }
         <header class="top">
             <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
-            <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
             <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
-            <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
+            <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
         </header>
 
         <main>
@@ -43,6 +42,7 @@
                 Reduce motion
                 @if (systemReducesMotion) { <span>(set by your system)</span> }
             </label>
+            <button type="button" class="quiet" disabled="@roundActive" @onclick="ResetBalance">Reset balance</button>
         </footer>
 
         <MathPanel @ref="math" Dives="Dives" Seed="lastSeed" SeedDiveId="@lastSeedDive" />

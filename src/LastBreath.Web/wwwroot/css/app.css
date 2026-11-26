@@ -7,7 +7,10 @@
     --control: #6f8d9f;
     --text: #e8eff3;
     --muted: #a7bbc7;
+    --amber: #e0a94a;
     --accent: #e0a94a;
+    --accent-edge: #e0a94a;
+    --accent-text: #e0a94a;
     --on-accent: #1a1204;
     --warn: #f0b45a;
     --focus: #9ad4f2;
@@ -41,9 +44,11 @@
     --page: 118rem;
     --edge: max(var(--gutter), calc((100% - var(--page)) / 2 + var(--gutter)));
     --side: clamp(21rem, 32vw, 30rem);
-    /* The stage is as wide as the room left under the header and above the footer allows: its height is about --fit of its width. */
+    /* The stage is as wide as the room left under the header and above the footer allows: its height is about --fit of its width
+       plus --fixed, which is what the foot of the board and the prize row keep whatever the width. */
     --chrome: 9.75rem;
-    --fit: 0.745;
+    --fit: 0.71;
+    --fixed: 2.4rem;
 }
 
 @media (prefers-color-scheme: light) {
@@ -57,6 +62,8 @@
         --text: #18252e;
         --muted: #47565f;
         --accent: #1f4258;
+        --accent-edge: #1f4258;
+        --accent-text: #1f4258;
         --on-accent: #ffffff;
         --warn: #8a5200;
         --focus: #0b5b86;
@@ -153,7 +160,7 @@ main {
 
 .top {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     align-items: center;
     gap: var(--s2) var(--s4);
     padding-block: var(--s3);
@@ -164,6 +171,7 @@ main {
     display: flex;
     align-items: center;
     gap: var(--s3);
+    min-width: 0;
     font-family: var(--serif);
     font-size: var(--text-xl);
     font-weight: 700;
@@ -178,6 +186,7 @@ main {
 
 .balance {
     color: var(--muted);
+    white-space: nowrap;
 }
 
 .balance strong {
@@ -186,19 +195,20 @@ main {
     font-size: var(--text-lg);
 }
 
-.top .quiet {
-    justify-self: end;
-}
-
 footer {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--s2) var(--s5);
-    padding-block: var(--s3) var(--s4);
+    padding-block: var(--s3);
     border-top: 1px solid var(--line);
     color: var(--muted);
     font-size: var(--text-sm);
+}
+
+footer .quiet {
+    min-height: 1.5rem;
+    margin-left: auto;
 }
 
 .keys summary {
@@ -794,52 +804,141 @@ picture img {
     border-radius: 0.3em;
 }
 
+/* The foot of the board is a plate like the ones under the coins. It shows the last landing while the round runs and the result when it ends,
+   so it is always there and the board never changes shape. */
+.board-foot {
+    --ow: clamp(3px, 0.6cqw, 9px);
+    position: relative;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s1) var(--s4);
+    height: clamp(5.25rem, 9cqw, 9rem);
+    padding: 0.4em 0.9em;
+    color: var(--art-plate-ink, var(--text));
+    background: var(--art-plate, var(--surface));
+    border: calc(var(--ow) * 0.55) solid var(--art-ink, var(--line));
+    border-radius: clamp(0.4rem, 1cqw, 1.1rem);
+    font-size: clamp(var(--text-sm), 1.9cqw, 1.5rem);
+}
+
+.board-foot p {
+    margin: 0;
+}
+
+.foot-spin {
+    opacity: 0.75;
+}
+
+.foot-what {
+    font-weight: 600;
+}
+
+.plate-win {
+    font-family: var(--serif);
+    font-size: clamp(var(--text-2xl), 3.4cqw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.05;
+}
+
+.plate-win span {
+    font-family: var(--sans);
+    font-size: 0.4em;
+    font-weight: 400;
+}
+
+.plate-times {
+    opacity: 0.8;
+}
+
+.plate-zero {
+    font-family: var(--serif);
+    font-size: clamp(var(--text-xl), 2.8cqw, 2.4rem);
+    font-weight: 700;
+}
+
+.plate-note {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--s1);
+    text-align: right;
+}
+
+.odds {
+    max-width: 34ch;
+    font-size: 0.85em;
+}
+
+/* On a narrow board the plate has room for one column, and it takes the height its lines need. */
 .prizes {
     --cell-gap: max(0.5rem, 1.4cqw);
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr 1fr 1.5fr;
     gap: var(--cell-gap);
 }
 
 .prize {
+    position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: clamp(var(--s2), 1.1cqw, 1.5rem) var(--s1);
+    justify-content: center;
+    gap: 0.6em;
+    padding: var(--s2) var(--s2);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: clamp(var(--r2), 1cqw, 1.25rem);
-    text-align: center;
+}
+
+.prize.grand {
+    background: color-mix(in srgb, var(--surface) 86%, var(--amber));
 }
 
 .prize.hit {
     background: var(--surface-2);
-    border: 2px solid var(--accent);
-    padding: calc(clamp(var(--s2), 1.1cqw, 1.5rem) - 1px) calc(var(--s1) - 1px);
+    border: 2px solid var(--accent-edge);
+    padding: calc(var(--s2) - 1px) calc(var(--s2) - 1px);
+}
+
+.prize.grand.hit {
+    background: color-mix(in srgb, var(--surface-2) 86%, var(--amber));
 }
 
 .medal {
     --ow: clamp(2.6px, 0.45cqw, 6px);
-    width: clamp(2.75rem, 8cqw, 9rem);
-    height: auto;
+    flex: none;
+    height: clamp(2.75rem, 5.2cqw, 4.5rem);
+    width: auto;
     aspect-ratio: 115 / 100;
+}
+
+.prize-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
 }
 
 .prize-name {
     color: var(--muted);
-    font-size: clamp(var(--text-sm), 2.1cqw, 1.8rem);
+    font-size: clamp(var(--text-sm), 1.7cqw, 1.5rem);
 }
 
 .prize-value {
-    font-size: clamp(var(--text-sm), 2.6cqw, 2.2rem);
-    font-weight: 600;
+    font-size: clamp(var(--text-sm), 2cqw, 1.9rem);
+    font-weight: 700;
 }
 
+/* The badge hangs on the top edge of the card, so a landed jackpot does not make its card any taller. */
 .prize-state {
+    position: absolute;
+    top: 0;
+    right: 0.5em;
     display: flex;
-    align-items: center;
-    min-height: 1.5em;
-    font-size: clamp(var(--text-xs), 1.8cqw, 1.5rem);
+    font-size: clamp(var(--text-xs), 1.5cqw, 1.3rem);
+    transform: translateY(-55%);
 }
 
 .badge {
@@ -850,6 +949,49 @@ picture img {
     border-radius: 1em;
     font-weight: 700;
     line-height: 1.5;
+}
+
+/* On a tall phone the board is narrow: the prizes stack again and the plate has one column. */
+@media (orientation: portrait) {
+    @container (max-width: 30rem) {
+        .prizes {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .prize {
+            flex-direction: column;
+            gap: 0.2em;
+            padding: var(--s1);
+            text-align: center;
+        }
+
+        .prize-text {
+            align-items: center;
+        }
+
+        .medal {
+            height: 2.4rem;
+        }
+    }
+
+    @container (max-width: 30rem) {
+        .board-foot {
+            grid-template-columns: minmax(0, 1fr);
+            height: auto;
+            min-height: 4.5rem;
+        }
+
+        .plate-note {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .odds {
+            max-width: none;
+        }
+    }
+
+    /* The prizes are one slim row, with the medal beside the figures, and Grand on a gold-tinted surface. A narrow board stacks them again. */
 }
 
 .result {
@@ -868,14 +1010,6 @@ picture img {
     outline-offset: 2px;
 }
 
-.summary-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0 var(--s4);
-}
-
 .summary h3 {
     font-family: var(--serif);
     font-size: var(--text-lg);
@@ -884,8 +1018,9 @@ picture img {
 .big-win {
     color: var(--accent);
     font-family: var(--serif);
-    font-size: var(--text-xl);
+    font-size: 1.5em;
     font-weight: 700;
+    line-height: 1.1;
 }
 
 .summary dl {
@@ -1346,6 +1481,35 @@ code {
     }
 }
 
+@media (max-width: 39.99rem) {
+    .top {
+        gap: var(--s2) var(--s3);
+        padding-block: var(--s2);
+    }
+
+    .brand {
+        gap: var(--s2);
+        font-size: var(--text-lg);
+    }
+
+    .logo {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .balance {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: var(--text-xs);
+        line-height: 1.1;
+    }
+
+    .balance strong {
+        margin: 0;
+    }
+}
+
 @media (max-width: 30rem) {
     .math-body {
         padding-inline: var(--s4);
@@ -1394,11 +1558,6 @@ code {
 /* Wider screens */
 
 @media (min-width: 46rem) {
-    .top {
-        grid-template-columns: 1fr auto auto auto;
-        gap: var(--s4);
-    }
-
     .cards,
     .steps {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1466,7 +1625,7 @@ code {
         grid-row: 1;
         align-self: center;
         justify-self: center;
-        width: min(100%, calc((100dvh - var(--chrome)) / var(--fit)));
+        width: min(100%, calc((100dvh - var(--chrome) - var(--fixed)) / var(--fit)));
     }
 
     /* The panel is as tall as what it holds, so a young round leaves the water showing under it, and it stops at the height of the window. */
@@ -1550,12 +1709,59 @@ code {
     }
 }
 
-/* A phone on its side has little height: the header and footer shrink, and the side panel keeps only what is needed to play. */
+/* A phone on its side has little height: the header and footer shrink, the board takes what is left, and the side panel keeps only what is needed to play. */
 @media (min-width: 40rem) and (max-height: 32rem) {
     :root {
         --chrome: 6.5rem;
-        --fit: 0.95;
-        --side: 20rem;
+        --fit: 0.74;
+        --fixed: 1.4rem;
+        --side: 15rem;
+    }
+
+    button {
+        min-height: 2.25rem;
+        padding-block: var(--s1);
+    }
+
+    button.quiet {
+        min-height: 1.5rem;
+    }
+
+    .stage {
+        gap: var(--s2);
+    }
+
+    .board,
+    .prizes {
+        --cell-gap: 0.3rem;
+    }
+
+    .side {
+        gap: var(--s2);
+        padding: var(--s2) var(--s3);
+    }
+
+    .hud,
+    .result {
+        padding-top: var(--s2);
+    }
+
+    .clock-text strong {
+        font-size: var(--text-base);
+    }
+
+    .bottle {
+        width: 0.75rem;
+        height: 1.5rem;
+    }
+
+    .total strong,
+    .summary .win dd strong {
+        font-size: var(--text-xl);
+    }
+
+    .summary dl > div:not(.win) {
+        display: none;
     }
 
     .round-head h2 {
@@ -1567,16 +1773,59 @@ code {
         white-space: nowrap;
     }
 
+    .board-foot {
+        grid-template-columns: auto minmax(0, 1fr);
+        height: 2.6rem;
+        padding: 0.15em 0.6em;
+    }
+
+    .plate-main {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5em;
+    }
+
+    .plate-win {
+        font-size: var(--text-lg);
+    }
+
+    .plate-zero {
+        font-size: var(--text-base);
+    }
+
+    .odds {
+        display: none;
+    }
+
+    .plate-note {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .big-win {
+        font-size: var(--text-base);
+    }
+
+    .summary dl {
+        margin-top: var(--s1);
+    }
+
     .medal {
-        width: 2rem;
+        height: 1.6rem;
     }
 
     .prize {
-        padding: var(--s1);
+        gap: 0.4em;
+        padding: 0.2rem 0.3rem;
     }
 
-    .prize-state {
-        min-height: 1.2em;
+    .prize.hit {
+        padding: calc(0.2rem - 1px) calc(0.3rem - 1px);
+    }
+
+    .prize-name,
+    .prize-value {
+        font-size: var(--text-xs);
     }
 
     .top {
@@ -1608,6 +1857,15 @@ code {
     .field-title {
         margin: 0;
         white-space: nowrap;
+    }
+
+    .chips {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .dive {
+        flex: 1;
+        min-width: 0;
     }
 
     .select-body {
