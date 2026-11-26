@@ -1,0 +1,103 @@
+import { expect, test } from "@playwright/test";
+import { diveButton, open, sawAnimation, summary, watchAnimations } from "./play";
+
+// How long each spin stays, by what it held: 450 ms for nothing, 800 for crates, 1,300 for a jackpot, and 1,100 on the
+// last breath. Seed 154 is a Classic round of 18 spins that lands a Minor, so it has all four kinds. Seed 33 is a sparse
+// Classic round whose clock runs down to its last breath more than once.
+
+const tolerance = 160;
+
+async function recordSpins(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const spins: { n: number; at: number; what: string; last: boolean }[] = [];
+    (window as any).spinLog = spins;
+    new MutationObserver(() => {
+      const label = document.querySelector(".board-foot.status .foot-spin")?.textContent ?? "";
+      const n = Number(label.replace("Spin ", ""));
+      if (n > 0 && spins.at(-1)?.n !== n) {
+        spins.push({ n, at: performance.now(), what: document.querySelector(".board-foot.status .foot-what")?.textContent ?? "", last: document.querySelector(".last") !== null });
+      }
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+}
+
+test("each spin stays for as long as what it held deserves", async ({ page }) => {
+  test.setTimeout(60_000);
+  await recordSpins(page);
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await expect(summary(page)).toBeVisible({ timeout: 40_000 });
+
+  const log: { n: number; at: number; what: string; last: boolean }[] = await page.evaluate(() => (window as any).spinLog);
+  expect(log).toHaveLength(18);
+  const expected = (what: string, last: boolean) => {
+    const base = /Mini|Minor|Major/.test(what) ? 1300 : what === "Nothing landed" ? 450 : 800;
+    return last ? Math.max(base, 1100) : base;
+  };
+  const kinds = new Set<number>();
+  for (let index = 0; index + 1 < log.length; index++) {
+    const pause = log[index + 1].at - log[index].at;
+    const want = expected(log[index].what, log[index].last);
+    kinds.add(want);
+    expect(Math.abs(pause - want), `spin ${log[index].n} (${log[index].what}${log[index].last ? ", last breath" : ""}) stayed ${Math.round(pause)} ms, not about ${want}`).toBeLessThan(tolerance);
+  }
+  expect([...kinds].sort((a, b) => a - b)).toEqual([450, 800, 1100, 1300]);
+});
+
+test("on the last breath the board has an amber edge and a band, and neither is animated", async ({ page }) => {
+  test.setTimeout(60_000);
+  await open(page, "/?seed=33");
+  await diveButton(page).click();
+
+  await expect(page.locator(".breath-band")).toHaveCount(0);
+  await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".breath-band")).toHaveText("Last breath");
+  await expect(page.locator(".board")).toHaveClass(/last-breath/);
+
+  const look = await page.locator(".board").evaluate((board) => {
+    const amber = getComputedStyle(document.documentElement).getPropertyValue("--amber").trim();
+    const band = board.querySelector(".breath-band")!;
+    return {
+      edge: getComputedStyle(board).borderTopColor,
+      ring: getComputedStyle(board).boxShadow,
+      amber,
+      bandAnimation: getComputedStyle(band).animationName,
+      boardAnimation: getComputedStyle(board).animationName,
+      running: board.getAnimations({ subtree: true }).length,
+    };
+  });
+  expect(look.amber).toBe("#e0a94a");
+  expect(look.edge).toBe("rgb(224, 169, 74)");
+  expect(look.ring).toContain("rgb(224, 169, 74)");
+  expect([look.bandAnimation, look.boardAnimation, look.running].toString()).toBe(["none", "none", 0].toString());
+
+  // The band goes with the last breath: a spin later the clock has gone or been refilled, and the board is plain again.
+  await expect(page.locator(".breath-band")).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator(".board")).not.toHaveClass(/last-breath/);
+});
+
+test.describe("with prefers-reduced-motion", () => {
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
+  test("the band is still there, with no animation at all", async ({ page }) => {
+    test.setTimeout(60_000);
+    await watchAnimations(page);
+    await open(page, "/?seed=33");
+    await diveButton(page).click();
+
+    await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+    expect(await sawAnimation(page)).toBe(false);
+  });
+});
+
+test("Skip still resolves the rest of a slow round at once", async ({ page }) => {
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  const started = Date.now();
+  await page.keyboard.press("s");
+  await expect(summary(page)).toBeVisible();
+
+  expect(Date.now() - started).toBeLessThan(3000);
+  await expect(page.locator(".board-foot.result-plate")).toBeVisible();
+});
