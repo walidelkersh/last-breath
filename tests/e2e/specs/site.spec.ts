@@ -55,8 +55,9 @@ for (const colorScheme of ["dark", "light"] as const) {
       const card = document.querySelector(".card-body")!;
       const chosen = document.querySelector(".card input:checked + .card-body")!;
       const chip = document.querySelector(".chip input:checked + span")!;
+      // Big win is lettered on the plate at the foot of the board, so that is the colour it has to read on.
       const box = document.createElement("div");
-      box.className = "side";
+      box.className = "board-foot result-plate";
       document.body.append(box);
       const bigWin = probe("big-win", box, box);
       box.remove();

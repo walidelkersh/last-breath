@@ -82,6 +82,35 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1920, height: 108
   });
 }
 
+const sizes = [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1600, height: 900 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }];
+
+for (const colorScheme of ["dark", "light"] as const) {
+  for (const seed of [154, 2]) {
+    test(`the text on the plate stays inside it at every size, ${seed === 154 ? "Big win" : "nothing"}, ${colorScheme} theme`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      for (const viewport of sizes) {
+        await page.setViewportSize(viewport);
+        await finish(page, seed);
+        const found = await page.evaluate(() => {
+          const plate = document.querySelector(".result-plate")!;
+          const box = plate.getBoundingClientRect();
+          return {
+            clipped: plate.scrollHeight > plate.clientHeight + 1 || plate.scrollWidth > plate.clientWidth + 1,
+            outside: [...plate.querySelectorAll("p")]
+              .filter((line) => {
+                const rect = line.getBoundingClientRect();
+                return rect.top < box.top - 0.5 || rect.bottom > box.bottom + 0.5 || rect.left < box.left - 0.5 || rect.right > box.right + 0.5;
+              })
+              .map((line) => line.className),
+          };
+        });
+        expect(found.outside, `${viewport.width} by ${viewport.height}`).toEqual([]);
+        expect(found.clipped, `${viewport.width} by ${viewport.height}`).toBe(false);
+      }
+    });
+  }
+}
+
 test("the empty wells are dimmed and the summary keeps only the rows that say something", async ({ page }) => {
   await finish(page, 154);
 
