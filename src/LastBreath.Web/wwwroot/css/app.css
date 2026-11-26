@@ -791,9 +791,10 @@ button.quiet {
 }
 
 dialog.math {
-    width: min(46rem, calc(100vw - 2rem));
+    width: min(58rem, calc(100vw - 2rem));
     max-height: calc(100dvh - 2rem);
-    padding: var(--s5);
+    padding: 0;
+    overflow: auto;
     color: var(--text);
     background: var(--surface);
     border: 1px solid var(--line);
@@ -804,11 +805,18 @@ dialog.math::backdrop {
     background: rgb(0 0 0 / 0.65);
 }
 
+/* The header stays while the sections scroll, so Close is always in reach. */
 .math-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--s4);
+    padding: var(--s3) var(--s5);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
 }
 
 .math-head h2 {
@@ -816,8 +824,21 @@ dialog.math::backdrop {
     font-size: var(--text-xl);
 }
 
+.math-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+    padding: var(--s4) var(--s5) var(--s5);
+}
+
+.math section h3 {
+    margin-bottom: var(--s2);
+    font-family: var(--serif);
+    font-size: var(--text-lg);
+}
+
 .math p {
-    margin: var(--s3) 0;
+    max-width: var(--measure);
     color: var(--muted);
 }
 
@@ -842,6 +863,7 @@ dialog.math::backdrop {
 
 .math thead th {
     font-family: var(--serif);
+    font-size: var(--text-base);
 }
 
 .math tbody th {
@@ -849,6 +871,10 @@ dialog.math::backdrop {
     color: var(--muted);
     font-weight: 400;
     text-align: left;
+}
+
+.math tbody + tbody tr:first-child > * {
+    border-top: 2px solid var(--control);
 }
 
 .math td {
@@ -870,10 +896,23 @@ code {
 
 .math .seed code {
     color: var(--text);
+    font-size: var(--text-lg);
+}
+
+.math .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s2) var(--s5);
+    max-width: none;
 }
 
 .math .links a {
-    margin-right: var(--s4);
+    color: var(--text);
+}
+
+.math .links .sub {
+    margin-left: auto;
 }
 
 /* Motion. The markup leaves these classes off when motion is reduced, and the media query is a second guard. */
@@ -918,6 +957,21 @@ code {
 
     .tile-drawn .tile-plate {
         padding: 0.05rem 0.3rem;
+    }
+}
+
+@media (max-width: 30rem) {
+    .math-body {
+        padding-inline: var(--s4);
+    }
+
+    .math th,
+    .math td {
+        padding-inline: var(--s1);
+    }
+
+    .math tbody th {
+        width: 30%;
     }
 }
 

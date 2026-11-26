@@ -69,3 +69,21 @@ test("the Math button opens it on both screens and a round carries on behind it"
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
 });
+
+test("the panel is wide on a desktop, keeps its header while the sections scroll, and limits the length of a line of prose", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await open(page);
+  await page.keyboard.press("m");
+  const panel = page.getByRole("dialog", { name: "Math" });
+  await expect(panel).toBeVisible();
+
+  for (const name of ["Figures for each dive", "Session seed", "Read more"]) await expect(panel.getByRole("heading", { name })).toBeVisible();
+  expect((await panel.boundingBox())!.width).toBeGreaterThan(880);
+  expect((await panel.locator(".math-body > p").boundingBox())!.width).toBeLessThan(640);
+
+  const header = panel.locator(".math-head");
+  await panel.evaluate((dialog) => (dialog.scrollTop = dialog.scrollHeight));
+  expect(await panel.evaluate((dialog) => dialog.scrollTop)).toBeGreaterThan(0);
+  expect(Math.abs((await header.boundingBox())!.y - (await panel.boundingBox())!.y)).toBeLessThan(3);
+  await expect(panel.getByRole("button", { name: "Close" })).toBeInViewport();
+});
