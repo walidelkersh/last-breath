@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { diveButton, open, summary } from "./play";
 
-const reports = join(__dirname, "..", "..", "..", "reports");
+const root = join(__dirname, "..", "..", "..");
+const reports = join(root, "reports");
+const repository = "https://github.com/walidelkersh/last-breath";
 const read = (file: string) => JSON.parse(readFileSync(join(reports, file), "utf8"));
 const solved = ["classic", "static", "tank"].map((slug) => ({
   exact: read(`solve-${slug}.json`),
@@ -33,8 +35,16 @@ test("M opens the Math panel with the frozen figures, and Escape closes it", asy
   );
   await expect(panel.getByText("no round yet")).toBeVisible();
 
-  const link = panel.getByRole("link", { name: "Source on GitHub" });
-  await expect(link).toHaveAttribute("href", "https://github.com/walidelkersh/last-breath");
+  const links = {
+    "Math in full": "math.md",
+    "PAR sheet": "par-sheet.md",
+    "Game design": "game-design.md",
+  };
+  for (const [name, file] of Object.entries(links)) {
+    await expect(panel.getByRole("link", { name })).toHaveAttribute("href", `${repository}/blob/main/docs/${file}`);
+    expect(existsSync(join(root, "docs", file)), `docs/${file} exists`).toBe(true);
+  }
+  await expect(panel.getByRole("link", { name: "Source on GitHub" })).toHaveAttribute("href", repository);
 
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();

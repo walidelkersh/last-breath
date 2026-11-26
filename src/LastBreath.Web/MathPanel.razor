@@ -51,12 +51,18 @@
     </p>
 
     <p class="links">
-        <a href="https://github.com/walidelkersh/last-breath" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+        <a href="@Docs/math.md" target="_blank" rel="noopener noreferrer">Math in full</a>
+        <a href="@Docs/par-sheet.md" target="_blank" rel="noopener noreferrer">PAR sheet</a>
+        <a href="@Docs/game-design.md" target="_blank" rel="noopener noreferrer">Game design</a>
+        <a href="@Repository" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
         <span class="sub">Config version @Config.Version</span>
     </p>
 </dialog>
 
 @code {
+    private const string Repository = "https://github.com/walidelkersh/last-breath";
+    private const string Docs = Repository + "/blob/main/docs";
+
     private ElementReference dialog;
 
     [Parameter, EditorRequired] public IReadOnlyList<DiveInfo> Dives { get; set; } = default!;

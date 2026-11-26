@@ -725,6 +725,10 @@ code {
     color: var(--text);
 }
 
+.math .links a {
+    margin-right: var(--s4);
+}
+
 /* Motion. The markup leaves these classes off when motion is reduced, and the media query is a second guard. */
 
 @keyframes tile-in {
