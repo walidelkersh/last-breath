@@ -83,7 +83,7 @@ PALETTE = {
         "rock": ("#c1d5e0", "#b8cfdb", "#d0e0e9"),
         "kelp": ("#bfd9d8", "#b6d1d2", "#cde3e2"),
         **BOARD,
-        "shaft": "#ffffff40",
+        "shaft": "#ffffff26",
     },
 }
 NOT_MATERIALS = {"ink", "plate", "plate-ink", "shaft"}

@@ -16,6 +16,7 @@
     --board: #183648;
     --board-line: #3a6078;
     --on-board: #e6f4fb;
+    --board-well: #0f4259;
     --warn: #f0b45a;
     --focus: #9ad4f2;
 
@@ -191,8 +192,7 @@ a {
 }
 
 .first-board .cells rect {
-    fill: var(--bg);
-    fill-opacity: 0.22;
+    fill: var(--board-well);
     stroke: var(--board-line);
     stroke-width: 1.2;
 }
@@ -837,7 +837,8 @@ main:has(> .select) {
     padding-bottom: 4%;
 }
 
-.over .tile-empty .well {
+/* The empty wells step back when there is something to look at, and a board with nothing on it keeps them as they are. */
+.over .board:has(.tile-drawn) .tile-empty .well {
     opacity: 0.4;
 }
 
@@ -2061,6 +2062,10 @@ code {
     .cards,
     .steps {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .name {
+        font-size: var(--text-base);
     }
 
     @media (max-width: 45.99rem) {

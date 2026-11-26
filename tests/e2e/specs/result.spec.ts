@@ -129,6 +129,8 @@ test("the empty wells are dimmed and the summary keeps only the rows that say so
   await expect(summary(page)).toBeVisible();
   await expect(summary(page).getByText("Jackpots", { exact: true })).toHaveCount(0);
   await expect(summary(page).getByText("None")).toHaveCount(0);
+  await expect(page.locator(".tile-drawn")).toHaveCount(0);
+  await expect(page.locator(".tile-empty .well").first(), "a board with nothing on it keeps its wells in full").toHaveCSS("opacity", "1");
 });
 
 for (const dive of [

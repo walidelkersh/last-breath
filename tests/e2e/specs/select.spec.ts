@@ -213,5 +213,8 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 667, height: 375 }
     expect(found.dive.right).toBeLessThanOrEqual(viewport.width);
     expect(found.dive.width, "Dive is wide enough to press").toBeGreaterThan(140);
     expect(found.chips.right).toBeLessThanOrEqual(found.dive.left);
+
+    const names = await page.evaluate(() => [...document.querySelectorAll(".name")].map((name) => Math.round(name.getBoundingClientRect().height / parseFloat(getComputedStyle(name).lineHeight || "0") || 1)));
+    expect(names, "the three names are on one line each").toEqual([1, 1, 1]);
   });
 }
