@@ -25,13 +25,13 @@
 @media (prefers-color-scheme: light) {
     :root {
         color-scheme: light;
-        --bg: #f2efe8;
-        --surface: #fffdf8;
-        --surface-2: #e9e4d8;
-        --line: #b9b09c;
-        --control: #7a7261;
+        --bg: #edf2f5;
+        --surface: #fafcfd;
+        --surface-2: #dce6ec;
+        --line: #a3b5c1;
+        --control: #647d8c;
         --text: #18252e;
-        --muted: #4c5b66;
+        --muted: #47565f;
         --accent: #1f4258;
         --on-accent: #ffffff;
         --warn: #8a5200;
