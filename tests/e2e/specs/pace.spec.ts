@@ -15,7 +15,7 @@ async function recordSpins(page: import("@playwright/test").Page) {
       const label = document.querySelector(".board-foot.status .foot-spin")?.textContent ?? "";
       const n = Number(label.replace("Spin ", ""));
       if (n > 0 && spins.at(-1)?.n !== n) {
-        spins.push({ n, at: performance.now(), what: document.querySelector(".board-foot.status .foot-what")?.textContent ?? "", last: document.querySelector(".last") !== null });
+        spins.push({ n, at: performance.now(), what: document.querySelector(".board-foot.status .foot-what")?.textContent ?? "", last: document.querySelector(".last:not(.off)") !== null });
       }
     }).observe(document, { subtree: true, childList: true, characterData: true });
   });
@@ -49,7 +49,7 @@ test("on the last breath the board has an amber edge and a band, and neither is 
   await open(page, "/?seed=33");
   await diveButton(page).click();
 
-  await expect(page.locator(".breath-band")).toHaveCount(0);
+  await expect(page.locator(".breath-band")).toBeHidden();
   await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".breath-band")).toHaveText("Last breath");
   await expect(page.locator(".board")).toHaveClass(/last-breath/);
@@ -63,7 +63,8 @@ test("on the last breath the board has an amber edge and a band, and neither is 
       amber,
       bandAnimation: getComputedStyle(band).animationName,
       boardAnimation: getComputedStyle(board).animationName,
-      running: board.getAnimations({ subtree: true }).length,
+      // The fade of the depth is a transition and is allowed. No keyframe animation runs on the board or in it.
+      running: board.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
     };
   });
   expect(look.amber).toBe("#e0a94a");
@@ -72,7 +73,7 @@ test("on the last breath the board has an amber edge and a band, and neither is 
   expect([look.bandAnimation, look.boardAnimation, look.running].toString()).toBe(["none", "none", 0].toString());
 
   // The band goes with the last breath: a spin later the clock has gone or been refilled, and the board is plain again.
-  await expect(page.locator(".breath-band")).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator(".breath-band")).toBeHidden({ timeout: 15_000 });
   await expect(page.locator(".board")).not.toHaveClass(/last-breath/);
 });
 

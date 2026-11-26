@@ -17,6 +17,8 @@
     --board-line: #3a6078;
     --on-board: #e6f4fb;
     --board-well: #0f4259;
+    --abyss: #020c14;
+    --depth-strength: 0.55;
     --warn: #f0b45a;
     --focus: #9ad4f2;
 
@@ -705,6 +707,12 @@ main:has(> .select) {
     font-weight: 600;
 }
 
+/* The line is always there and only its visibility changes, so the total under it never moves when the last breath comes. */
+.last.off,
+.breath-band.off {
+    visibility: hidden;
+}
+
 .gain {
     display: inline-block;
     margin-left: var(--s2);
@@ -777,10 +785,11 @@ main:has(> .select) {
     border-radius: var(--board-radius);
 }
 
-/* The last breath is shown by a static band on the top edge and an amber line round the board, not by motion, so that reduced motion keeps it. */
+/* The last breath is shown by a static band on the top edge and a 3 px amber edge round the board, a pixel of border and two of shadow so that
+   nothing moves. The depth does the rest. It is not motion, so reduced motion keeps it. */
 .board.last-breath {
     border-color: var(--amber);
-    box-shadow: 0 0 0 1px var(--amber);
+    box-shadow: 0 0 0 2px var(--amber);
 }
 
 /* The label is a tab on the top edge of the board. Its lower edge is level with the top of the tiles, so it never lies over one however small the board is. */
@@ -804,9 +813,37 @@ main:has(> .select) {
 .panel {
     position: absolute;
     inset: 0;
+    z-index: -1;
     width: 100%;
     height: 100%;
     border-radius: inherit;
+}
+
+/* Depth is the clock. The round sets --air, from 1 when the air is full to 0 when it is gone, and the water closes in as it falls: a dark layer
+   under the tiles, and on a large screen one behind the whole round. Without the moves class, which reduced motion leaves off, the steps are
+   the same and they do not fade. */
+.board {
+    isolation: isolate;
+}
+
+.board::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--abyss) 35%, transparent) 0%, var(--abyss) 100%);
+    opacity: calc((1 - var(--air, 1)) * var(--depth-strength));
+    pointer-events: none;
+}
+
+.round.moves .board::before,
+.round.moves::before {
+    transition: opacity 0.6s ease;
+}
+
+.round.moves.over .board::before,
+.round.moves.over::before {
+    transition-duration: 1.2s;
 }
 
 .tile {
@@ -1582,6 +1619,11 @@ code {
     100% { opacity: 0; transform: translate(-0.2rem, -112vh); }
 }
 
+@keyframes ring-pulse {
+    from { opacity: 0.95; transform: scale(1); }
+    to { opacity: 0; transform: scale(1.18); }
+}
+
 @keyframes gain-fly {
     from { opacity: 0; transform: translateY(0.6rem); }
     25% { opacity: 1; }
@@ -1594,6 +1636,31 @@ code {
 
 .anim-fly {
     animation: gain-fly 0.6s ease-out both;
+}
+
+/* One ring, 700 ms, out from the edge and fading: it is not repeated and it does not flash. */
+.anim-ring::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 3px solid var(--ring, var(--amber));
+    border-radius: inherit;
+    animation: ring-pulse 0.7s ease-out 1 both;
+    pointer-events: none;
+}
+
+/* With reduced motion the ring is still. */
+.ring-static::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 3px solid var(--ring, var(--amber));
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.prize {
+    --ring: var(--accent-edge);
 }
 
 /* A few soft bubbles climb in the gutters at either side of the page, slowly and faintly, behind everything and clear of the controls.
@@ -1788,6 +1855,24 @@ code {
     .app.staged {
         height: 100dvh;
         grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    /* On a staged screen the page itself darkens with the depth. Everything that carries text sits on a surface of its own, and the header and
+       the footer, which do not, are backed so that their text keeps its contrast at the darkest step. A phone has text on the bare page, so it
+       darkens the board only. */
+    .round::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: radial-gradient(ellipse at 50% 45%, transparent 25%, var(--abyss) 130%);
+        opacity: calc((1 - var(--air, 1)) * var(--depth-strength));
+        pointer-events: none;
+    }
+
+    .app.staged .top,
+    .app.staged footer {
+        background: color-mix(in srgb, var(--bg) 82%, transparent);
     }
 
     .app.staged main {

@@ -3,7 +3,7 @@
 @inject IJSRuntime JS
 @inject IReadOnlyList<DiveInfo> Dives
 
-<section class="round @(finished ? "over" : "")" aria-labelledby="round-title">
+<section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
     <div class="side">
         <div class="round-head">
             <h2 id="round-title">@dive.Name</h2>
@@ -22,7 +22,7 @@
                                 <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
                             }
                         </span>
-                        @if (lastBreath) { <p class="last">Last breath</p> }
+                        <p class="last @(lastBreath ? "" : "off")">Last breath</p>
                     </div>
                     break;
                 case "Static":
@@ -52,7 +52,7 @@
                                 <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < tanksLeft, false))" /></svg>
                             }
                         </span>
-                        @if (lastBreath) { <p class="last">Last breath</p> }
+                        <p class="last @(lastBreath ? "" : "off")">Last breath</p>
                     </div>
                     break;
             }
@@ -121,11 +121,11 @@
     <div class="stage">
         <div class="board @(showsBreathBand ? "last-breath" : "")" role="group" aria-label="Board, five columns by three rows">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
-            @if (showsBreathBand) { <p class="breath-band" aria-hidden="true">Last breath</p> }
+            @if (DiveId != "Static") { <p class="breath-band @(showsBreathBand ? "" : "off")" aria-hidden="true">Last breath</p> }
             @for (var index = 0; index < Board.Size; index++)
             {
                 var tile = TileAt(index);
-                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn")" role="img" aria-label="@tile.Name" title="@tile.Tip">
+                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew)" role="img" aria-label="@tile.Name" title="@tile.Tip">
                     <svg class="well" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#well-@WellPattern[index]" /></svg>
                     @if (tile.Kind != "empty")
                     {
@@ -176,7 +176,7 @@
         <ul class="prizes" aria-label="Jackpots">
             @foreach (var prize in Prizes())
             {
-                <li class="prize @(prize.Hit ? "hit" : "") @(prize.Label == "Grand" ? "grand" : "") @(prize.IsNew && !ReduceMotion ? "anim-in" : "")" aria-label="@prize.Name" title="@prize.Tip">
+                <li class="prize @(prize.Hit ? "hit" : "") @(prize.Label == "Grand" ? "grand" : "") @(prize.IsNew && !ReduceMotion ? "anim-in" : "") @RingClass(prize.Hit, prize.IsNew)" aria-label="@prize.Name" title="@prize.Tip">
                     <svg class="medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-@(prize.Label.ToLowerInvariant())" /></svg>
                     <span class="prize-text">
                         <span class="prize-name">@prize.Label</span>
@@ -190,7 +190,9 @@
 </section>
 
 @code {
+    // The board total counts up to what a spin added: briefly for crates, and for longer when a jackpot landed.
     private const int CountMs = 300;
+    private const int JackpotCountMs = 900;
 
     private readonly CancellationTokenSource stop = new();
     private DiveConfig dive = default!;
@@ -223,6 +225,28 @@
         ? $"Returned {Format.Credits(Settlement.Credits(outcome.Units, Bet))} of your {Format.Credits(Bet)} bet"
         : $"{Format.Multiple(outcome.Units)}× bet";
 
+    // How much air is left, from 0 to 1, of the most the dive can have at this point: the refill in Classic, the spins in Drift, and in Tank
+    // the starting air plus every breath the tanks have added so far. The water darkens as it falls, and the dive surfaces when the round ends.
+    private double Air
+    {
+        get
+        {
+            if (finished || shown == 0) return 1;
+            var most = DiveId switch
+            {
+                "Classic" => dive.RefillTo ?? dive.StartingClock,
+                "Static" => dive.StartingClock,
+                _ => dive.StartingClock + spins.Take(shown).Sum(spin => spin.AirTanks.Sum(tank => tank.Outcome.Breaths())),
+            };
+            return Math.Clamp((double)clock / Math.Max(1, most), 0, 1);
+        }
+    }
+
+    private bool JackpotLanded => current is { } spin && spin.NewCells.Any(index => spin.Cells[index].Kind == CellKind.Jackpot);
+
+    // A jackpot that lands gives one pulse of a ring, on its tile and on its card. With reduced motion the ring is there, still, for as long as the jackpot is.
+    private string RingClass(bool jackpot, bool isNew) => !jackpot ? "" : ReduceMotion ? "ring-static" : isNew ? "anim-ring" : "";
+
     private Spin? current => shown > 0 ? spins[shown - 1] : null;
     private int clock => current?.ClockAfter ?? dive.StartingClock;
     private int tanksLeft => current?.TanksLeft ?? dive.TankLimit ?? 0;
@@ -250,7 +274,7 @@
         {
             var from = Settlement.Credits(countedUnits, Bet);
             countedUnits = units;
-            if (!ReduceMotion) await JS.InvokeVoidAsync("lastBreath.countUp", totalValue, from, Settlement.Credits(units, Bet), CountMs);
+            if (!ReduceMotion) await JS.InvokeVoidAsync("lastBreath.countUp", totalValue, from, Settlement.Credits(units, Bet), JackpotLanded ? JackpotCountMs : CountMs);
         }
         if (focusSummary)
         {
