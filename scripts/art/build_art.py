@@ -6,6 +6,9 @@ the script fails the build when a file or a colour breaks them. The sprite holds
 The page inlines it, so the colours come from CSS variables and follow the theme. The single files
 carry their own palette, so they also work as an image.
 
+scripts/art/blender/air_tank.py renders the air tank into two WebP files, one for each theme, which sit beside the SVG files.
+This script never writes or removes them. The audit only checks that they are there and small.
+
     python -I scripts/art/build_art.py           write the files
     python -I scripts/art/build_art.py --check   exit 1 if a file differs from what would be written
 """
@@ -31,7 +34,9 @@ LIGHT = (-0.2, -0.98)
 WOBBLE = {"warp": 0.45, "wavelength": 36.0, "jitter": 0.2, "step": 7.0}
 TILE = (115, 100)             # the aspect of a tile on the board, so a symbol fills it
 PANEL = (600, 330)
-BUDGET = {"file_bytes": 6000, "total_bytes": 150_000}
+# The total counts every file here and both renders, although a page loads the sprite and only one render.
+BUDGET = {"file_bytes": 6000, "render_bytes": 20_000, "total_bytes": 150_000}
+RENDERS = ("air-tank-dark.webp", "air-tank-light.webp")
 WELLS = "abc"
 VARIANTS = "ab"
 BOTTLE = (20, 40)
@@ -598,8 +603,6 @@ def audit(files):
                 problems.append(f"{name}: a glint of length {length:.1f}")
         if name != "sprite.svg" and len(text.encode()) > BUDGET["file_bytes"]:
             problems.append(f"{name}: {len(text.encode())} bytes is over the file budget")
-    if sum(len(t.encode()) for t in files.values()) > BUDGET["total_bytes"]:
-        problems.append("the art is over the total budget")
 
     for theme, colours in PALETTE.items():
         if set(colours) - NOT_MATERIALS != set(MATERIALS):
@@ -621,6 +624,25 @@ def audit(files):
     return problems
 
 
+def render_sizes(problems):
+    """Byte size of each shipped render. A missing file, a file that is not a WebP and a file over the budget are problems."""
+    sizes = []
+    for name in RENDERS:
+        path = OUT / name
+        if not path.is_file():
+            problems.append(f"{name}: missing, it comes from scripts/art/blender/air_tank.py")
+            continue
+        with path.open("rb") as handle:
+            head = handle.read(12)
+        size = path.stat().st_size
+        sizes.append((name, size))
+        if head[:4] != b"RIFF" or head[8:12] != b"WEBP":
+            problems.append(f"{name}: not a WebP file")
+        if size > BUDGET["render_bytes"]:
+            problems.append(f"{name}: {size} bytes is over the render budget")
+    return sizes
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--check", action="store_true")
@@ -628,9 +650,13 @@ def main():
 
     files = build()
     problems = audit(files)
+    renders = render_sizes(problems)
+    if sum(len(t.encode()) for t in files.values()) + sum(size for _, size in renders) > BUDGET["total_bytes"]:
+        problems.append("the art and the renders are over the total budget")
     if problems:
         sys.exit("\n".join(problems))
-    gone = [path for path in OUT.glob("*.svg") if path.name not in files]
+    # Everything in the art folder is stale unless the script writes it or it is one of the two renders.
+    gone = [path for path in OUT.glob("*") if path.is_file() and path.name not in files and path.name not in RENDERS]
     stale = [name for name, text in files.items() if not (OUT / name).is_file() or (OUT / name).read_text(encoding="utf-8") != text]
     if check:
         sys.exit(f"stale art: {', '.join(stale + [path.name for path in gone])}" if stale or gone else 0)
@@ -640,7 +666,9 @@ def main():
     for name, text in files.items():
         (OUT / name).write_text(text, encoding="utf-8", newline="\n")
         print(f"{name:18}{len(text.encode()):>7} bytes")
-    print(f"{'total':18}{sum(len(t.encode()) for t in files.values()):>7} bytes")
+    for name, size in renders:
+        print(f"{name:18}{size:>7} bytes")
+    print(f"{'total':18}{sum(len(t.encode()) for t in files.values()) + sum(size for _, size in renders):>7} bytes")
 
 
 if __name__ == "__main__":
