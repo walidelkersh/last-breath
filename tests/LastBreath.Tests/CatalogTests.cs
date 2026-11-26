@@ -40,6 +40,20 @@ public sealed class CatalogTests
         Assert.Equal("about 8 spins", figures.TypicalLength);
     }
 
+    [Theory]
+    [InlineData(6.0, "6 spins")]
+    [InlineData(6.004, "6 spins")]
+    [InlineData(5.992, "6 spins")]
+    [InlineData(6.02, "about 6 spins")]
+    [InlineData(7.40, "about 7 spins")]
+    [InlineData(5.01, "5 spins")]
+    public void TheTypicalLengthSaysAboutOnlyWhenTheMeanIsNotAWholeNumberOfSpins(double mean, string printed)
+    {
+        var json = Solve.Replace("\"mean_spins\": 7.5", $"\"mean_spins\": {mean.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+
+        Assert.Equal(printed, Catalog.Parse(json, Simulate).TypicalLength);
+    }
+
     [Fact]
     public void EachCardShowsTheNameFromTheConfigAndANinetySixPercentRtp()
     {

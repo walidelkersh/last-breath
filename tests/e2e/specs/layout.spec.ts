@@ -235,7 +235,7 @@ test("the head counts the spin and the ticker names what each spin landed, newes
   await expect(page.locator(".spin")).toHaveText("Spin 1");
   const newest = page.locator(".ticker li").first();
   await expect(newest).toContainText("Spin 1");
-  await expect(newest).toContainText("Air tanks, plus 1 and plus 2 breaths");
+  await expect(newest).toContainText("Air tanks, +1 and +2 breaths");
   await expect(newest).not.toContainText("Nothing landed");
   await expect(page.locator("[aria-live] .ticker")).toHaveCount(0);
 });
@@ -325,4 +325,15 @@ test("after the round the total is on the plate and not said again in the summar
   await expect(summary(page).getByText("Crates", { exact: true })).toBeVisible();
   // The live total in the head shows the board while the round runs, and is hidden at the end.
   await expect(page.locator(".hud")).toBeHidden();
+});
+
+test("the list on the page writes a tank as +1 and +2 and the live region says plus 1 and plus 2", async ({ page }) => {
+  await open(page, "/?seed=4");
+  await page.keyboard.press("3");
+  await diveButton(page).click();
+
+  await expect(page.locator(".ticker li").first()).toContainText("Air tanks, +1 and +2 breaths");
+  await expect(page.locator(".board-foot.status .foot-what")).toHaveText("Air tanks, +1 and +2 breaths");
+  await expect(page.locator("[aria-live]")).toContainText("Air tanks, plus 1 and plus 2 breaths");
+  expect(await page.locator(".ticker").textContent()).not.toContain("plus");
 });

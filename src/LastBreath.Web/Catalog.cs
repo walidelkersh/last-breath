@@ -16,7 +16,15 @@ public sealed record Figures(
     long SimulatedRounds,
     IReadOnlyList<double> FinalCrates)
 {
-    public string TypicalLength => $"about {Math.Round(MeanSpins, MidpointRounding.AwayFromZero):0} spins";
+    // "about" only where the mean is not already a whole number of spins, as Drift's six is.
+    public string TypicalLength
+    {
+        get
+        {
+            var whole = Math.Round(MeanSpins, MidpointRounding.AwayFromZero);
+            return $"{(Math.Abs(MeanSpins - whole) <= 0.01 ? "" : "about ")}{whole:0} spins";
+        }
+    }
 
     public long GrandOdds => (long)Math.Round(1 / GrandProbability);
 }
@@ -31,7 +39,7 @@ public static class Catalog
     [
         ("Classic", "Three breaths, filled back to three whenever a crate lands.", "Medium"),
         ("Static", "Exactly six spins. A crate never changes the count.", "Low"),
-        ("Tank", "Four breaths with no refill. Air tanks add breaths, three at most.", "Low to medium"),
+        ("Tank", "Four breaths with no refill. Air tanks add breaths, up to three tanks a round.", "Low to medium"),
     ];
 
     public static IReadOnlyList<DiveInfo> Load(GameConfig config) =>

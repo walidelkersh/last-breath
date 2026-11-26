@@ -57,8 +57,8 @@ public sealed class ReplayTests
         cells[7] = new Cell(CellKind.Cash, 100);
         var mixed = new Spin(2, cells, [3, 4, 7], [], 3, 3, 0);
 
-        Assert.Equal("1 crate, 0.05; Air tank, plus 2 breaths", Narration.Brief(Default, 1.00m, spins[0]));
-        Assert.Equal("Air tank, plus 2 breaths", Narration.Brief(Default, 1.00m, tankOnly));
+        Assert.Equal("1 crate, 0.05; Air tank, +2 breaths", Narration.Brief(Default, 1.00m, spins[0]));
+        Assert.Equal("Air tank, +2 breaths", Narration.Brief(Default, 1.00m, tankOnly));
         Assert.Equal("Nothing landed", Narration.Brief(Default, 1.00m, spins[1]));
         Assert.Equal("2 crates, 0.70; Mini, 10.00", Narration.Brief(Default, 2.00m, mixed));
     }

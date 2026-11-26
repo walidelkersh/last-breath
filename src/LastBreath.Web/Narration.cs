@@ -36,7 +36,7 @@ public static class Narration
             parts.Add($"{Plural(crates.Length, "crate")}, {Format.Credits(Settlement.Credits(crates.Sum(index => spin.Cells[index].Units), bet))}");
         parts.AddRange(spin.NewCells.Where(index => spin.Cells[index].Kind == CellKind.Jackpot)
             .Select(index => $"{Label(config, spin.Cells[index])}, {Format.Credits(Settlement.Credits(spin.Cells[index].Units, bet))}"));
-        if (Tanks(spin) is { } tanks) parts.Add(tanks);
+        if (Tanks(spin, spoken: false) is { } tanks) parts.Add(tanks);
         return parts.Count == 0 ? "Nothing landed" : string.Join("; ", parts);
     }
 
@@ -76,11 +76,14 @@ public static class Narration
         return landed.Count == 0 ? null : string.Join(" and ", landed);
     }
 
-    private static string? Tanks(Spin spin)
+    // The words for a tank that landed. The live region says "plus 1 and plus 2 breaths", which reads well aloud, and the list on the page says
+    // "+1 and +2 breaths", which is shorter to read.
+    private static string? Tanks(Spin spin, bool spoken = true)
     {
         if (spin.AirTanks.Length == 0) return null;
         var breaths = spin.AirTanks.Select(tank => tank.Outcome.Breaths()).ToArray();
-        return $"{(breaths.Length == 1 ? "Air tank" : "Air tanks")}, plus {string.Join(" and plus ", breaths)} {(breaths.Sum() == 1 ? "breath" : "breaths")}";
+        var plus = spoken ? "plus " : "+";
+        return $"{(breaths.Length == 1 ? "Air tank" : "Air tanks")}, {plus}{string.Join($" and {plus}", breaths)} {(breaths.Sum() == 1 ? "breath" : "breaths")}";
     }
 
     public static string Result(GameConfig config, decimal bet, RoundSummary outcome, bool skipped)

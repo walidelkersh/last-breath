@@ -48,7 +48,7 @@ public sealed class TickerTests
 
         Assert.False(Narration.IsEmpty(tank));
         Assert.True(Narration.IsEmpty(Empty(2)));
-        Assert.Equal("Air tank, plus 1 breath", Assert.Single(Narration.Ticker(Default, 1.00m, [tank], 1)).What);
+        Assert.Equal("Air tank, +1 breath", Assert.Single(Narration.Ticker(Default, 1.00m, [tank], 1)).What);
     }
 
     [Fact]
