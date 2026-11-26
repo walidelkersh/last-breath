@@ -1,7 +1,7 @@
 @implements IDisposable
 @inject GameConfig Config
 
-<section class="round" aria-labelledby="round-title">
+<section class="round @(finished ? "over" : "")" aria-labelledby="round-title">
     <div class="round-head">
         <h2 id="round-title">@dive.Name</h2>
         <p class="bet">Bet @Format.Credits(Bet)</p>
@@ -56,69 +56,79 @@
         <p class="total" title="@(Format.Multiple(units))× bet">Board <strong>@Format.Credits(Settlement.Credits(units, Bet))</strong><span class="sr-only"> credits, @(Format.Multiple(units)) times the bet</span></p>
     </div>
 
-    <div class="board" role="group" aria-label="Board, five columns by three rows">
-        <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
-        @for (var index = 0; index < Board.Size; index++)
+    <div class="stage">
+        <div class="board" role="group" aria-label="Board, five columns by three rows">
+            <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
+            @for (var index = 0; index < Board.Size; index++)
+            {
+                var tile = TileAt(index);
+                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
+                    @if (tile.Art is { } art)
+                    {
+                        <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@art" /></svg>
+                    }
+                    @if (tile.Kind != "empty")
+                    {
+                        <span class="tile-plate">
+                            <span class="tile-label">@tile.Label</span>
+                            <span class="tile-value">@tile.Value</span>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+
+        <ul class="prizes" aria-label="Jackpots">
+            @foreach (var prize in Prizes())
+            {
+                <li class="prize @(prize.Hit ? "hit" : "")" aria-label="@prize.Name" title="@prize.Tip">
+                    <svg class="medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-@(prize.Label.ToLowerInvariant())" /></svg>
+                    <span class="prize-name">@prize.Label</span>
+                    <span class="prize-value">@prize.Value</span>
+                    <span class="prize-state">@prize.State</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <div class="result">
+        @if (finished)
         {
-            var tile = TileAt(index);
-            <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
-                @if (tile.Art is { } art)
+            <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
+                <h3 id="summary-title">Round over</h3>
+                <dl>
+                    <div class="win">
+                        <dt>Total win</dt>
+                        <dd title="@(Format.Multiple(outcome.Units))× bet"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits <span class="multiple">@(Format.Multiple(outcome.Units))× bet</span></dd>
+                    </div>
+                    <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
+                    <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
+                    <div><dt>Jackpots</dt><dd>@(outcome.Jackpots.Length == 0 ? "None" : string.Join(", ", outcome.Jackpots))</dd></div>
+                    <div><dt>Grand</dt><dd>@(outcome.Grand ? $"Won, {Narration.Credits(Config.Grand, Bet)}" : "Not won")</dd></div>
+                </dl>
+                @if (!CanDiveAgain)
                 {
-                    <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@art" /></svg>
+                    <p class="note">Not enough credits for another dive at this bet.</p>
                 }
-                @if (tile.Kind != "empty")
-                {
-                    <span class="tile-plate">
-                        <span class="tile-label">@tile.Label</span>
-                        <span class="tile-value">@tile.Value</span>
-                    </span>
-                }
-            </div>
+            </section>
+        }
+        else
+        {
+            <p class="landing"><span class="landing-spin">Spin @shown</span> @(current is { } latest ? Narration.Latest(Config, Bet, latest) : "Nothing has landed yet.")</p>
         }
     </div>
 
-    <ul class="prizes" aria-label="Jackpots">
-        @foreach (var prize in Prizes())
+    <div class="actions">
+        @if (finished)
         {
-            <li class="prize @(prize.Hit ? "hit" : "")" aria-label="@prize.Name" title="@prize.Tip">
-                <svg class="medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-@(prize.Label.ToLowerInvariant())" /></svg>
-                <span class="prize-name">@prize.Label</span>
-                <span class="prize-value">@prize.Value</span>
-                <span class="prize-state">@prize.State</span>
-            </li>
+            <button type="button" class="primary" disabled="@(!CanDiveAgain)" @onclick="DiveAgain">Dive again</button>
+            <button type="button" @onclick="ChangeDive">Change dive</button>
         }
-    </ul>
-
-    @if (finished)
-    {
-        <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
-            <h3 id="summary-title">Round over</h3>
-            <dl>
-                <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
-                <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
-                <div><dt>Jackpots</dt><dd>@(outcome.Jackpots.Length == 0 ? "None" : string.Join(", ", outcome.Jackpots))</dd></div>
-                <div><dt>Grand</dt><dd>@(outcome.Grand ? $"Won, {Narration.Credits(Config.Grand, Bet)}" : "Not won")</dd></div>
-                <div class="win">
-                    <dt>Total win</dt>
-                    <dd title="@(Format.Multiple(outcome.Units))× bet"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits <span class="multiple">@(Format.Multiple(outcome.Units))× bet</span></dd>
-                </div>
-            </dl>
-            <div class="actions">
-                <button type="button" class="primary" disabled="@(!CanDiveAgain)" @onclick="DiveAgain">Dive again</button>
-                <button type="button" @onclick="ChangeDive">Change dive</button>
-            </div>
-            @if (!CanDiveAgain)
-            {
-                <p class="note">Not enough credits for another dive at this bet.</p>
-            }
-        </section>
-    }
-    else
-    {
-        <div class="actions">
+        else
+        {
             <button type="button" @ref="skipButton" @onclick="Skip" aria-keyshortcuts="S">Skip</button>
-        </div>
-    }
+        }
+    </div>
 </section>
 
 @code {

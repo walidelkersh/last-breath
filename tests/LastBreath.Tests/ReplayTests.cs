@@ -47,6 +47,17 @@ public sealed class ReplayTests
     }
 
     [Fact]
+    public void TheStatusColumnNamesWhatLandedAndDoesNotCallAnAirTankNothing()
+    {
+        var spins = Replay.Of(TankRoundWithOneTank(), Default.Dives["Tank"]);
+        var tankOnly = new Spin(1, new Cell[Board.Size], [], spins[0].AirTanks, 4, 5, 2);
+
+        Assert.Equal("Landed: 1 crate worth 0.05 credits. Air tank, plus 2 breaths.", Narration.Latest(Default, 1.00m, spins[0]));
+        Assert.Equal("Air tank, plus 2 breaths.", Narration.Latest(Default, 1.00m, tankOnly));
+        Assert.Equal("Nothing landed.", Narration.Latest(Default, 1.00m, spins[1]));
+    }
+
+    [Fact]
     public void ADeadSpinOnTheLastBreathSaysSo()
     {
         var spin = new Spin(3, new Cell[Board.Size], [], [], 2, 1, 0);

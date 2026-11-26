@@ -32,7 +32,10 @@
 
         <footer>
             <p>Demo only. The credits are play money, and nothing is paid out.</p>
-            <p>Keys: 1 to 3 choose a dive, S skips, M opens the math, Escape closes it.</p>
+            <details class="keys">
+                <summary>Keys</summary>
+                <p>1 to 3 choose a dive. S skips to the end of a round. M opens the math. Escape closes it. Space or Enter presses the button in focus.</p>
+            </details>
             <label class="toggle">
                 <input type="checkbox" checked="@reduceMotion" disabled="@systemReducesMotion" @onchange="ToggleMotion" />
                 Reduce motion
