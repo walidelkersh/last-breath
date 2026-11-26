@@ -1,5 +1,6 @@
 <section class="select" aria-labelledby="dives-title">
     <h2 id="dives-title">Choose a dive</h2>
+    <p class="lede">One bet buys one dive. Each dive counts its breaths a different way.</p>
     <div class="cards" role="radiogroup" aria-labelledby="dives-title">
         @for (var i = 0; i < Dives.Count; i++)
         {
@@ -11,6 +12,35 @@
                        aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id facts-@dive.Id"
                        aria-keyshortcuts="@key" />
                 <span class="card-body">
+                    <svg class="pic" viewBox="0 0 300 120" aria-hidden="true" focusable="false">
+                        <use href="#panel" />
+                        @switch (dive.Id)
+                        {
+                            case "Classic":
+                                <use href="#crate-mid-a" x="10" y="12" width="115" height="100" />
+                                <path class="pic-arrow" d="M132 64h26m-8-8l8 8l-8 8" />
+                                <use href="#bottle-full" x="172" y="26" width="34" height="68" />
+                                <use href="#bottle-full" x="212" y="26" width="34" height="68" />
+                                <use href="#bottle-full" x="252" y="26" width="34" height="68" />
+                                break;
+                            case "Static":
+                                for (var cell = 0; cell < 6; cell++)
+                                {
+                                    <use href="#well-@("abcabc"[cell])" x="@(6 + cell * 48)" y="40" width="44" height="38.3" />
+                                }
+                                <use href="#crate-low-a" x="@(6 + 48 - 6)" y="34" width="56" height="48.7" />
+                                <use href="#crate-low-b" x="@(6 + 4 * 48 - 6)" y="34" width="56" height="48.7" />
+                                break;
+                            default:
+                                for (var breath = 0; breath < 4; breath++)
+                                {
+                                    <use href="#bottle-full" x="@(14 + breath * 27)" y="38" width="24" height="48" />
+                                }
+                                <use href="#air-tank" x="126" y="14" width="88" height="76" />
+                                <use href="#crate-mid-b" x="200" y="20" width="92" height="80" />
+                                break;
+                        }
+                    </svg>
                     <span class="card-top">
                         <span class="key" aria-hidden="true">@key</span>
                         <span class="name" id="name-@dive.Id">@dive.Name</span>

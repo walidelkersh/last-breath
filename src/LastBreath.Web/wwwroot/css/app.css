@@ -235,6 +235,12 @@ button.quiet {
 
 /* Selection screen */
 
+.select {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
 .select h2,
 .field-title {
     font-size: var(--text-lg);
@@ -246,10 +252,16 @@ button.quiet {
     font-size: var(--text-base);
 }
 
+.lede {
+    max-width: var(--measure);
+    margin-top: var(--s1);
+    color: var(--muted);
+}
+
 .cards {
     display: grid;
     gap: var(--s3);
-    margin-top: var(--s3);
+    margin-top: var(--s4);
 }
 
 .card {
@@ -263,32 +275,59 @@ button.quiet {
     flex-direction: column;
     gap: var(--s3);
     height: 100%;
-    padding: var(--s4);
+    padding: var(--s3);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r3);
 }
 
+/* A raised edge for hover, a heavy edge for the choice, a gapped ring for focus: no state depends on colour alone. */
 .card:hover .card-body {
     border-color: var(--control);
+    box-shadow: 0 var(--s1) 0 0 var(--line);
+    transform: translateY(calc(var(--s1) * -1));
 }
 
 .card input:checked + .card-body {
     background: var(--surface-2);
     border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
-.card input:focus-visible + .card-body,
+.card input:focus-visible + .card-body {
+    outline: 3px solid var(--focus);
+    outline-offset: 4px;
+}
+
 .chip input:focus-visible + span {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
+}
+
+.pic {
+    --ow: 3px;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 300 / 120;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r2);
+}
+
+.pic-arrow {
+    fill: none;
+    stroke: var(--art-plate-ink, var(--text));
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .card-top {
     display: flex;
     align-items: center;
     gap: var(--s2);
+    padding: 0 var(--s1);
 }
 
 .key {
@@ -300,6 +339,13 @@ button.quiet {
     border: 1px solid var(--control);
     border-radius: var(--r1);
     font-size: var(--text-xs);
+}
+
+.card input:checked + .card-body .key {
+    color: var(--on-accent);
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 700;
 }
 
 .name {
@@ -322,6 +368,7 @@ button.quiet {
 }
 
 .rule {
+    padding: 0 var(--s1);
     color: var(--muted);
 }
 
@@ -329,6 +376,7 @@ button.quiet {
     display: flex;
     flex-direction: column;
     margin-top: auto;
+    padding: 0 var(--s1);
 }
 
 .fact {
@@ -352,13 +400,13 @@ button.quiet {
 .stake {
     display: flex;
     flex-direction: column;
-    gap: var(--s4);
+    gap: var(--s3);
     margin-top: var(--s5);
 }
 
 .chips {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--s2);
 }
 
@@ -368,20 +416,24 @@ button.quiet {
 }
 
 .chip span {
-    display: inline-block;
-    min-width: 4rem;
-    padding: var(--s2) var(--s3);
+    display: block;
+    padding: var(--s2) 0;
     text-align: center;
     background: var(--surface);
     border: 1px solid var(--control);
     border-radius: var(--r2);
 }
 
+.chip:hover span {
+    border-color: var(--text);
+}
+
 .chip input:checked + span {
     color: var(--on-accent);
     background: var(--accent);
     border-color: var(--accent);
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
 
 .dive {
@@ -856,6 +908,16 @@ code {
         flex: 1;
     }
 
+    .stake {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        margin: auto calc(var(--s4) * -1) 0;
+        padding: var(--s3) var(--s4);
+        background: var(--bg);
+        border-top: 1px solid var(--line);
+    }
+
     .over .hud {
         display: none;
     }
@@ -874,6 +936,10 @@ code {
         justify-content: space-between;
     }
 
+    .chips {
+        grid-template-columns: repeat(6, 4.5rem);
+    }
+
     .dive {
         width: auto;
         min-width: 14rem;
@@ -881,6 +947,16 @@ code {
 
     .go {
         text-align: right;
+    }
+}
+
+@media (min-width: 56rem) and (max-height: 46rem) {
+    main {
+        padding-block: var(--s4);
+    }
+
+    .stake {
+        margin-top: var(--s4);
     }
 }
 

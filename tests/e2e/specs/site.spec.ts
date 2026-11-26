@@ -23,7 +23,7 @@ const contrast = (foreground: number[], background: number[]) => {
 };
 
 for (const colorScheme of ["dark", "light"] as const) {
-  test(`text on every tile and on the card rule meets WCAG AA in the ${colorScheme} theme`, async ({ page }) => {
+  test(`text on every tile, on the cards, on the chosen controls and on the page meets WCAG AA in the ${colorScheme} theme`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
     await open(page);
     // The plate colours come from the art sprite, which the page loads after the game starts.
@@ -35,8 +35,8 @@ for (const colorScheme of ["dark", "light"] as const) {
         const background = channels(getComputedStyle(surface).backgroundColor);
         return { name, foreground: channels(getComputedStyle(text).color).slice(0, 3), background: background.slice(0, 3), opaque: (background[3] ?? 1) === 1 };
       };
-      const probe = (classes: string, parent: Element, surface?: Element) => {
-        const element = document.createElement("div");
+      const probe = (classes: string, parent: Element, surface?: Element, tag = "div") => {
+        const element = document.createElement(tag);
         element.className = classes;
         parent.append(element);
         const result = pair(classes, element, surface ?? element);
@@ -53,15 +53,22 @@ for (const colorScheme of ["dark", "light"] as const) {
         return result;
       };
       const card = document.querySelector(".card-body")!;
+      const chosen = document.querySelector(".card input:checked + .card-body")!;
+      const chip = document.querySelector(".chip input:checked + span")!;
       return [
         ...["crate", "tank", "mini", "minor", "major"].map(plate),
         probe("rule", card, card),
         pair("body text on the page", document.body, document.body),
         probe("last", document.body, document.body),
+        probe("rule", chosen, chosen),
+        probe("key", chosen),
+        pair("chosen bet chip", chip, chip),
+        probe("primary", document.body, undefined, "button"),
+        probe("bet", document.body, document.body),
       ];
     });
 
-    expect(pairs).toHaveLength(8);
+    expect(pairs).toHaveLength(13);
     for (const { name, foreground, background, opaque } of pairs) {
       expect(opaque, `${name} sits on a solid colour`).toBe(true);
       expect(contrast(foreground, background), name).toBeGreaterThanOrEqual(4.5);
