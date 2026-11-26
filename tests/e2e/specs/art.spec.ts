@@ -32,7 +32,7 @@ test("the art loads on a round with no failed request, and every symbol a tile u
   expect(tiles.map((tile) => tile.href)).toContain("#bottle-full");
   expect(tiles.map((tile) => tile.href)).toContain("#medal-grand");
   expect(tiles.every((tile) => tile.drawn)).toBe(true);
-  expect(plates).toEqual(["Air +1", "Air +2"]);
+  expect(plates).toEqual(["+1", "+2"]);
 });
 
 const phone = { width: 390, height: 844 };
@@ -55,6 +55,8 @@ for (const colorScheme of ["dark", "light"] as const) {
         page.on("requestfailed", (request) => failed.push(`${request.url()} ${request.failure()?.errorText}`));
 
         await open(page, "/?seed=4");
+        // The pop of a new coin overshoots its cell for a moment, so the geometry is read with the pop switched off.
+        await page.addStyleTag({ content: ".coin { animation: none !important; }" });
         await page.keyboard.press("3");
         await diveButton(page).click();
         await expect(page.locator(".tile-tank")).toHaveCount(2);
@@ -90,7 +92,7 @@ for (const colorScheme of ["dark", "light"] as const) {
           expect([tank.alt, tank.hidden]).toEqual(["", "true"]);
           expect(["none", "matrix(1, 0, 0, 1, 0, 0)"], "the render is not turned again").toContain(tank.transform);
         }
-        expect(tanks.map((tank) => tank.plate)).toEqual(["Air +1", "Air +2"]);
+        expect(tanks.map((tank) => tank.plate)).toEqual(["+1", "+2"]);
       });
     });
   }

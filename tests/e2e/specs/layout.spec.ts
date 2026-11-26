@@ -178,7 +178,7 @@ test.describe("on a phone", () => {
     const tile = page.locator(".tile-crate").first();
     await expect(tile).toBeVisible();
 
-    await expect(tile.locator(".tile-label")).toBeHidden();
+    await expect(tile.locator(".tile-label")).toHaveCount(0);
     await expect(tile.locator(".tile-value")).toBeVisible();
     await expect(tile).toHaveAttribute("aria-label", /: Crate, \d+\.\d\d credits, [\d.]+ times the bet$/);
     await expect(tile).toHaveAttribute("title", /^[\d.]+× bet$/);

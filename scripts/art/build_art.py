@@ -382,16 +382,13 @@ def gilded_details(art, a, b, c, d, variant):
 
 
 def well(variant):
+    """A quiet recess in the water, set in about 6% from the edge of the tile: a darker rim and a floor, and nothing else."""
     art = Art(f"well-{variant}", TILE)
-    art.shape(rounded_box(1.2, 1.2, TILE[0] - 1.2, TILE[1] - 1.2, 9), "well", "s", outline=False)
-    floor = rounded_box(3.2, 3.2, TILE[0] - 3.2, TILE[1] - 3.2, 7.5)
+    inset = 5.4 + 0.7 * WELLS.index(variant)
+    art.shape(rounded_box(inset + 1.1, inset, TILE[0] - inset - 1.1, TILE[1] - inset, 9), "well", "s", outline=False)
+    floor = rounded_box(inset + 3.1, inset + 2, TILE[0] - inset - 3.1, TILE[1] - inset - 2, 7.5)
     art.shape(floor, "well", "b", outline=False)
     art.shade(floor, "well", 7, toward_light=True)
-    r = art.rng
-    x, y = 22 + 40 * r.random(), 50 + 14 * r.random()
-    art.glint((x, TILE[1] - 6.5), (x + 8 + 8 * r.random(), TILE[1] - 6.5), "well")
-    if variant != "a":
-        art.glint((TILE[0] - 6.5, y), (TILE[0] - 6.5, y + 7 + 6 * r.random()), "well")
     return art
 
 

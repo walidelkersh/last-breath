@@ -48,7 +48,7 @@ test("the in-game toggle turns the animation classes off and is remembered", asy
   await diveButton(page).click();
 
   await expect(page.getByTestId("gain")).toHaveText("+3");
-  await expect(page.locator(".tile-tank.anim-in")).toHaveCount(2);
+  await expect(page.locator(".tile-tank .coin.anim-in")).toHaveCount(2);
   await expect(page.getByTestId("gain")).toHaveClass(/anim-fly/);
   expect(await sawAnimation(page)).toBe(true);
 

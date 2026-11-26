@@ -98,7 +98,7 @@ test("the board total counts up to its new value over about 300 ms", async ({ pa
 test("a new crate pops in", async ({ page }) => {
   await playClassic(page, smallWin);
 
-  await expect(page.locator(".tile-crate.anim-in").first()).toBeVisible();
+  await expect(page.locator(".tile-crate .coin.anim-in").first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.getAnimations().some((animation) => (animation as CSSAnimation).animationName === "tile-in"))).toBe(true);
 });
 

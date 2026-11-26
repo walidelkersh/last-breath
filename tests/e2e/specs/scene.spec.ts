@@ -66,41 +66,37 @@ async function startAClassicRound(page: Page) {
 const running = (page: Page, name: string) =>
   page.evaluate((wanted) => document.getAnimations().some((animation) => (animation as CSSAnimation).animationName === wanted), name);
 
-test("with motion allowed a few faint bubbles climb behind the page and the empty wells carry a drifting streak", async ({ page }) => {
+test("with motion allowed a few faint bubbles climb behind the page", async ({ page }) => {
   await startAClassicRound(page);
 
   const bubbles = page.locator(".bubbles span");
   expect(await bubbles.count()).toBeLessThanOrEqual(8);
   expect(await bubbles.count()).toBeGreaterThan(3);
   expect(await running(page, "rise")).toBe(true);
-  await expect(page.locator(".board")).toHaveClass(/drifting/);
-  expect(await running(page, "drift")).toBe(true);
   expect(await page.locator(".bubbles").evaluate((layer) => [getComputedStyle(layer).pointerEvents, layer.getAttribute("aria-hidden"), getComputedStyle(layer).zIndex])).toEqual(["none", "true", "-1"]);
 });
 
 test.describe("with prefers-reduced-motion", () => {
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
-  test("there are no bubbles and no drifting streaks, and nothing is animated anywhere", async ({ page }) => {
+  test("there are no bubbles, and nothing is animated anywhere", async ({ page }) => {
     await watchAnimations(page);
     await startAClassicRound(page);
     await page.keyboard.press("s");
     await expect(summary(page)).toBeVisible();
 
     await expect(page.locator(".bubbles")).toHaveCount(0);
-    await expect(page.locator(".drifting")).toHaveCount(0);
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     expect(await sawAnimation(page)).toBe(false);
   });
 });
 
-test("the in-game toggle takes the bubbles and the streaks away at once", async ({ page }) => {
+test("the in-game toggle takes the bubbles away at once", async ({ page }) => {
   await startAClassicRound(page);
   await expect(page.locator(".bubbles")).toHaveCount(1);
 
   await page.getByLabel("Reduce motion").check();
 
   await expect(page.locator(".bubbles")).toHaveCount(0);
-  await expect(page.locator(".drifting")).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => document.getAnimations().filter((animation) => ["rise", "drift"].includes((animation as CSSAnimation).animationName)).length)).toBe(0);
+  await expect.poll(() => page.evaluate(() => document.getAnimations().filter((animation) => (animation as CSSAnimation).animationName === "rise").length)).toBe(0);
 });

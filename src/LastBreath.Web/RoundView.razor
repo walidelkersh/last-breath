@@ -113,25 +113,25 @@
     </div>
 
     <div class="stage">
-        <div class="board @(ReduceMotion ? "" : "drifting")" role="group" aria-label="Board, five columns by three rows">
+        <div class="board" role="group" aria-label="Board, five columns by three rows">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
             @for (var index = 0; index < Board.Size; index++)
             {
                 var tile = TileAt(index);
-                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
-                    @if (tile.Art == AirTankArt)
-                    {
-                        <AirTankImage Class="art" />
-                    }
-                    else if (tile.Art is { } art)
-                    {
-                        <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@art" /></svg>
-                    }
+                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn")" role="img" aria-label="@tile.Name" title="@tile.Tip">
+                    <svg class="well" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#well-@WellPattern[index]" /></svg>
                     @if (tile.Kind != "empty")
                     {
-                        <span class="tile-plate">
-                            <span class="tile-label">@tile.Label</span>
-                            <span class="tile-value">@tile.Value</span>
+                        <span class="coin @(tile.IsNew && !ReduceMotion ? "anim-in" : "")">
+                            @if (tile.Art == AirTankArt)
+                            {
+                                <AirTankImage Class="art" />
+                            }
+                            else
+                            {
+                                <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@tile.Art" /></svg>
+                            }
+                            <span class="tile-plate"><span class="tile-value">@tile.Value</span></span>
                         </span>
                     }
                 </div>
@@ -252,7 +252,7 @@
 
     public void Dispose() => stop.Dispose();
 
-    private sealed record Tile(string Kind, string Label, string Value, string Name, string Tip, bool IsNew, string? Art = null);
+    private sealed record Tile(string Kind, string Value, string Name, string Tip, bool IsNew, string? Art = null);
 
     private Tile TileAt(int index)
     {
@@ -261,16 +261,16 @@
         if (tank is { } airTank)
         {
             var breaths = airTank.Outcome.Breaths();
-            return new Tile("tank", "Air", $"+{breaths}", $"{place}: air tank, plus {breaths} {(breaths == 1 ? "breath" : "breaths")}", $"+{breaths} breaths", true, AirTankArt);
+            return new Tile("tank", $"+{breaths}", $"{place}: air tank, plus {breaths} {(breaths == 1 ? "breath" : "breaths")}", $"+{breaths} breaths", true, AirTankArt);
         }
 
         var cell = current?.Cells[index] ?? default;
-        if (cell.IsEmpty) return new Tile("empty", "", "", $"{place}: empty", "", false, $"well-{WellPattern[index]}");
+        if (cell.IsEmpty) return new Tile("empty", "", $"{place}: empty", "", false);
 
         var label = Narration.Label(Config, cell);
         var multiple = Format.Multiple(cell.Units);
         var credits = Format.Credits(Settlement.Credits(cell.Units, Bet));
-        return new Tile(label.ToLowerInvariant(), label, credits,
+        return new Tile(label.ToLowerInvariant(), credits,
             $"{place}: {label}, {credits} credits, {multiple} times the bet", $"{multiple}× bet",
             current!.NewCells.Contains(index), cell.Kind == CellKind.Cash ? CrateArt(cell.Units, index) : $"medal-{label.ToLowerInvariant()}");
     }
