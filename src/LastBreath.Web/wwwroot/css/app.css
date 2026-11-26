@@ -855,6 +855,145 @@ picture img {
     color: var(--muted);
 }
 
+/* The session panel: what the page has seen so far, in numbers and in a strip of bars. */
+.session {
+    order: 6;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.session h3 {
+    font-family: var(--serif);
+    font-size: var(--text-base);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s2) var(--s4);
+}
+
+@media (min-width: 56rem) {
+    .stats {
+        grid-template-columns: repeat(4, auto);
+        justify-content: space-between;
+        gap: var(--s2);
+    }
+}
+
+.stats dt {
+    color: var(--muted);
+    font-size: var(--text-xs);
+}
+
+.stats dd {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.stats .sub {
+    display: block;
+}
+
+.bars {
+    --bet-line: 27%;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.2rem;
+    height: 3rem;
+}
+
+.bars::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: var(--bet-line);
+    left: 0;
+    border-top: 1px dashed var(--muted);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.bars li {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+}
+
+.bars span {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0.2rem;
+}
+
+.bar-empty {
+    border-bottom: 1px solid var(--line);
+}
+
+.bar-nothing span {
+    background: var(--control);
+}
+
+.bar-under span {
+    background: transparent;
+    border: 2px solid var(--focus);
+    border-bottom: 0;
+}
+
+.bar-over span {
+    background: var(--accent);
+}
+
+.bar-big span {
+    background: var(--accent);
+    border-top: 0.3rem solid var(--warn);
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--s3);
+    color: var(--muted);
+    font-size: var(--text-xs);
+}
+
+.legend li::before {
+    content: "";
+    display: inline-block;
+    box-sizing: border-box;
+    width: 0.7em;
+    height: 0.7em;
+    margin-right: 0.35em;
+}
+
+.legend .bar-nothing::before {
+    height: 0.25em;
+    background: var(--control);
+}
+
+.legend .bar-under::before {
+    border: 2px solid var(--focus);
+}
+
+.legend .bar-over::before {
+    background: var(--accent);
+}
+
+.legend .bar-big::before {
+    background: var(--accent);
+    border-top: 0.25em solid var(--warn);
+}
+
+.session .note {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+}
+
 .actions {
     order: 7;
     display: flex;
@@ -1148,6 +1287,7 @@ code {
     }
 }
 
+/* A short window drops the lines of the side panel that matter least, the note first, so the page still does not scroll. */
 @media (min-width: 56rem) and (max-height: 46rem) {
     main {
         padding-block: var(--s4);
@@ -1155,6 +1295,17 @@ code {
 
     .stake {
         margin-top: var(--s4);
+    }
+
+    .session .note {
+        display: none;
+    }
+}
+
+@media (min-width: 56rem) and (max-height: 42rem) {
+    .session h3,
+    .legend {
+        display: none;
     }
 }
 
@@ -1190,9 +1341,9 @@ code {
         flex-direction: column;
         grid-column: 2;
         grid-row: 1;
-        gap: var(--s4);
+        gap: var(--s3);
         min-height: 0;
-        padding: var(--s4);
+        padding: var(--s3) var(--s4);
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: var(--r3);
@@ -1205,12 +1356,28 @@ code {
     .hud,
     .result,
     .ticker {
-        padding-top: var(--s4);
+        padding-top: var(--s3);
         border-top: 1px solid var(--line);
+    }
+
+    .summary dl {
+        grid-template-columns: repeat(4, auto);
+        justify-content: space-between;
+        gap: var(--s2) var(--s3);
+    }
+
+    .summary dl > .win {
+        grid-column: 1 / -1;
     }
 
     .side > .actions {
         order: 1;
+    }
+
+    .side > .session {
+        order: 3;
+        padding-top: var(--s3);
+        border-top: 1px solid var(--line);
     }
 
     .side > .ticker {
@@ -1218,6 +1385,14 @@ code {
         flex: 1 1 0;
         min-height: 0;
         padding-top: var(--s3);
+        container-type: size;
+    }
+
+    /* When not even one row fits, none is shown, rather than the top half of one. */
+    @container (max-height: 2.25rem) {
+        .ticker li {
+            display: none;
+        }
     }
 
     .summary {

@@ -1,0 +1,54 @@
+<section class="session" aria-labelledby="session-title">
+    <h3 id="session-title">This session</h3>
+
+    <dl class="stats">
+        <div><dt>Rounds played</dt><dd data-testid="session-rounds">@Session.Rounds</dd></div>
+        <div><dt>Total bet</dt><dd data-testid="session-bet">@Format.Credits(Session.Bet)</dd></div>
+        <div><dt>Total returned</dt><dd data-testid="session-returned">@Format.Credits(Session.Returned)</dd></div>
+        <div>
+            <dt>Returned so far</dt>
+            <dd data-testid="session-return">
+                @if (Session.Return is { } share)
+                {
+                    @Format.Percent(share, 1)
+                    <span class="sub">over @Session.Rounds @(Session.Rounds == 1 ? "round" : "rounds")</span>
+                }
+                else
+                {
+                    <span>none yet</span>
+                }
+            </dd>
+        </div>
+    </dl>
+
+    <ol class="bars" aria-label="The last @Session.Shown rounds, oldest first" style="--bet-line: @Format.Share(Session.Height(1))">
+        @foreach (var result in Session.Recent)
+        {
+            <li class="bar bar-@result.Tier.ToString().ToLowerInvariant()" aria-label="@Name(result)" title="@Format.Times(result.Multiple)× bet">
+                <span style="height: @Format.Share(Session.Height(result.Multiple))"></span>
+            </li>
+        }
+        @for (var empty = Session.Recent.Count; empty < Session.Shown; empty++)
+        {
+            <li class="bar-empty" aria-hidden="true"></li>
+        }
+    </ol>
+
+    <ul class="legend" aria-label="What the bars mean">
+        <li class="bar-nothing">Nothing</li>
+        <li class="bar-under">Under the bet</li>
+        <li class="bar-over">Over the bet</li>
+        <li class="bar-big" title="Ten times the bet or more">Big win, 10× or more</li>
+    </ul>
+
+    <p class="note">The @Dive.Name returns @Format.Percent(Dive.Figures.Rtp) over millions of rounds. A short session says little.</p>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Session Session { get; set; } = default!;
+    [Parameter, EditorRequired] public DiveInfo Dive { get; set; } = default!;
+
+    private static string Name(RoundResult result) =>
+        $"Round {result.Number}, {result.Dive}, {Format.Credits(result.Win)} credits returned on a bet of {Format.Credits(result.Bet)}, "
+        + $"{Format.Times(result.Multiple)} times the bet, {result.TierName.ToLowerInvariant()}";
+}

@@ -68,7 +68,7 @@ test("a round of ten times the bet or more says Big win, and a smaller one does 
   await page.getByRole("button", { name: "Dive again" }).click();
   await page.keyboard.press("s");
   await expect(page.getByTestId("win")).toHaveText("0.00");
-  await expect(page.getByText("Big win")).toHaveCount(0);
+  await expect(summary(page).getByText("Big win")).toHaveCount(0);
 });
 
 test("a round under ten times the bet has no Big win line", async ({ page }) => {
@@ -77,7 +77,7 @@ test("a round under ten times the bet has no Big win line", async ({ page }) => 
   await expect(summary(page)).toBeVisible();
 
   await expect(page.getByTestId("win")).toHaveText("2.50");
-  await expect(page.getByText("Big win")).toHaveCount(0);
+  await expect(summary(page).getByText("Big win")).toHaveCount(0);
 });
 
 test("the board total counts up to its new value over about 300 ms", async ({ page }) => {

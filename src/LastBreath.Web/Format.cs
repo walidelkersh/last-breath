@@ -15,5 +15,10 @@ public static class Format
     public static string Whole(long value) => value.ToString("N0", Culture);
 
     // A value in units as a multiple of the bet: 250 units is 0.25, 100,000 is 100.
-    public static string Multiple(int units) => (units / 1000m).ToString("#,0.##", Culture);
+    public static string Multiple(int units) => Times(units / 1000m);
+
+    public static string Times(decimal multiple) => multiple.ToString("#,0.##", Culture);
+
+    // A share of a box for a CSS length: 0.2685 is 26.9%.
+    public static string Share(double fraction) => (fraction * 100).ToString("0.0", Culture) + "%";
 }

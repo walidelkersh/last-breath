@@ -22,7 +22,7 @@
             }
             else
             {
-                <RoundView @ref="roundView" @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" ReduceMotion="reduceMotion"
+                <RoundView @ref="roundView" @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" Session="session" ReduceMotion="reduceMotion"
                            CanDiveAgain="balance >= bet"
                            Announce="Say" Finished="Settle" DiveAgain="StartRound" ChangeDive="ChangeDive" />
             }
@@ -53,6 +53,7 @@
     private const string MotionKey = "lastbreath.reduce";
     private const decimal StartingBalance = 1000.00m;
 
+    private readonly Session session = new();
     private bool ready;
     private bool systemReducesMotion;
     private bool reduceMotionChoice;
@@ -126,6 +127,7 @@
     {
         balance += win;
         roundActive = false;
+        session.Add(Dives.First(dive => dive.Id == selectedDive).Name, roundBet, win);
     }
 
     private void ChangeDive()
@@ -137,6 +139,7 @@
     private void ResetBalance()
     {
         balance = StartingBalance;
+        session.Clear();
         Say($"Balance reset to {Format.Credits(balance)} credits.");
     }
 

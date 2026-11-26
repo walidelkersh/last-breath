@@ -1,6 +1,7 @@
 @implements IDisposable
 @inject GameConfig Config
 @inject IJSRuntime JS
+@inject IReadOnlyList<DiveInfo> Dives
 
 <section class="round @(finished ? "over" : "")" aria-labelledby="round-title">
     <div class="side">
@@ -95,6 +96,8 @@
             }
         </ol>
 
+        <SessionPanel Session="Session" Dive="Dives.First(info => info.Id == DiveId)" />
+
         <div class="actions">
             @if (finished)
             {
@@ -167,6 +170,7 @@
     [Parameter, EditorRequired] public Round Round { get; set; } = default!;
     [Parameter, EditorRequired] public string DiveId { get; set; } = "";
     [Parameter] public decimal Bet { get; set; }
+    [Parameter, EditorRequired] public Session Session { get; set; } = default!;
     [Parameter] public bool ReduceMotion { get; set; }
     [Parameter] public bool CanDiveAgain { get; set; }
     [Parameter] public EventCallback<string> Announce { get; set; }

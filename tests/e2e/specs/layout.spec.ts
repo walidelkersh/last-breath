@@ -195,18 +195,31 @@ test("the head counts the spin and the ticker names what each spin landed, newes
   await expect(page.locator("[aria-live] .ticker")).toHaveCount(0);
 });
 
-test("after a skip the ticker still holds every spin, newest on top, and shows only whole rows", async ({ page }) => {
-  await playToTheEnd(page, rounds[0]);
+test.describe("the ticker after a skip", () => {
+  const visibleRows = (page: Page) =>
+    page.evaluate(() => {
+      const ticker = document.querySelector(".ticker")!.getBoundingClientRect();
+      const shown = [...document.querySelectorAll<HTMLElement>(".ticker li")].filter((row) => row.offsetParent !== null && row.getBoundingClientRect().left < ticker.right - 2);
+      return { count: shown.length, whole: shown.every((row) => row.getBoundingClientRect().bottom <= ticker.bottom + 1) };
+    });
 
-  const items = page.locator(".ticker li");
-  await expect(items).toHaveCount(18);
-  await expect(items.first()).toContainText("Spin 18");
-  await expect(items.last()).toContainText("Spin 1");
-  const rows = await page.evaluate(() => {
-    const ticker = document.querySelector(".ticker")!.getBoundingClientRect();
-    const shown = [...document.querySelectorAll(".ticker li")].filter((row) => row.getBoundingClientRect().left < ticker.right - 2);
-    return { count: shown.length, whole: shown.every((row) => row.getBoundingClientRect().bottom <= ticker.bottom + 1) };
+  test("holds every spin, newest on top, and shows several whole rows when there is room", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await playToTheEnd(page, rounds[0]);
+
+    const items = page.locator(".ticker li");
+    await expect(items).toHaveCount(18);
+    await expect(items.first()).toContainText("Spin 18");
+    await expect(items.last()).toContainText("Spin 1");
+    const rows = await visibleRows(page);
+    expect(rows.count).toBeGreaterThan(5);
+    expect(rows.whole).toBe(true);
   });
-  expect(rows.count).toBeGreaterThan(0);
-  expect(rows.whole).toBe(true);
+
+  test("shows no half row when the window is short", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 700 });
+    await playToTheEnd(page, rounds[0]);
+
+    expect((await visibleRows(page)).whole).toBe(true);
+  });
 });
