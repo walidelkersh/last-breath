@@ -139,3 +139,16 @@ for (const colorScheme of ["dark", "light"] as const) {
     expect(found.medal, "the Big win legend has a medal and not a colour").toBeGreaterThan(10);
   });
 }
+
+for (const colorScheme of ["dark", "light"] as const) {
+  test(`the arrow in the Classic card is light on the deep water in the ${colorScheme} theme`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await open(page);
+    const found = await page.evaluate(() => {
+      const arrow = document.querySelector(".card .pic-arrow")!;
+      const pic = document.querySelector(".card .pic")!;
+      return { stroke: getComputedStyle(arrow).stroke, board: getComputedStyle(pic).backgroundColor };
+    });
+    expect(contrast(channels(found.stroke), channels(found.board))).toBeGreaterThanOrEqual(7);
+  });
+}

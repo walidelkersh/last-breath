@@ -42,6 +42,11 @@ window.lastBreath = {
         element.countFrame = requestAnimationFrame(step);
     },
 
+    // Scrolls only as far as needed, and leaves room under the block for the bar at the foot, so that a block is whole or starts at the top and is never cut in two.
+    reveal(element) {
+        element.scrollIntoView({ block: "nearest" });
+    },
+
     openDialog(dialog) {
         if (!dialog.open) dialog.showModal();
     },

@@ -123,3 +123,20 @@ test("the side panel is as tall as the board, with its actions pinned at the foo
   expect(after.widths[0] + after.widths[1] + after.gap).toBeCloseTo(after.actionsWidth, 0);
   await expect(page.locator(".session")).toBeVisible();
 });
+
+for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }, { width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test(`the landed badge never lies over the name or the value of its prize at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page, "/?seed=154");
+    await diveButton(page).click();
+    await page.keyboard.press("s");
+    await expect(summary(page)).toBeVisible();
+
+    const found = await page.evaluate(() => {
+      const badge = document.querySelector(".prize.hit .badge")!.getBoundingClientRect();
+      const overlap = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      return [".prize-name", ".prize-value", ".medal"].map((selector) => ({ selector, over: overlap(badge, document.querySelector(`.prize.hit ${selector}`)!.getBoundingClientRect()) }));
+    });
+    expect(found.filter((item) => item.over)).toEqual([]);
+  });
+}

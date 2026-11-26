@@ -212,6 +212,23 @@ test("the four kinds of bar differ by shape and not only by colour", async ({ pa
   expect(by.over.fill).toBe("rgb(224, 169, 74)");
 });
 
+for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }]) {
+  test(`the labels of the tally stay on one line at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page, "/?seed=154");
+    await playRounds(page, 1);
+
+    const labels = await page.evaluate(() =>
+      [...document.querySelectorAll(".stats dt")].map((label) => {
+        const style = getComputedStyle(label);
+        return { text: label.textContent, lines: Math.round(label.getBoundingClientRect().height / (parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.45)) };
+      }),
+    );
+    expect(labels.map((label) => label.text)).toEqual(["Rounds", "Total bet", "Total returned", "Returned so far"]);
+    for (const label of labels) expect(label.lines, `${label.text} is on one line`).toBe(1);
+  });
+}
+
 test("Reset balance clears the session", async ({ page }) => {
   await open(page, "/?seed=154");
   await diveButton(page).click();

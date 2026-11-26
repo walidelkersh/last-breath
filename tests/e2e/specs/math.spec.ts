@@ -87,3 +87,51 @@ test("the panel is wide on a desktop, keeps its header while the sections scroll
   expect(Math.abs((await header.boundingBox())!.y - (await panel.boundingBox())!.y)).toBeLessThan(3);
   await expect(panel.getByRole("button", { name: "Close" })).toBeInViewport();
 });
+
+test("the replay command is whole and uses the name of the dive on the page, and the seed is the only large code", async ({ page }) => {
+  for (const { key, name, word, seed } of [{ key: "1", name: "Classic Dive", word: "classic", seed: 5 }, { key: "2", name: "Drift Dive", word: "drift", seed: 11 }, { key: "3", name: "Tank Dive", word: "tank", seed: 4 }]) {
+    await open(page, `/?seed=${seed}`);
+    await page.keyboard.press(key);
+    await diveButton(page).click();
+    await page.keyboard.press("m");
+    const panel = page.getByRole("dialog", { name: "Math" });
+
+    await expect(panel.getByTestId("command")).toHaveText(`play --dive ${word} --seed ${seed}`);
+    await expect(panel.getByText(`a ${name}`)).toBeVisible();
+    const sizes = await panel.evaluate((dialog) => ({
+      seed: parseFloat(getComputedStyle(dialog.querySelector("[data-testid=seed]")!).fontSize),
+      command: parseFloat(getComputedStyle(dialog.querySelector("[data-testid=command]")!).fontSize),
+    }));
+    expect(sizes.command).toBeLessThan(sizes.seed);
+  }
+});
+
+test("on a phone the command does not break in the middle, it scrolls, and Close is a plain button", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await open(page, "/?seed=1234567890123");
+  await page.keyboard.press("2");
+  await diveButton(page).click();
+  await page.getByRole("button", { name: "Math" }).click();
+  const panel = page.getByRole("dialog", { name: "Math" });
+
+  const command = panel.getByTestId("command");
+  await command.scrollIntoViewIfNeeded();
+  const found = await command.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return { whiteSpace: style.whiteSpace, overflowX: style.overflowX, lines: new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size, fitsOrScrolls: element.scrollWidth <= element.clientWidth || style.overflowX === "auto", tab: element.tabIndex };
+  });
+  expect(found.whiteSpace).toBe("nowrap");
+  expect(found.overflowX).toBe("auto");
+  expect(found.lines).toBe(1);
+  expect(found.fitsOrScrolls).toBe(true);
+  expect(found.tab).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+
+  const close = panel.getByRole("button", { name: "Close" });
+  const paint = await close.evaluate((button) => ({ fill: getComputedStyle(button).backgroundColor, primary: button.classList.contains("primary") }));
+  expect(paint.primary).toBe(false);
+  expect(paint.fill).not.toBe("rgb(224, 169, 74)");
+  expect(await close.evaluate((button) => getComputedStyle(button).borderTopColor)).not.toBe("rgba(0, 0, 0, 0)");
+});

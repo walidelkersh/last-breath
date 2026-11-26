@@ -15,7 +15,23 @@
 </head>
 
 <body>
-    <div id="app"><p class="loading">Loading the game</p></div>
+    <div id="app">
+        <div class="first" role="status">
+            <svg class="first-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                <rect x="12" y="14" width="16" height="22" rx="7" />
+                <rect x="16" y="8" width="8" height="8" rx="1.5" />
+                <rect class="cap" x="15" y="3" width="10" height="6" rx="2" />
+                <circle cx="33" cy="11" r="2" /><circle cx="35" cy="19" r="1.4" />
+            </svg>
+            <p class="first-name">Last Breath</p>
+            <svg class="first-board" viewBox="0 0 140 65" aria-hidden="true" focusable="false">
+                <rect class="frame" x="1.5" y="1.5" width="137" height="62" rx="8" />
+                <g class="cells"><rect x="9" y="9" width="23" height="16" rx="4"/><rect x="35" y="9" width="23" height="16" rx="4"/><rect x="61" y="9" width="23" height="16" rx="4"/><rect x="87" y="9" width="23" height="16" rx="4"/><rect x="113" y="9" width="23" height="16" rx="4"/><rect x="9" y="28" width="23" height="16" rx="4"/><rect x="35" y="28" width="23" height="16" rx="4"/><rect x="61" y="28" width="23" height="16" rx="4"/><rect x="87" y="28" width="23" height="16" rx="4"/><rect x="113" y="28" width="23" height="16" rx="4"/><rect x="9" y="47" width="23" height="16" rx="4"/><rect x="35" y="47" width="23" height="16" rx="4"/><rect x="61" y="47" width="23" height="16" rx="4"/><rect x="87" y="47" width="23" height="16" rx="4"/><rect x="113" y="47" width="23" height="16" rx="4"/></g>
+            </svg>
+            <p class="first-line">Salvage what you can before your air runs out.</p>
+            <p class="loading">Loading the game</p>
+        </div>
+    </div>
 
     <div id="blazor-error-ui">
         Something went wrong in the game. <a href=".">Reload</a>

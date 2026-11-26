@@ -76,6 +76,30 @@ test("on the last breath the board has an amber edge and a band, and neither is 
   await expect(page.locator(".board")).not.toHaveClass(/last-breath/);
 });
 
+for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }, { width: 1024, height: 700 }, { width: 1920, height: 1080 }, { width: 390, height: 844 }]) {
+  test(`the Last breath tab lies over no tile and stays on the screen at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize(viewport);
+    await open(page, "/?seed=33");
+    await diveButton(page).click();
+    await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
+
+    const found = await page.evaluate(() => {
+      const band = document.querySelector(".breath-band")!.getBoundingClientRect();
+      const board = document.querySelector(".board")!.getBoundingClientRect();
+      const overlap = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top + 0.5;
+      return {
+        covered: [...document.querySelectorAll(".tile")].filter((tile) => overlap(band, tile.getBoundingClientRect())).length,
+        top: band.top,
+        centred: Math.abs((band.left + band.right) / 2 - (board.left + board.right) / 2),
+      };
+    });
+    expect(found.covered, "tiles under the tab").toBe(0);
+    expect(found.top, "the tab is on the screen").toBeGreaterThanOrEqual(0);
+    expect(found.centred).toBeLessThan(2);
+  });
+}
+
 test.describe("with prefers-reduced-motion", () => {
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 

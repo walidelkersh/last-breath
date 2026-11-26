@@ -152,6 +152,30 @@ test.describe("on a phone", () => {
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again at the foot of the page");
   });
 
+  test("the summary takes focus without a jump, the ring is drawn inside it, and it is whole above the bar or starts at the top of the screen", async ({ page }) => {
+    for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 640 }, { width: 375, height: 560 }]) {
+      await page.setViewportSize(viewport);
+      await open(page, "/?seed=154");
+      await diveButton(page).click();
+      const before = await page.evaluate(() => scrollY);
+      expect(before).toBe(0);
+      await page.keyboard.press("s");
+      await expect(summary(page)).toBeFocused();
+
+      const found = await page.evaluate(() => {
+        const box = document.querySelector(".summary")!.getBoundingClientRect();
+        const bar = document.querySelector(".actions")!.getBoundingClientRect();
+        const style = getComputedStyle(document.querySelector(".summary")!);
+        return { top: box.top, bottom: box.bottom, height: box.height, bar: bar.top, offset: style.outlineOffset, scrollMargin: style.scrollMarginBottom };
+      });
+      const label = `${viewport.width} by ${viewport.height}`;
+      expect(found.offset, label).toBe("-3px");
+      expect(found.top, `${label}: the summary is not cut at the top`).toBeGreaterThanOrEqual(0);
+      if (found.height + 12 <= found.bar) expect(found.bottom, `${label}: it fits, so it ends above the bar`).toBeLessThanOrEqual(found.bar);
+      else expect(found.top, `${label}: it does not fit, so it starts at the top of the screen`).toBeLessThanOrEqual(16);
+    }
+  });
+
   test("a round starts at the top of the page even when the selection screen was scrolled", async ({ page }) => {
     await open(page);
     await page.evaluate(() => scrollTo(0, 800));

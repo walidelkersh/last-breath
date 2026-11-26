@@ -255,7 +255,8 @@
         if (focusSummary)
         {
             focusSummary = false;
-            await summary.FocusAsync();
+            await summary.FocusAsync(preventScroll: true);
+            await JS.InvokeVoidAsync("lastBreath.reveal", summary);
         }
     }
 

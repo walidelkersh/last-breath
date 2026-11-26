@@ -4,7 +4,7 @@
 <dialog @ref="dialog" class="math" aria-labelledby="math-title">
     <div class="math-head">
         <h2 id="math-title">Math</h2>
-        <form method="dialog"><button type="submit" class="primary">Close</button></form>
+        <form method="dialog"><button type="submit">Close</button></form>
     </div>
 
     <div class="math-body">
@@ -49,7 +49,8 @@
                 @if (Seed is { } seed && SeedDiveId is { } id)
                 {
                     <code data-testid="seed">@seed</code>
-                    <span class="sub">The seed of the most recent round, a @Dives.First(dive => dive.Id == id).Name. The lab replays it with <code>play --dive @id.ToLowerInvariant() --seed @seed</code>.</span>
+                    <span class="sub">The seed of the most recent round, a @Dives.First(dive => dive.Id == id).Name. The lab replays it with</span>
+                    <code class="command" data-testid="command" tabindex="0">play --dive @LabName(id) --seed @seed</code>
                 }
                 else
                 {
@@ -80,6 +81,9 @@
     [Parameter, EditorRequired] public IReadOnlyList<DiveInfo> Dives { get; set; } = default!;
     [Parameter] public ulong? Seed { get; set; }
     [Parameter] public string? SeedDiveId { get; set; }
+
+    // The lab knows the dive Static as drift as well, which is what the page calls it.
+    private static string LabName(string id) => id == "Static" ? "drift" : id.ToLowerInvariant();
 
     public async Task Open() => await JS.InvokeVoidAsync("lastBreath.openDialog", dialog);
 

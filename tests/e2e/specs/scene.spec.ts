@@ -76,6 +76,37 @@ test("with motion allowed a few faint bubbles climb behind the page", async ({ p
   expect(await page.locator(".bubbles").evaluate((layer) => [getComputedStyle(layer).pointerEvents, layer.getAttribute("aria-hidden"), getComputedStyle(layer).zIndex])).toEqual(["none", "true", "-1"]);
 });
 
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }, { width: 2560, height: 1440 }]) {
+  test(`the bubbles are soft discs in the gutters, never over the content, at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await startAClassicRound(page);
+
+    const found = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.paddingLeft = "var(--edge)";
+      document.body.append(probe);
+      const edge = parseFloat(getComputedStyle(probe).paddingLeft);
+      probe.remove();
+      const bubbles = [...document.querySelectorAll(".bubbles span")].map((bubble) => {
+        const box = bubble.getBoundingClientRect();
+        const style = getComputedStyle(bubble);
+        const keyframes = (bubble.getAnimations()[0]?.effect as KeyframeEffect).getKeyframes().map((frame) => Number(frame.opacity ?? 0));
+        return { left: box.left, right: box.right, border: style.borderTopWidth, fill: style.backgroundColor, peak: Math.max(...keyframes) };
+      });
+      return { edge, width: innerWidth, bubbles };
+    });
+    expect(found.bubbles.length).toBeGreaterThan(3);
+    for (const bubble of found.bubbles) {
+      expect(bubble.border, "no outline").toBe("0px");
+      expect(bubble.fill, "a fill").not.toBe("rgba(0, 0, 0, 0)");
+      expect(bubble.peak, "about a tenth at most").toBeLessThanOrEqual(0.1);
+      const inLeft = bubble.right <= found.edge + 1;
+      const inRight = bubble.left >= found.width - found.edge - 1;
+      expect(inLeft || inRight, `a bubble at ${Math.round(bubble.left)} to ${Math.round(bubble.right)} stays in a gutter of ${Math.round(found.edge)}`).toBe(true);
+    }
+  });
+}
+
 test.describe("with prefers-reduced-motion", () => {
   test.use({ contextOptions: { reducedMotion: "reduce" } });
 
