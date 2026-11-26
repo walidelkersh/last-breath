@@ -26,6 +26,22 @@ window.lastBreath = {
         });
     },
 
+    // Writes into the text node that Blazor owns, so its next update still lands on it. Called only when motion is allowed.
+    countUp(element, from, to, ms) {
+        cancelAnimationFrame(element.countFrame);
+        const text = element.firstChild;
+        const credits = (value) => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        // A frame's timestamp can be older than this call, so the clock is clamped.
+        const started = performance.now();
+        text.nodeValue = credits(from);
+        const step = (now) => {
+            const done = Math.min(1, Math.max(0, (now - started) / ms));
+            text.nodeValue = credits(from + (to - from) * (1 - (1 - done) ** 3));
+            if (done < 1) element.countFrame = requestAnimationFrame(step);
+        };
+        element.countFrame = requestAnimationFrame(step);
+    },
+
     openDialog(dialog) {
         if (!dialog.open) dialog.showModal();
     },

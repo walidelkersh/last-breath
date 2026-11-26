@@ -17,7 +17,13 @@ public sealed record Spin(
 }
 
 // What the summary says about a finished round.
-public sealed record RoundSummary(int Spins, int Crates, string[] Jackpots, bool Grand, int Units);
+public sealed record RoundSummary(int Spins, int Crates, string[] Jackpots, bool Grand, int Units)
+{
+    // Ten times the bet. A unit is a thousandth of the bet.
+    public const int BigWinUnits = 10_000;
+
+    public bool BigWin => Units >= BigWinUnits;
+}
 
 public static class Replay
 {

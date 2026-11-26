@@ -650,6 +650,7 @@ button.quiet {
 }
 
 .prize.hit {
+    background: var(--surface-2);
     border: 2px solid var(--accent);
     padding: calc(var(--s2) - 1px) calc(var(--s1) - 1px);
 }
@@ -671,9 +672,19 @@ button.quiet {
 }
 
 .prize-state {
-    min-height: 1.1em;
-    color: var(--muted);
+    display: flex;
+    align-items: center;
+    min-height: 1.5rem;
+}
+
+.badge {
+    padding: 0 var(--s2);
+    color: var(--on-accent);
+    background: var(--accent);
+    border-radius: 1rem;
     font-size: var(--text-xs);
+    font-weight: 700;
+    line-height: 1.5;
 }
 
 .landing {
@@ -698,9 +709,24 @@ button.quiet {
     outline-offset: 2px;
 }
 
+.summary-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 var(--s4);
+}
+
 .summary h3 {
     font-family: var(--serif);
     font-size: var(--text-lg);
+}
+
+.big-win {
+    color: var(--accent);
+    font-family: var(--serif);
+    font-size: var(--text-xl);
+    font-weight: 700;
 }
 
 .summary dl {
@@ -847,7 +873,9 @@ code {
 /* Motion. The markup leaves these classes off when motion is reduced, and the media query is a second guard. */
 
 @keyframes tile-in {
-    from { opacity: 0; transform: scale(0.88); }
+    from { opacity: 0; transform: scale(0.8); }
+    60% { opacity: 1; transform: scale(1.07); }
+    to { transform: scale(1); }
 }
 
 @keyframes gain-fly {
@@ -857,7 +885,7 @@ code {
 }
 
 .anim-in {
-    animation: tile-in 0.22s ease-out;
+    animation: tile-in 0.3s ease-out;
 }
 
 .anim-fly {

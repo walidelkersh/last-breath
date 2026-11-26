@@ -90,6 +90,15 @@ public sealed class ReplayTests
         Assert.StartsWith("Skipped to the end. ", Narration.Result(Default, 2.00m, outcome, skipped: true));
     }
 
+    [Theory]
+    [InlineData(9_950, false)]
+    [InlineData(10_000, true)]
+    [InlineData(21_650, true)]
+    public void ARoundIsABigWinFromTenTimesTheBet(int units, bool bigWin)
+    {
+        Assert.Equal(bigWin, new RoundSummary(7, 3, [], false, units).BigWin);
+    }
+
     [Fact]
     public void AFullBoardIsSummarisedWithTheGrand()
     {
