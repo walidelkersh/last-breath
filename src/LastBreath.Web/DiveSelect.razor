@@ -1,8 +1,8 @@
 <section class="select" aria-labelledby="dives-title">
     <div class="select-body">
-        <h2 id="dives-title">Choose a dive</h2>
-        <p class="lede">Pick a dive. One bet buys one round.</p>
-        <div class="cards" role="radiogroup" aria-labelledby="dives-title">
+        <h2 id="dives-title">Salvage what you can before your air runs out.</h2>
+        <p class="lede" id="dives-lede">Choose a dive. One bet buys one round.</p>
+        <div class="cards" role="radiogroup" aria-labelledby="dives-lede">
             @for (var i = 0; i < Dives.Count; i++)
             {
                 var dive = Dives[i];
@@ -83,7 +83,7 @@
                     <use href="#crate-mid-a" x="2" y="6" width="56" height="48.7" />
                     <use href="#crate-low-b" x="102" y="6" width="56" height="48.7" />
                 </svg>
-                <p><span class="step-no" aria-hidden="true">2</span> Coins land and lock in their cell</p>
+                <p><span class="step-no" aria-hidden="true">2</span> Crates land and lock in their cell</p>
             </li>
             <li>
                 <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
@@ -92,7 +92,7 @@
                     <use href="#bottle-low" x="68" y="8" width="24" height="48" />
                     <use href="#bottle-empty" x="112" y="8" width="24" height="48" />
                 </svg>
-                <p><span class="step-no" aria-hidden="true">3</span> The clock of breaths decides when the round ends</p>
+                <p><span class="step-no" aria-hidden="true">3</span> When the breaths run out, you surface</p>
             </li>
         </ol>
     </div>

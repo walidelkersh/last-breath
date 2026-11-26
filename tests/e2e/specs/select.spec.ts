@@ -60,11 +60,21 @@ for (const colorScheme of ["dark", "light"] as const) {
   });
 }
 
-test("the heading has a short line under it in plain words", async ({ page }) => {
+test("the heading says what the game is, and the line under it says what to do without saying it again", async ({ page }) => {
   await open(page);
 
-  await expect(page.getByRole("heading", { name: "Choose a dive" })).toBeVisible();
-  await expect(page.locator(".lede")).toHaveText("Pick a dive. One bet buys one round.");
+  await expect(page.getByRole("heading", { name: "Salvage what you can before your air runs out." })).toBeVisible();
+  await expect(page.locator(".lede")).toHaveText("Choose a dive. One bet buys one round.");
+  await expect(page.getByRole("radiogroup", { name: "Choose a dive. One bet buys one round." })).toBeVisible();
+});
+
+test("the selection starts at the top of the page, under the header, and does not centre itself in a tall window", async ({ page }) => {
+  for (const height of [800, 1440]) {
+    await page.setViewportSize({ width: 1280, height });
+    await open(page);
+    const gap = await page.evaluate(() => document.querySelector(".select h2")!.getBoundingClientRect().top - document.querySelector(".top")!.getBoundingClientRect().bottom);
+    expect(gap, `${height} high`).toBeLessThan(80);
+  }
 });
 
 test("a strip of three steps explains the game, each drawn from symbols that are in the sprite", async ({ page }) => {
@@ -74,8 +84,8 @@ test("a strip of three steps explains the game, each drawn from symbols that are
   const steps = page.getByRole("list", { name: "How a round goes" }).getByRole("listitem");
   await expect(steps).toHaveText([
     /^\s*1\s*The board starts empty\s*$/,
-    /^\s*2\s*Coins land and lock in their cell\s*$/,
-    /^\s*3\s*The clock of breaths decides when the round ends\s*$/,
+    /^\s*2\s*Crates land and lock in their cell\s*$/,
+    /^\s*3\s*When the breaths run out, you surface\s*$/,
   ]);
   const drawn = await page.evaluate(() =>
     [...document.querySelectorAll(".steps li")].map((step) => {
@@ -181,3 +191,27 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 });
+
+for (const viewport of [{ width: 844, height: 390 }, { width: 667, height: 375 }]) {
+  test(`on a phone on its side at ${viewport.width} by ${viewport.height} the selection does not scroll sideways, and the Tank card, the bets and Dive are whole`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page);
+    await page.getByRole("radio", { name: "Tank Dive" }).focus();
+
+    const found = await page.evaluate(() => {
+      const box = (selector: string) => {
+        const rect = document.querySelector(selector)!.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, width: rect.width };
+      };
+      const cards = [...document.querySelectorAll(".card-body")].map((card) => card.getBoundingClientRect());
+      return { scrollWidth: document.documentElement.scrollWidth, tank: cards[2].right, tankLeft: cards[2].left, dive: box(".dive"), chips: box(".chips"), cards: cards.length };
+    });
+    expect(found.scrollWidth).toBeLessThanOrEqual(viewport.width);
+    expect(found.cards).toBe(3);
+    expect(found.tankLeft).toBeGreaterThan(0);
+    expect(found.tank).toBeLessThanOrEqual(viewport.width);
+    expect(found.dive.right).toBeLessThanOrEqual(viewport.width);
+    expect(found.dive.width, "Dive is wide enough to press").toBeGreaterThan(140);
+    expect(found.chips.right).toBeLessThanOrEqual(found.dive.left);
+  });
+}

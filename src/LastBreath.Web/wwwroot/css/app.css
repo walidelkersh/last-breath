@@ -287,15 +287,23 @@ button.quiet:disabled {
     flex-direction: column;
 }
 
-/* When the window is taller than the content, the free room goes above and below the dives, and the bar stays at the foot. */
-.select-body {
-    margin-block: auto;
-}
-
 .select h2,
 .field-title {
     font-size: var(--text-lg);
     font-weight: 700;
+}
+
+/* The premise is the first thing on the page, and the line under it says what to do. */
+.select h2 {
+    max-width: var(--measure);
+    font-size: clamp(var(--text-xl), 1.15rem + 1vw, var(--text-2xl));
+    line-height: 1.2;
+}
+
+@media (max-height: 56rem) {
+    .select h2 {
+        font-size: var(--text-xl);
+    }
 }
 
 .field-title {
@@ -1916,13 +1924,33 @@ code {
         grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 
-    .dive {
+    .go {
         flex: 1;
         min-width: 0;
     }
 
-    .select-body {
-        margin-block: 0;
+    .dive {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* A phone on its side is wide enough for the three dives side by side, and the steps stack their drawing over the line. */
+    .cards,
+    .steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 45.99rem) {
+        .steps li {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--s2);
+        }
+
+        .step-pic {
+            width: 100%;
+            max-width: 9rem;
+        }
     }
 
     .app.staged main {

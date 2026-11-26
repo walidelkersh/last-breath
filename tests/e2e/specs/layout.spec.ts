@@ -34,12 +34,15 @@ async function expectInside(page: Page, target: Locator, what: string) {
 async function expectTheStageToFit(page: Page) {
   const fit = await page.evaluate(() => ({
     scrollHeight: document.documentElement.scrollHeight,
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth,
     innerHeight,
     stageBottom: document.querySelector(".stage")!.getBoundingClientRect().bottom,
     sideBottom: document.querySelector(".side")!.getBoundingClientRect().bottom,
     footerTop: document.querySelector("footer")!.getBoundingClientRect().top,
   }));
   expect(fit.scrollHeight, "the page does not scroll").toBeLessThanOrEqual(fit.innerHeight);
+  expect(fit.scrollWidth, "the page does not scroll sideways").toBeLessThanOrEqual(fit.innerWidth);
   expect(fit.stageBottom, "the stage ends above the footer").toBeLessThanOrEqual(fit.footerTop);
   expect(fit.sideBottom, "the side panel ends above the footer").toBeLessThanOrEqual(fit.footerTop);
 }

@@ -3,7 +3,7 @@ import { diveButton, open, summary } from "./play";
 
 test("the published site also works from the /last-breath/ sub-path", async ({ page }) => {
   await open(page, "/last-breath/");
-  await expect(page.getByRole("heading", { name: "Choose a dive" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Salvage what you can before your air runs out." })).toBeVisible();
   await page.keyboard.press("3");
   await diveButton(page).click();
   await page.keyboard.press("s");
