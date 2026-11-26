@@ -409,7 +409,12 @@ button.quiet:disabled {
     cursor: pointer;
 }
 
-/* The hidden radio spans the card, so focus scrolls the whole card into view. The margin adds the taller bet bar to the padding above. */
+/* The hidden radio spans the card. A card that takes focus is brought into view whole by the script, with a margin under it for the bet bar, which is
+   taller than the padding the page keeps for it. */
+.card {
+    scroll-margin-bottom: 6rem;
+}
+
 .card input {
     inset: 0;
     width: 100%;

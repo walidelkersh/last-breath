@@ -91,6 +91,13 @@ document.addEventListener("toggle", (event) => {
     if (keys.matches && keys.matches("details.keys") && keys.open) keys.style.setProperty("--keys-left", `${keys.getBoundingClientRect().left}px`);
 }, true);
 
+// A card that takes focus from the keyboard is brought into view whole and clear of the bar at the foot. The engines differ in what they scroll to for a
+// focused radio that fills a card, and WebKit shows only the top of a card that was out of view, so the script does it for all of them.
+document.addEventListener("focusin", (event) => {
+    const card = event.target.matches && event.target.matches(".card input") ? event.target.closest(".card") : null;
+    if (card) card.scrollIntoView({ block: "nearest" });
+});
+
 // The art sprite goes into the page itself, not into an <img>, so that its colours come from the page's CSS variables
 // and follow the theme. A failed request leaves the game playable, with text on the plain page colours.
 fetch("art/sprite.svg")
