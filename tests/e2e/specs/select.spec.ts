@@ -60,6 +60,51 @@ for (const colorScheme of ["dark", "light"] as const) {
   });
 }
 
+test("the heading has a short line under it in plain words", async ({ page }) => {
+  await open(page);
+
+  await expect(page.getByRole("heading", { name: "Choose a dive" })).toBeVisible();
+  await expect(page.locator(".lede")).toHaveText("Pick a dive. One bet buys one round.");
+});
+
+test("a strip of three steps explains the game, each drawn from symbols that are in the sprite", async ({ page }) => {
+  await open(page);
+  await page.waitForFunction(() => document.querySelector("symbol#panel") !== null);
+
+  const steps = page.getByRole("list", { name: "How a round goes" }).getByRole("listitem");
+  await expect(steps).toHaveText([
+    /^\s*1\s*The board starts empty\s*$/,
+    /^\s*2\s*Coins land and lock in their cell\s*$/,
+    /^\s*3\s*The clock of breaths decides when the round ends\s*$/,
+  ]);
+  const drawn = await page.evaluate(() =>
+    [...document.querySelectorAll(".steps li")].map((step) => {
+      const hrefs = [...step.querySelectorAll<SVGUseElement>("use")].map((use) => use.getAttribute("href")!);
+      return { hrefs, missing: hrefs.filter((href) => (document.querySelector(`symbol${href}`)?.querySelectorAll("path").length ?? 0) === 0) };
+    }),
+  );
+  expect(drawn.flatMap((step) => step.missing)).toEqual([]);
+  expect(drawn[0].hrefs.filter((href) => href.startsWith("#well"))).toHaveLength(3);
+  expect(drawn[1].hrefs.filter((href) => href.startsWith("#crate")).length).toBeGreaterThan(0);
+  expect(drawn[2].hrefs).toEqual(expect.arrayContaining(["#bottle-full", "#bottle-low", "#bottle-empty"]));
+});
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }]) {
+  test(`Dive and the bet are on screen without scrolling at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await open(page);
+
+    for (const target of [page.getByRole("button", { name: "Dive", exact: true }), page.locator(".chips")]) {
+      const box = (await target.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    }
+    if (viewport.height !== 768) {
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(viewport.height);
+    }
+  });
+}
+
 test("the chosen card and the hovered card differ from the others by more than colour", async ({ page }) => {
   await open(page);
   await page.keyboard.press("2");
