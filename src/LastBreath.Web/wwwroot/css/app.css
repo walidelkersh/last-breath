@@ -735,8 +735,8 @@ main:has(> .select) {
 /* The spare tanks are the render of the air tank, small, and a tank that is used is faded. The words beside them say the same. */
 .tank-pip {
     flex: none;
-    width: 2rem;
-    height: 2rem;
+    width: 2.4rem;
+    height: 2.4rem;
 }
 
 .tank-pip.spent {
@@ -2058,8 +2058,8 @@ code {
     }
 
     .tank-pip {
-        width: 1.5rem;
-        height: 1.5rem;
+        width: 1.7rem;
+        height: 1.7rem;
     }
 
     .total strong {

@@ -149,6 +149,6 @@ for (const colorScheme of ["dark", "light"] as const) {
     expect(new Set(found.sources)).toEqual(new Set([`air-tank-${colorScheme}.webp`]));
     expect(found.bottles, "no oxygen bottle stands for a tank").toBe(0);
     expect(found.text.join(" ")).toContain("Spare tanks 1 of 3");
-    expect(found.size).toBeGreaterThanOrEqual(20);
+    expect(found.size, "large enough to read as a tank").toBeGreaterThanOrEqual(32);
   });
 }
