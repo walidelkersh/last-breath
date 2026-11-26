@@ -135,3 +135,32 @@ test("on a phone the command does not break in the middle, it scrolls, and Close
   expect(paint.fill).not.toBe("rgb(224, 169, 74)");
   expect(await close.evaluate((button) => getComputedStyle(button).borderTopColor)).not.toBe("rgba(0, 0, 0, 0)");
 });
+
+test("closing the Math panel gives focus back to the Math button, in every engine, with the Close button and with Escape", async ({ page }) => {
+  await open(page);
+  const panel = page.getByRole("dialog", { name: "Math" });
+  const mathButton = page.getByRole("button", { name: "Math", exact: true });
+
+  await mathButton.click();
+  await expect(panel).toBeVisible();
+  await panel.getByRole("button", { name: "Close" }).click();
+  await expect(panel).toBeHidden();
+  await expect(mathButton).toBeFocused();
+
+  await mathButton.click();
+  await expect(panel).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(mathButton).toBeFocused();
+});
+
+test("opened with M, the panel gives focus back to what had it", async ({ page }) => {
+  await open(page);
+  await expect(diveButton(page)).toBeFocused();
+
+  await page.keyboard.press("m");
+  await expect(page.getByRole("dialog", { name: "Math" })).toBeVisible();
+  await page.getByRole("dialog", { name: "Math" }).getByRole("button", { name: "Close" }).click();
+
+  await expect(diveButton(page)).toBeFocused();
+});

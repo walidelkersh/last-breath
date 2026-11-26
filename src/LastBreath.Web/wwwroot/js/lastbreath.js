@@ -55,8 +55,16 @@ window.lastBreath = {
         if (!active || active === document.body || active === document.documentElement) element.focus({ preventScroll: true });
     },
 
-    openDialog(dialog) {
-        if (!dialog.open) dialog.showModal();
+    // Closing the panel gives focus back to what had it, or to the control that opened it when nothing did, because a click does not focus a button in
+    // every engine and some of them leave focus on the page when a dialog closes.
+    openDialog(dialog, opener) {
+        if (dialog.open) return;
+        const focused = document.activeElement;
+        const back = focused && focused !== document.body ? focused : opener;
+        dialog.addEventListener("close", () => {
+            if (back && back.isConnected) back.focus({ preventScroll: true });
+        }, { once: true });
+        dialog.showModal();
     },
 
     randomSeed() {
@@ -65,6 +73,23 @@ window.lastBreath = {
         return ((BigInt(words[0]) << 32n) | BigInt(words[1])).toString();
     },
 };
+
+// The list of keys is a popover. It closes on a click anywhere else and on Escape, and it knows how far from the left it starts so that it
+// stays on the screen.
+document.addEventListener("click", (event) => {
+    const keys = document.querySelector("details.keys[open]");
+    if (keys && !keys.contains(event.target)) keys.removeAttribute("open");
+});
+document.addEventListener("keydown", (event) => {
+    const keys = document.querySelector("details.keys[open]");
+    if (event.key !== "Escape" || !keys) return;
+    keys.removeAttribute("open");
+    keys.querySelector("summary").focus({ preventScroll: true });
+});
+document.addEventListener("toggle", (event) => {
+    const keys = event.target;
+    if (keys.matches && keys.matches("details.keys") && keys.open) keys.style.setProperty("--keys-left", `${keys.getBoundingClientRect().left}px`);
+}, true);
 
 // The art sprite goes into the page itself, not into an <img>, so that its colours come from the page's CSS variables
 // and follow the theme. A failed request leaves the game playable, with text on the plain page colours.

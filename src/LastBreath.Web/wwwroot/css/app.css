@@ -283,13 +283,25 @@ footer .quiet {
     text-decoration: underline;
 }
 
-.keys[open] {
-    flex-basis: 100%;
+/* The list of keys is a small popover over the page, anchored above its control. Opening it never changes the height of the footer, so it
+   cannot change the layout of the stage, which is sized from the footer. */
+.keys {
+    position: relative;
 }
 
 .keys p {
-    max-width: var(--measure);
-    margin-top: var(--s1);
+    position: absolute;
+    bottom: calc(100% + var(--s2));
+    left: 0;
+    z-index: 30;
+    width: max-content;
+    max-width: min(var(--measure), calc(100vw - var(--keys-left, 0px) - var(--edge)));
+    margin: 0;
+    padding: var(--s3) var(--s4);
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r2);
 }
 
 /* Buttons */
@@ -816,7 +828,7 @@ main:has(> .select) {
     color: var(--on-accent);
     background: var(--amber);
     border-radius: 1em;
-    font-size: var(--text-xs);
+    font-size: clamp(var(--text-xs), 1.4cqw, 1.5rem);
     font-weight: 700;
     line-height: 1.4;
     white-space: nowrap;
@@ -1986,7 +1998,43 @@ code {
         order: 3;
         flex: 0 1 auto;
         min-height: 0;
-        overflow: auto;
+    }
+
+    /* Opened, the log has the room. The strip, its legend and its note step aside, and the list fills what is left and scrolls, with a shadow at
+       the edge that has more behind it. */
+    .side:has(.spinlog[open]) .session :is(.bars, .legend, .note) {
+        display: none;
+    }
+
+    /* The opened log is the scroller, with its own line pinned at the top. */
+    .side > .spinlog[open] {
+        flex: 1 1 0;
+        padding-top: 0;
+        overflow-y: auto;
+        background:
+            linear-gradient(var(--surface) 30%, transparent) top / 100% 1.5rem no-repeat local,
+            linear-gradient(transparent, var(--surface) 70%) bottom / 100% 1.5rem no-repeat local,
+            radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--text) 24%, transparent), transparent) top / 100% 0.7rem no-repeat scroll,
+            radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--text) 24%, transparent), transparent) bottom / 100% 0.7rem no-repeat scroll;
+        scrollbar-width: thin;
+    }
+
+    .spinlog[open] summary {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding-block: var(--s1);
+        background: var(--surface);
+    }
+
+    .spinlog[open] .ticker {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .spinlog[open] .ticker li {
+        height: 1.65rem;
+        margin-bottom: 0;
     }
 
     /* When not even one row fits, none is shown, rather than the top half of one. */
@@ -2014,9 +2062,9 @@ code {
 /* A phone on its side has little height: the header and footer shrink, the board takes what is left, and the side panel keeps only what is needed to play. */
 @media (min-width: 40rem) and (max-height: 32rem) {
     :root {
-        --chrome: 4.5rem;
+        --chrome: 5.4rem;
         --fit: 0.71;
-        --fixed: 2.25rem;
+        --fixed: 2.45rem;
         --side: 15rem;
     }
 
@@ -2214,8 +2262,13 @@ code {
         white-space: nowrap;
     }
 
+    /* A chip is wide enough for 10.00 with room at its sides. */
     .chips {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(3rem, 1fr));
+    }
+
+    .chip span {
+        font-size: var(--text-sm);
     }
 
     .go {
@@ -2251,8 +2304,13 @@ code {
         }
     }
 
+    /* The board starts clear of the header, with room above it for the Last breath tab. */
     .app.staged main {
-        padding-block: var(--s1);
+        padding-block: 1.1rem var(--s1);
+    }
+
+    .breath-band {
+        line-height: 1.2;
     }
 
     .session,

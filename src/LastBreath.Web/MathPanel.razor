@@ -85,7 +85,8 @@
     // The lab knows the dive Static as drift as well, which is what the page calls it.
     private static string LabName(string id) => id == "Static" ? "drift" : id.ToLowerInvariant();
 
-    public async Task Open() => await JS.InvokeVoidAsync("lastBreath.openDialog", dialog);
+    // The opener is the control to give focus back to when the panel closes.
+    public async Task Open(ElementReference opener) => await JS.InvokeVoidAsync("lastBreath.openDialog", dialog, opener);
 
     private RenderFragment Cells(Func<DiveInfo, string> value) => builder =>
     {

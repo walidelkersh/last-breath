@@ -12,7 +12,7 @@
         <header class="top">
             <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
             <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
-            <button type="button" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
+            <button type="button" @ref="mathButton" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
         </header>
 
         <main>
@@ -35,7 +35,7 @@
             <p>Demo only. The credits are play money, and nothing is paid out.</p>
             <details class="keys">
                 <summary>Keys</summary>
-                <p>1 to 3 choose a dive. S skips to the end of a round. M opens the math. Escape closes it. Space or Enter presses the button in focus.</p>
+                <p>1 to 3 choose a dive. S skips to the end of a round. M opens the math. Escape closes the math or this list. Space or Enter presses the button in focus.</p>
             </details>
             <label class="toggle">
                 <input type="checkbox" checked="@reduceMotion" disabled="@systemReducesMotion" @onchange="ToggleMotion" />
@@ -75,6 +75,7 @@
     private string? lastSeedDive;
     private RoundView? roundView;
     private MathPanel? math;
+    private ElementReference mathButton;
 
     private bool reduceMotion => systemReducesMotion || reduceMotionChoice;
 
@@ -168,7 +169,7 @@
 
     private async Task OpenMath()
     {
-        if (math is not null) await math.Open();
+        if (math is not null) await math.Open(mathButton);
     }
 
     [JSInvokable]
