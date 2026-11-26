@@ -266,7 +266,7 @@ test("a jackpot is not counted as a crate, and two rounds that paid very differe
   await expect(summary(page)).toBeVisible();
   const next = await plate(page).locator(".odds").textContent();
   expect(next).not.toBe(big);
-  expect(big).toMatch(/^A win of 21\.65× or more comes about 1 Classic dive in [\d,]+\.$/);
+  expect(big).toMatch(/^A win of 21\.65× or more comes in about 1 Classic dive in [\d,]+\.$/);
 });
 
 test("before the end the foot of the board shows the last landing, and it is not a live region", async ({ page }) => {

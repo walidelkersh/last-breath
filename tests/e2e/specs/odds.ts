@@ -62,11 +62,13 @@ export function expectedLine(slug: "classic" | "static" | "tank", kind: string, 
       : `About 1 in ${rounded(every)} ${kind} dives surfaces with nothing, and that is part of the 96%.`;
   }
   if (units < 1000) {
-    const tenths = Math.round((atLeast(1) - atLeast(1000)) * 10);
+    // Every dive that ends under the bet, the ones that pay nothing included.
+    const tenths = Math.round((1 - atLeast(1000)) * 10);
+    if (tenths >= 10) return `Nearly every ${kind} dive returns less than the bet.`;
     return tenths < 1 ? `Fewer than 1 in 10 ${kind} dives return less than the bet.` : `About ${tenths} in 10 ${kind} dives return less than the bet.`;
   }
   const every = 1 / atLeast(units);
   return every < 2
     ? `A win of ${times(units)}× or more comes in more than half of ${kind} dives.`
-    : `A win of ${times(units)}× or more comes about 1 ${kind} dive in ${rounded(every)}.`;
+    : `A win of ${times(units)}× or more comes in about 1 ${kind} dive in ${rounded(every)}.`;
 }

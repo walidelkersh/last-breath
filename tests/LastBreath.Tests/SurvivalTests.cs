@@ -73,14 +73,30 @@ public sealed class SurvivalTests
 
     [Theory]
     [MemberData(nameof(Dives))]
-    public void ABetOrMoreIsLessLikelyThanAnyWinAndTheChanceUnderTheBetIsTheGap(string id)
+    public void TheChanceUnderTheBetIncludesTheDivesThatPayNothing(string id)
     {
         var (_, _, survival) = Of(id);
-        var under = survival.AboveNothingBelow(RoundSummary.BetUnits);
+        var under = survival.Below(RoundSummary.BetUnits);
+        var paysSomethingButLessThanTheBet = survival.AtLeast(1) - survival.AtLeast(RoundSummary.BetUnits);
 
         Assert.InRange(under, 0, 1);
-        Assert.Equal(survival.AtLeast(1) - survival.AtLeast(RoundSummary.BetUnits), under, 15);
-        Assert.Equal(1, survival.Nothing + under + survival.AtLeast(RoundSummary.BetUnits), 12);
+        Assert.Equal(survival.Nothing + paysSomethingButLessThanTheBet, under, 12);
+        Assert.Equal(1, under + survival.AtLeast(RoundSummary.BetUnits), 12);
+    }
+
+    // The exact figures, P(A < bet): Classic 0.720736, Drift 0.696604 and Tank 0.713180, which are 7 in 10 for all three. Counting only the
+    // dives that pay something, Classic was 0.510476 and printed as 5 in 10, which made it look safer than the other two.
+    [Theory]
+    [InlineData("Classic", 0.720736, 0.510476)]
+    [InlineData("Static", 0.696604, 0.696143)]
+    [InlineData("Tank", 0.713180, 0.711751)]
+    public void TheChanceUnderTheBetIsTheExactFigureAndIsSevenInTenForEveryDive(string id, double exact, double leavingOutNothing)
+    {
+        var (_, _, survival) = Of(id);
+
+        Assert.Equal(exact, survival.Below(RoundSummary.BetUnits), 6);
+        Assert.Equal(7, (int)Math.Round(survival.Below(RoundSummary.BetUnits) * 10, MidpointRounding.AwayFromZero));
+        Assert.Equal(leavingOutNothing, survival.AtLeast(1) - survival.AtLeast(RoundSummary.BetUnits), 6);
     }
 
     [Fact]

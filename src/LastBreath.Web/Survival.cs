@@ -38,8 +38,8 @@ public sealed class Survival
         return index >= _atLeast.Length ? 0 : _atLeast[index];
     }
 
-    // The chance of an award above nothing and below this many units.
-    public double AboveNothingBelow(int units) => Math.Max(0, AtLeast(1) - AtLeast(units));
+    // The chance of an award below this many units, nothing included.
+    public double Below(int units) => Math.Max(0, 1 - AtLeast(units));
 
     // The mean award in bets: the sum of the chances of at least each step above zero, times the size of a step.
     public double Mean

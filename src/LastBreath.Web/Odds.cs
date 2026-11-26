@@ -23,11 +23,12 @@ public static class Odds
 
         if (units < RoundSummary.BetUnits)
         {
-            var tenths = (int)Math.Round(survival.AboveNothingBelow(RoundSummary.BetUnits) * 10, MidpointRounding.AwayFromZero);
+            // Every dive that ends under the bet counts, the ones that pay nothing included.
+            var tenths = (int)Math.Round(survival.Below(RoundSummary.BetUnits) * 10, MidpointRounding.AwayFromZero);
             return tenths switch
             {
                 < 1 => $"Fewer than 1 in 10 {kind} dives return less than the bet.",
-                >= 10 => $"Nearly every {kind} dive that pays returns less than the bet.",
+                >= 10 => $"Nearly every {kind} dive returns less than the bet.",
                 _ => $"About {tenths} in 10 {kind} dives return less than the bet.",
             };
         }
@@ -37,7 +38,7 @@ public static class Odds
         var often = 1 / atLeast;
         return often < 2
             ? $"A win of {Format.Multiple(units)}× or more comes in more than half of {kind} dives."
-            : $"A win of {Format.Multiple(units)}× or more comes about 1 {kind} dive in {Rounded(often)}.";
+            : $"A win of {Format.Multiple(units)}× or more comes in about 1 {kind} dive in {Rounded(often)}.";
     }
 
     // A whole number below ten, and two significant digits from ten up, so that nobody reads a false precision.
