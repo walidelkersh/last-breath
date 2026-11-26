@@ -6,11 +6,11 @@ Last Breath is a hold-and-spin game with no base game. Each bet buys one dive, w
 
 Every dive returns about 96% of the bet. The exact figures come from the solver, and a Python script recomputes them in fractions and agrees to 1e-12. Classic returns {{classic.rtp}} with a standard deviation of {{classic.sd}} bets per round, a hit frequency of {{classic.hit}} and {{classic.spins}} spins on average, and its Grand lands about once in {{classic.grand_odds}} rounds. Drift returns {{drift.rtp}} with a standard deviation of {{drift.sd}}, a hit frequency of {{drift.hit}}, {{drift.spins}} spins and a Grand once in {{drift.grand_odds}} rounds. Tank returns {{tank.rtp}} with a standard deviation of {{tank.sd}}, a hit frequency of {{tank.hit}}, {{tank.spins}} spins and a Grand once in {{tank.grand_odds}} rounds.
 
-I also played {{rounds}} rounds of each dive with seed {{seed}} through the real engines, and the simulated returns were {{classic.sim_rtp}}, {{drift.sim_rtp}} and {{tank.sim_rtp}}. That is one seed per dive, and the Grand carries most of the variance in Classic and Tank, so a single seed can land a standard error or so from the exact figure, as it did for those two. The engines, the solvers and the Python check all follow one reading of the rules, so none of them can show that I misread a rule. Free, Wreck and Crew are not built, and I tested the client in Chromium only.
+I also played {{rounds}} rounds of each dive with seed {{seed}} through the real engines, and the simulated returns were {{classic.sim_rtp}}, {{drift.sim_rtp}} and {{tank.sim_rtp}}. That is one seed per dive, and the Grand carries most of the variance in Classic and Tank, so a single seed can land a standard error or so from the exact figure, as it did for those two. The engines, the solvers and the Python check all follow one reading of the rules, so none of them can show that I misread a rule. Free, Wreck and Crew are not built. The browser tests pass in Chromium, Firefox and WebKit, but I have not tried the client on a real iPhone, a real Mac or with a screen reader.
 
 ## Build, test and run
 
-The build needs the .NET 8 SDK or newer. The browser tests need Node 18 or newer, and they publish the client, serve it and drive Chromium.
+The build needs the .NET 8 SDK or newer. The browser tests need Node 18 or newer, and they publish the client, serve it and drive Chromium. Setting `E2E_BROWSERS=all` runs them in Firefox and WebKit as well.
 
 ```
 dotnet build LastBreath.sln -c Release
