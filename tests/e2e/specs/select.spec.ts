@@ -76,6 +76,17 @@ test.describe("on a phone", () => {
     }
   });
 
+  test("a card that takes keyboard focus is scrolled clear of the bar", async ({ page }) => {
+    await open(page);
+    await page.getByRole("radio", { name: "Tank Dive" }).focus();
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowRight");
+
+    const card = (await page.locator(".card", { has: page.getByText("Tank Dive", { exact: true }) }).locator(".card-body").boundingBox())!;
+    const bar = (await page.locator(".stake").boundingBox())!;
+    expect(card.y + card.height).toBeLessThanOrEqual(bar.y);
+  });
+
   test("a bet can be chosen from the bar and a round started from it", async ({ page }) => {
     await open(page);
     await page.getByRole("radio", { name: "2.00", exact: true }).check({ force: true });

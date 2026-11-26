@@ -55,12 +55,24 @@ test.describe("on a phone", () => {
     await expectInside(page, page.getByRole("button", { name: "Skip" }), "Skip");
 
     await page.keyboard.press("s");
-    await expect(summary(page)).toBeVisible();
+    await expect(summary(page)).toBeFocused();
+    const shown = (await summary(page).boundingBox())!;
+    const again = (await page.getByRole("button", { name: "Dive again" }).boundingBox())!;
+    expect(shown.y + shown.height, "the summary ends above the bar").toBeLessThanOrEqual(again.y);
     await page.evaluate(() => scrollTo(0, 0));
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again");
     await expectInside(page, page.getByRole("button", { name: "Change dive" }), "Change dive");
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again at the foot of the page");
+  });
+
+  test("a round starts at the top of the page even when the selection screen was scrolled", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => scrollTo(0, 800));
+    await diveButton(page).click();
+
+    await expect(page.getByRole("button", { name: "Skip" })).toBeFocused();
+    expect(await page.evaluate(() => scrollY)).toBe(0);
   });
 
   test("the header is two short lines: the title and Math, then the balance and Reset balance", async ({ page }) => {

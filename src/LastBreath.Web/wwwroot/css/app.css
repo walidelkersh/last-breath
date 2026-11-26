@@ -59,8 +59,9 @@
     box-sizing: border-box;
 }
 
+/* Room for the bar at the foot of a narrow screen, so a focused control is never scrolled in behind it. */
 html {
-    scroll-padding-bottom: 6rem;
+    scroll-padding-bottom: 5rem;
 }
 
 body {
@@ -276,6 +277,15 @@ button.quiet {
     cursor: pointer;
 }
 
+/* The hidden radio spans the card, so focus scrolls the whole card into view. The margin adds the taller bet bar to the padding above. */
+.card input {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    scroll-margin-bottom: 6rem;
+}
+
 .card-body {
     display: flex;
     flex-direction: column;
@@ -288,10 +298,12 @@ button.quiet {
 }
 
 /* A raised edge for hover, a heavy edge for the choice, a gapped ring for focus: no state depends on colour alone. */
-.card:hover .card-body {
-    border-color: var(--control);
-    box-shadow: 0 var(--s1) 0 0 var(--line);
-    transform: translateY(calc(var(--s1) * -1));
+@media (hover: hover) {
+    .card:hover .card-body {
+        border-color: var(--control);
+        box-shadow: 0 var(--s1) 0 0 var(--line);
+        transform: translateY(calc(var(--s1) * -1));
+    }
 }
 
 .card input:checked + .card-body {
@@ -695,12 +707,12 @@ button.quiet {
 
 .landing {
     min-height: 5.5rem;
-    font-size: var(--text-sm);
 }
 
 .landing-spin {
     display: block;
     color: var(--muted);
+    font-size: var(--text-sm);
 }
 
 .summary {
@@ -957,6 +969,14 @@ code {
 
     .tile-drawn .tile-plate {
         padding: 0.05rem 0.3rem;
+    }
+
+    .tile-drawn .art {
+        inset: auto;
+        top: -6%;
+        left: -9%;
+        width: 118%;
+        height: 112%;
     }
 }
 

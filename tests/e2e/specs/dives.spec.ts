@@ -1,8 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { balance, cents, credits, diveButton, dives, open, summary, tabTo } from "./play";
 
-for (const dive of dives) {
-  test(`${dive.name} is played to the end by keyboard and the balance moves by the win minus the bet`, async ({ page }) => {
+const screens = [
+  { where: "", viewport: { width: 1280, height: 720 } },
+  { where: " on a phone", viewport: { width: 390, height: 844 } },
+];
+
+for (const { where, viewport } of screens) for (const dive of dives) {
+  test(`${dive.name} is played to the end by keyboard${where} and the balance moves by the win minus the bet`, async ({ page }) => {
+    await page.setViewportSize(viewport);
     await open(page);
     const before = await balance(page);
 

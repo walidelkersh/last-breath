@@ -178,7 +178,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) await skipButton.FocusAsync();
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("scrollTo", 0, 0);
+            await skipButton.FocusAsync(preventScroll: true);
+        }
         if (units != countedUnits)
         {
             var from = Settlement.Credits(countedUnits, Bet);

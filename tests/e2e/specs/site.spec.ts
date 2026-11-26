@@ -55,6 +55,11 @@ for (const colorScheme of ["dark", "light"] as const) {
       const card = document.querySelector(".card-body")!;
       const chosen = document.querySelector(".card input:checked + .card-body")!;
       const chip = document.querySelector(".chip input:checked + span")!;
+      const box = document.createElement("section");
+      box.className = "summary";
+      document.body.append(box);
+      const bigWin = probe("big-win", box, box);
+      box.remove();
       return [
         ...["crate", "tank", "mini", "minor", "major"].map(plate),
         probe("rule", card, card),
@@ -65,10 +70,11 @@ for (const colorScheme of ["dark", "light"] as const) {
         pair("chosen bet chip", chip, chip),
         probe("primary", document.body, undefined, "button"),
         probe("bet", document.body, document.body),
+        bigWin,
       ];
     });
 
-    expect(pairs).toHaveLength(13);
+    expect(pairs).toHaveLength(14);
     for (const { name, foreground, background, opaque } of pairs) {
       expect(opaque, `${name} sits on a solid colour`).toBe(true);
       expect(contrast(foreground, background), name).toBeGreaterThanOrEqual(4.5);
