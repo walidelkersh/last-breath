@@ -217,14 +217,7 @@
 
     private DiveInfo info => Dives.First(dive => dive.Id == DiveId);
 
-    private string? OddsLine
-    {
-        get
-        {
-            var filled = outcome.Crates + outcome.Jackpots.Length;
-            return Odds.Line(info.Name, info.Figures.Rtp, filled, info.Figures.FinalCrates[filled]);
-        }
-    }
+    private string? OddsLine => Odds.Line(info.Name, info.Figures.Rtp, outcome.Units, Survival.For(Config, info));
 
     private string PlateTimes => outcome.Kind == "under"
         ? $"Returned {Format.Credits(Settlement.Credits(outcome.Units, Bet))} of your {Format.Credits(Bet)} bet"

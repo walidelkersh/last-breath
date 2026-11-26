@@ -22,43 +22,103 @@ public sealed class OddsTests
         Assert.Equal(printed, Odds.Rounded(every));
     }
 
-    [Fact]
-    public void ClassicEndingWithNothingIsAboutOneInFiveAndPartOfTheNinetySixPercent()
+    // Awards of 0, 500, 1,000, 1,500 and 1,950 units, at 0.2, 0.3, 0.3, 0.15 and 0.05, so that every sum is easy to check.
+    private static Survival Spread()
     {
-        Assert.Equal(
-            "About 1 in 5 Classic dives surfaces with nothing, and that is part of the 96%.",
-            Odds.Line("Classic Dive", 0.960019, 0, 0.2103));
+        var award = new double[40];
+        award[0] = 0.2;
+        award[10] = 0.3;
+        award[20] = 0.3;
+        award[30] = 0.15;
+        award[39] = 0.05;
+        return new Survival(award);
     }
 
     [Fact]
-    public void AnEndingWithCratesNamesTheDiveAndTheCountAndSaysOneTimeIn()
+    public void ARoundThatPaidNothingKeepsTheLineAboutOneInFiveAndPartOfTheNinetySixPercent()
     {
-        Assert.Equal("A Classic dive ends with exactly 9 crates about 1 time in 44.", Odds.Line("Classic Dive", 0.96, 9, 0.0227));
-        Assert.Equal("A Drift dive ends with exactly 1 crate about 1 time in 220.", Odds.Line("Drift Dive", 0.96, 1, 0.0046));
-        Assert.Equal("A Tank dive ends with exactly 14 crates about 1 time in 5,000.", Odds.Line("Tank Dive", 0.96, 14, 0.0002));
+        Assert.Equal(
+            "About 1 in 5 Classic dives surfaces with nothing, and that is part of the 96%.",
+            Odds.Line("Classic Dive", 0.960019, 0, Spread()));
+    }
+
+    [Fact]
+    public void ARoundUnderTheBetSaysHowManyInTenReturnLessThanTheBet()
+    {
+        // 0.8 of the dives pay something and 0.5 pay the bet or more, so 0.3 return less than the bet and more than nothing.
+        Assert.Equal("About 3 in 10 Classic dives return less than the bet.", Odds.Line("Classic Dive", 0.96, 500, Spread()));
+    }
+
+    [Fact]
+    public void ARoundAtOrOverTheBetSaysHowOftenADiveDoesAtLeastThatWell()
+    {
+        Assert.Equal("A win of 1× or more comes about 1 Classic dive in 2.", Odds.Line("Classic Dive", 0.96, 1_000, Spread()));
+        Assert.Equal("A win of 1.5× or more comes about 1 Classic dive in 5.", Odds.Line("Classic Dive", 0.96, 1_500, Spread()));
+        Assert.Equal("A win of 1.95× or more comes about 1 Drift dive in 20.", Odds.Line("Drift Dive", 0.96, 1_950, Spread()));
+    }
+
+    [Fact]
+    public void ABigWinNamesItsOwnMultipleAndIsRoundedToTwoDigits()
+    {
+        var award = new double[1_000];
+        award[0] = 0.5;
+        award[900] = 0.4992; // 45,000 units
+        award[999] = 0.0008; // 49,950 units, 1 in 1,250
+        var survival = new Survival(award);
+
+        Assert.Equal("A win of 49.95× or more comes about 1 Tank dive in 1,300.", Odds.Line("Tank Dive", 0.96, 49_950, survival));
     }
 
     [Fact]
     public void ARoundThatIsMoreLikelyThanNotNeverPrintsAFractionBelowOne()
     {
-        Assert.Equal("A Classic dive ends with exactly 2 crates more often than not.", Odds.Line("Classic Dive", 0.96, 2, 0.8));
-        Assert.Equal("More than half of all Classic dives surface with nothing, and that is part of the 96%.", Odds.Line("Classic Dive", 0.96, 0, 0.6));
+        var award = new double[40];
+        award[0] = 0.1;
+        award[20] = 0.9;
+        var survival = new Survival(award);
+
+        Assert.Equal("A win of 1× or more comes in more than half of Classic dives.", Odds.Line("Classic Dive", 0.96, 1_000, survival));
+        Assert.Equal("About 1 in 10 Classic dives surfaces with nothing, and that is part of the 96%.", Odds.Line("Classic Dive", 0.96, 0, survival));
+
+        var mostly = new double[40];
+        mostly[0] = 0.6;
+        mostly[20] = 0.4;
+        Assert.Equal("More than half of all Classic dives surface with nothing, and that is part of the 96%.", Odds.Line("Classic Dive", 0.96, 0, new Survival(mostly)));
     }
 
     [Fact]
-    public void AnImpossibleEndingHasNoLine()
+    public void AnUnderTheBetLineBelowOneInTenSaysSo()
     {
-        Assert.Null(Odds.Line("Classic Dive", 0.96, 15, 0));
+        var award = new double[40];
+        award[2] = 0.04;
+        award[20] = 0.96;
+
+        Assert.Equal("Fewer than 1 in 10 Classic dives return less than the bet.", Odds.Line("Classic Dive", 0.96, 100, new Survival(award)));
+    }
+
+    [Fact]
+    public void AnAwardThatCannotHappenHasNoLine()
+    {
+        Assert.Null(Odds.Line("Classic Dive", 0.96, 3_000, Spread()));
+        Assert.Null(Odds.Line("Classic Dive", 0.96, 0, new Survival(new double[] { 0, 1 })));
     }
 
     [Theory]
-    [InlineData("Classic", 0, "About 1 in 5 Classic dives surfaces with nothing, and that is part of the 96%.")]
-    [InlineData("Static", 9, "A Drift dive ends with exactly 9 crates about 1 time in 16.")]
-    [InlineData("Tank", 5, "A Tank dive ends with exactly 5 crates about 1 time in 5.")]
-    public void TheLineUsesTheFigureOfTheDiveFromItsOwnReport(string id, int crates, string line)
+    [InlineData("Classic")]
+    [InlineData("Static")]
+    [InlineData("Tank")]
+    public void TheLineOfEachDiveUsesItsOwnDistributionAndNeverCountsAJackpotAsACrate(string id)
     {
-        var dive = Catalog.Load(ConfigLoader.LoadDefault()).First(info => info.Id == id);
+        var config = ConfigLoader.LoadDefault();
+        var dive = Catalog.Load(config).First(info => info.Id == id);
+        var survival = Survival.For(config, dive);
 
-        Assert.Equal(line, Odds.Line(dive.Name, dive.Figures.Rtp, crates, dive.Figures.FinalCrates[crates]));
+        foreach (var units in new[] { 0, 250, 950, 1_000, 2_500, 10_000, 21_650 })
+        {
+            var line = Odds.Line(dive.Name, dive.Figures.Rtp, units, survival);
+            if (line is null) continue;
+            Assert.DoesNotContain("crate", line);
+        }
+        Assert.StartsWith("A win of 21.65× or more comes about 1 ", Odds.Line(dive.Name, dive.Figures.Rtp, 21_650, survival)!);
     }
 }

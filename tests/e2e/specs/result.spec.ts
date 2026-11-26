@@ -1,19 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { diveButton, open, summary } from "./play";
+import { expectedLine } from "./odds";
 
 // Seeds, found with "lab play": Classic 154 lands a Minor and returns 21.65 times the bet, Classic 1 returns 2.5,
-// and Classic 2 returns nothing. Drift 11 and Tank 4 are the seeds the other specs use for those dives.
-
-const reports = join(__dirname, "..", "..", "..", "reports");
-const chances = (slug: string) => JSON.parse(readFileSync(join(reports, `solve-${slug}.json`), "utf8")).final_crate_probabilities as number[];
-
-// The same wording as the page, written again from the rule: a whole number below ten, two significant digits from ten up.
-function rounded(every: number) {
-  const scale = every < 10 ? 1 : 10 ** (Math.floor(Math.log10(every)) - 1);
-  return (Math.round(every / scale) * scale).toLocaleString("en-US");
-}
+// Classic 5 returns 0.6 and Classic 2 returns nothing. Drift 11 and Tank 4 are the seeds the other specs use for those dives.
 
 async function finish(page: Page, seed: number, key = "1") {
   await open(page, `/?seed=${seed}`);
@@ -242,24 +232,40 @@ test("the empty wells are dimmed and the summary keeps only the rows that say so
 });
 
 for (const dive of [
-  { name: "Classic Dive", slug: "classic", key: "1", seed: 154 },
-  { name: "Drift Dive", slug: "static", key: "2", seed: 11 },
-  { name: "Tank Dive", slug: "tank", key: "3", seed: 4 },
+  { name: "Classic Dive", slug: "classic" as const, key: "1", seeds: [2, 5, 1, 154] },
+  { name: "Drift Dive", slug: "static" as const, key: "2", seeds: [11, 12] },
+  { name: "Tank Dive", slug: "tank" as const, key: "3", seeds: [4, 5] },
 ]) {
-  test(`${dive.name}: the odds line uses the figure of that dive from its report for the cells the board ended with`, async ({ page }) => {
-    await finish(page, dive.seed, dive.key);
-
-    const filled = await page.locator(".tile-drawn:not(.tile-tank)").count();
+  test(`${dive.name}: the odds line is the chance of doing at least this well, worked out again from the report and the config`, async ({ page }) => {
+    test.setTimeout(60_000);
     const kind = dive.name.replace(" Dive", "");
-    const every = 1 / chances(dive.slug)[filled];
-    const expected =
-      filled === 0
-        ? `About 1 in ${rounded(every)} ${kind} dives surfaces with nothing, and that is part of the 96%.`
-        : `A ${kind} dive ends with exactly ${filled} ${filled === 1 ? "crate" : "crates"} about 1 time in ${rounded(every)}.`;
-    await expect(plate(page).locator(".odds")).toHaveText(expected);
-    expect(await plate(page).textContent()).not.toContain("!");
+    for (const seed of dive.seeds) {
+      await finish(page, seed, dive.key);
+      const win = await summary(page).getByTestId("win").textContent();
+      const units = Math.round(Number(win!.replace(/,/g, "")) * 1000);
+
+      await expect(plate(page).locator(".odds"), `${kind} seed ${seed}, ${units} units`).toHaveText(expectedLine(dive.slug, kind, units));
+      expect(await plate(page).textContent()).not.toContain("!");
+      expect(await plate(page).textContent()).not.toMatch(/crate/i);
+    }
   });
 }
+
+test("a jackpot is not counted as a crate, and two rounds that paid very differently do not get the same line", async ({ page }) => {
+  await finish(page, 154);
+  // Seed 154 fills 10 cells: 9 crates and a Minor. The summary says so, and the plate does not count the Minor as a crate.
+  await expect(summary(page).getByText("Crates", { exact: true })).toBeVisible();
+  await expect(summary(page).locator("div", { hasText: /^Crates9$/ })).toHaveCount(1);
+  await expect(plate(page).locator(".odds")).not.toContainText("10 crates");
+  const big = await plate(page).locator(".odds").textContent();
+
+  await page.getByRole("button", { name: "Dive again" }).click();
+  await page.keyboard.press("s");
+  await expect(summary(page)).toBeVisible();
+  const next = await plate(page).locator(".odds").textContent();
+  expect(next).not.toBe(big);
+  expect(big).toMatch(/^A win of 21\.65× or more comes about 1 Classic dive in [\d,]+\.$/);
+});
 
 test("before the end the foot of the board shows the last landing, and it is not a live region", async ({ page }) => {
   await open(page, "/?seed=1");

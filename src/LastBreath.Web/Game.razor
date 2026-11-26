@@ -96,6 +96,19 @@
         reduceMotionChoice = await JS.InvokeAsync<string?>("lastBreath.read", MotionKey) == "1";
         await JS.InvokeVoidAsync("lastBreath.listenKeys", DotNetObjectReference.Create(this));
         ready = true;
+        _ = WarmUp();
+    }
+
+    // The odds line on the result plate needs the award distribution of the dive. It is built here, one dive at a time and
+    // after the first frame, so that no round waits for it. A round that ends sooner builds the one it needs itself.
+    private async Task WarmUp()
+    {
+        await Task.Delay(1500);
+        foreach (var info in Dives)
+        {
+            Survival.For(Config, info);
+            await Task.Delay(300);
+        }
     }
 
     private async Task Pick(string id)
