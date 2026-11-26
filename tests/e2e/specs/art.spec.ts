@@ -15,7 +15,7 @@ test("the art loads on a round with no failed request, and every symbol a tile u
 
   const { tiles, plates } = await page.evaluate(() => {
     const plates = [...document.querySelectorAll(".tile-tank .tile-plate")].map((plate) => plate.textContent!.replace(/\s+/g, " ").trim());
-    const targets = [...document.querySelectorAll<SVGUseElement>(".board use")].map((use) => use.getAttribute("href")!);
+    const targets = [...document.querySelectorAll<SVGUseElement>(".round use")].map((use) => use.getAttribute("href")!);
     const tiles = targets.map((href) => {
       const symbol = document.querySelector(`symbol${href}`);
       return { href, drawn: symbol !== null && symbol.querySelectorAll("path").length > 0 };
@@ -27,6 +27,8 @@ test("the art loads on a round with no failed request, and every symbol a tile u
   expect(tiles.map((tile) => tile.href)).toContain("#panel");
   expect(tiles.map((tile) => tile.href)).toContain("#air-tank");
   expect(tiles.filter((tile) => tile.href.startsWith("#well-")).length).toBeGreaterThan(0);
+  expect(tiles.map((tile) => tile.href)).toContain("#bottle-full");
+  expect(tiles.map((tile) => tile.href)).toContain("#medal-grand");
   expect(tiles.every((tile) => tile.drawn)).toBe(true);
   expect(plates).toEqual(["Air +1", "Air +2"]);
 });
@@ -37,6 +39,6 @@ test("the sprite follows the theme through the page's variables", async ({ page 
     return page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--art-plate"));
   };
   await open(page);
-  await page.waitForFunction(() => document.querySelector("symbol#crate-low") !== null);
+  await page.waitForFunction(() => document.querySelector("symbol#crate-low-a") !== null);
   expect(await plate("dark")).not.toEqual(await plate("light"));
 });

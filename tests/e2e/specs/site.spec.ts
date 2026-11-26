@@ -45,7 +45,7 @@ for (const colorScheme of ["dark", "light"] as const) {
       };
       const plate = (kind: string) => {
         const tile = document.createElement("div");
-        tile.className = `tile tile-${kind}`;
+        tile.className = `tile tile-${kind} tile-drawn`;
         tile.innerHTML = '<span class="tile-plate"></span>';
         document.body.append(tile);
         const result = pair(`plate on tile-${kind}`, tile.firstElementChild!, tile.firstElementChild!);
@@ -54,14 +54,14 @@ for (const colorScheme of ["dark", "light"] as const) {
       };
       const card = document.querySelector(".card-body")!;
       return [
-        ...["mini", "minor", "major"].map((kind) => probe(`tile tile-${kind}`, document.body)),
-        plate("crate"),
-        plate("tank"),
+        ...["crate", "tank", "mini", "minor", "major"].map(plate),
         probe("rule", card, card),
+        pair("body text on the page", document.body, document.body),
+        probe("last", document.body, document.body),
       ];
     });
 
-    expect(pairs).toHaveLength(6);
+    expect(pairs).toHaveLength(8);
     for (const { name, foreground, background, opaque } of pairs) {
       expect(opaque, `${name} sits on a solid colour`).toBe(true);
       expect(contrast(foreground, background), name).toBeGreaterThanOrEqual(4.5);

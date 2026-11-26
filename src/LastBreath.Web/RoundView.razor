@@ -16,7 +16,7 @@
                     <span class="pips" aria-hidden="true">
                         @for (var i = 0; i < dive.RefillTo; i++)
                         {
-                            <span class="pip bottle @(i < clock ? "on" : "") @(lastBreath ? "low" : "")"></span>
+                            <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
                         }
                     </span>
                     @if (lastBreath) { <p class="last">Last breath</p> }
@@ -46,7 +46,7 @@
                     <span class="pips" aria-hidden="true">
                         @for (var i = 0; i < dive.TankLimit; i++)
                         {
-                            <span class="pip bottle @(i < tanksLeft ? "on" : "")"></span>
+                            <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < tanksLeft, false))" /></svg>
                         }
                     </span>
                     @if (lastBreath) { <p class="last">Last breath</p> }
@@ -61,7 +61,7 @@
         @for (var index = 0; index < Board.Size; index++)
         {
             var tile = TileAt(index);
-            <div class="tile tile-@tile.Kind @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
+            <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @(tile.IsNew && !ReduceMotion ? "anim-in" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip">
                 @if (tile.Art is { } art)
                 {
                     <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@art" /></svg>
@@ -81,6 +81,7 @@
         @foreach (var prize in Prizes())
         {
             <li class="prize @(prize.Hit ? "hit" : "")" aria-label="@prize.Name" title="@prize.Tip">
+                <svg class="medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-@(prize.Label.ToLowerInvariant())" /></svg>
                 <span class="prize-name">@prize.Label</span>
                 <span class="prize-value">@prize.Value</span>
                 <span class="prize-state">@prize.State</span>
@@ -226,7 +227,7 @@
         var credits = Format.Credits(Settlement.Credits(cell.Units, Bet));
         return new Tile(label.ToLowerInvariant(), label, credits,
             $"{place}: {label}, {credits} credits, {multiple} times the bet", $"{multiple}× bet",
-            current!.NewCells.Contains(index), cell.Kind == CellKind.Cash ? CrateArt(cell.Units) : null);
+            current!.NewCells.Contains(index), cell.Kind == CellKind.Cash ? CrateArt(cell.Units, index) : $"medal-{label.ToLowerInvariant()}");
     }
 
     // A small turn per cell so that crates of one tier do not stand in the board like stamps.
@@ -235,7 +236,13 @@
     // Three drawings of the same empty well, laid out so that no two neighbours match.
     private const string WellPattern = "abcbcacabbcacab";
 
-    private static string CrateArt(int units) => units <= 250 ? "crate-low" : units <= 1000 ? "crate-mid" : "crate-high";
+    // Two drawings of each crate tier, chosen by the cell so that a crate keeps its look from spin to spin.
+    private const string CratePattern = "abbaababbabaaba";
+
+    private static string CrateArt(int units, int index) =>
+        $"crate-{(units <= 250 ? "low" : units <= 1000 ? "mid" : "high")}-{CratePattern[index]}";
+
+    private static string Bottle(bool filled, bool lastBreath) => filled ? (lastBreath ? "bottle-low" : "bottle-full") : "bottle-empty";
 
     private sealed record Prize(string Label, string Value, string State, string Name, string Tip, bool Hit);
 

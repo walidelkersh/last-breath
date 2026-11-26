@@ -1,4 +1,4 @@
-"""Draws the pilot art for the board: the water panel, the empty cell wells, three crate tiers and the air tank.
+"""Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals, the air tank and the oxygen bottles.
 
 Every symbol is flat and cel shaded. The rules sit in the data below, and the audit at the end of
 the script fails the build when a file or a colour breaks them. The sprite holds every symbol once.
@@ -21,8 +21,8 @@ OUT = ROOT / "src" / "LastBreath.Web" / "wwwroot" / "art"
 
 # Style rules. One light from above and a little to the left, one outline weight, one highlight shape.
 SEED = 7319
-OUTLINE = 2.2                 # visible weight in view box units, on every outlined shape
-GLINT = 2.6                   # the one highlight shape: a round-capped stroke on an edge that faces the light
+OUTLINE = 1.7                 # visible weight in pixels at the reference tile, on every outlined shape; app.css scales it with the board
+GLINT = 0.6                   # the one highlight shape: a round-capped stroke on an edge that faces the light, this share of the outline
 GLINT_LENGTH = (6, 18)
 LIGHT = (-0.2, -0.98)
 WOBBLE = {"warp": 0.45, "wavelength": 36.0, "jitter": 0.2, "step": 7.0}
@@ -30,36 +30,47 @@ TILE = (115, 100)             # the aspect of a tile on the board, so a symbol f
 PANEL = (600, 330)
 BUDGET = {"file_bytes": 6000, "total_bytes": 150_000}
 WELLS = "abc"
+VARIANTS = "ab"
+BOTTLE = (20, 40)
 
 # A ramp is (base, shade, highlight). Shade is always darker than the base and highlight lighter.
 PALETTE = {
     "dark": {
         "ink": "#05121b",
         "plate": "#05121b", "plate-ink": "#e6f4fb",
-        "water": ("#12465e", "#0c3449", "#226a89"),
-        "well": ("#0a2f42", "#05202e", "#2a7794"),
+        "water": ("#12465e", "#0e3b52", "#1c5a76"),
+        "well": ("#0f4259", "#0a3045", "#2f7897"),
         "wood-low": ("#b9805e", "#7a4b3a", "#e0a583"),
         "wood-mid": ("#d98a40", "#8d4e20", "#f5b76d"),
         "wood-high": ("#e0645a", "#80322f", "#f79a8a"),
         "steel": ("#8da9be", "#4f677a", "#d2e6f3"),
         "gold": ("#efb82a", "#a96f12", "#ffe070"),
         "tank": ("#52a6e6", "#2a68ab", "#b0e0fa"),
+        "verdigris": ("#3fae9f", "#23766f", "#8be0d0"),
+        "gem": ("#35c9d6", "#1c8b9c", "#a5f2f7"),
+        "amber": ("#f0a63a", "#a2661a", "#ffd27a"),
+        "empty": ("#31566d", "#1f3f52", "#4c748c"),
     },
     "light": {
         "ink": "#0a2231",
         "plate": "#f2f9fc", "plate-ink": "#0a2231",
-        "water": ("#a3d5e5", "#7dbbd0", "#d2edf5"),
-        "well": ("#74b0c5", "#4a8aa4", "#b4dfeb"),
+        "water": ("#a3d5e5", "#8bc5d8", "#c3e5ef"),
+        "well": ("#94c7d8", "#74abc1", "#cfeaf3"),
         "wood-low": ("#a1664a", "#6a4033", "#cb8a6b"),
         "wood-mid": ("#b96d2a", "#7a421a", "#e69f58"),
         "wood-high": ("#a8453f", "#68292a", "#d6766a"),
         "steel": ("#7f9db3", "#4a6276", "#c6dcea"),
         "gold": ("#e8aa14", "#9f650c", "#fcd95a"),
         "tank": ("#2b78c0", "#1d5192", "#8cc7ee"),
+        "verdigris": ("#2f9a8c", "#1e6b66", "#7fd6c6"),
+        "gem": ("#1fb3c4", "#12788c", "#8eeaf2"),
+        "amber": ("#d98a14", "#935305", "#f7c765"),
+        "empty": ("#b5c7d2", "#98afbd", "#dce8ee"),
     },
 }
 NOT_MATERIALS = {"ink", "plate", "plate-ink"}
-MATERIALS = sorted(set(PALETTE["dark"]) - NOT_MATERIALS)
+# New materials go at the end, so that the class names in a file already drawn do not change.
+MATERIALS = ("gold", "steel", "tank", "water", "well", "wood-high", "wood-low", "wood-mid", "verdigris", "gem", "amber", "empty")
 CODES = {name: f"m{index}" for index, name in enumerate(MATERIALS)}
 
 
@@ -168,9 +179,9 @@ class Art:
         if len(band) >= 3:
             self.shape(band, material, "s", outline=False)
 
-    def glint(self, start, end, material):
+    def glint(self, start, end, material, via=None):
         assert GLINT_LENGTH[0] <= math.dist(start, end) <= GLINT_LENGTH[1], (self.name, start, end)
-        middle = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
+        middle = via or ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
         points = [self.at(*p) for p in (start, middle, end)]
         self.items.append((material, f'<path class="g" d="{path_data(points, False)}"/>'))
 
@@ -208,9 +219,26 @@ def jitter(rng, spread=0.9):
     return rng.uniform(-spread, spread)
 
 
-def crate(tier):
-    art = Art(f"crate-{tier}", TILE, seed="crate", rot=-2.0)
+# Where each variant puts its planks, seams and nails, as shares of the front face. The box is the same in both.
+CRATE = {
+    "a": {"rows": (0.37, 0.69), "seams": (0.36, 0.70), "joints": (0.44, 0.70, 0.27),
+          "nails": ((5.5, 11), (-5, 12.5), (4.5, 9), (-6, 7.5))},
+    "b": {"rows": (0.31, 0.64), "seams": (0.42, 0.74), "joints": (0.60, 0.33, 0.66),
+          "nails": ((6.2, 8), (-6.5, 9.2), (5, 7), (-4.5, 10))},
+}
+
+
+def grain(art, material, tone, x0, x1, y0, y1, count):
+    """Short, thin strokes along the planks, in the tone next to the plank's own."""
+    for _ in range(count):
+        x, y = art.rng.uniform(x0 + 3, x1 - 20), art.rng.uniform(y0 + 2.5, y1 - 2.5)
+        art.strip((x, y), (x + art.rng.uniform(8, 18), y + art.rng.uniform(-0.6, 0.6)), 0.9, material, tone)
+
+
+def crate(tier, variant):
+    art = Art(f"crate-{tier}-{variant}", TILE, seed="crate", rot=-2.0)
     r = art.rng
+    plan = CRATE[variant]
     wood = f"wood-{tier}"
     ax, ay = 10 + jitter(r), 34 + jitter(r)
     bx, by = 86 + jitter(r), 34 + jitter(r)
@@ -220,7 +248,7 @@ def crate(tier):
     a, b, c, d = (ax, ay), (bx, by), (cx, cy), (dx, dy)
     plus = lambda p: (p[0] + depth[0], p[1] + depth[1])
     front, top, side = [a, b, c, d], [a, plus(a), plus(b), b], [b, plus(b), plus(c), c]
-    rows = (ay + 0.37 * (dy - ay), ay + 0.69 * (dy - ay))
+    rows = tuple(ay + share * (dy - ay) for share in plan["rows"])
 
     art.shape(side, wood, "s")
     art.shape(top, wood, "h")
@@ -230,58 +258,96 @@ def crate(tier):
     for y in rows:
         art.strip((bx, y), plus((bx, y - 0.6)), 1.4, None, "i")
         art.strip((ax + 1.5, y), (bx - 1, y + 0.5), 1.5, wood, "s")
-    for fraction in (0.36, 0.7):
-        left = (ax + (plus(a)[0] - ax) * fraction, ay + (plus(a)[1] - ay) * fraction)
-        right = (bx + (plus(b)[0] - bx) * fraction, by + (plus(b)[1] - by) * fraction)
+    for share in plan["seams"]:
+        left = (ax + (plus(a)[0] - ax) * share, ay + (plus(a)[1] - ay) * share)
+        right = (bx + (plus(b)[0] - bx) * share, by + (plus(b)[1] - by) * share)
         art.strip(left, right, 1.5, wood, "b")
-    joints = ((ax + 0.44 * (bx - ax), ay + 3, rows[0] - 1.5), (ax + 0.7 * (bx - ax), rows[0] + 2, rows[1] - 1.5), (ax + 0.27 * (bx - ax), rows[1] + 2, dy - 2))
-    for x, y0, y1 in joints:
-        art.strip((x, y0), (x + 0.4, y1), 1.4, wood, "s")
-    for nx, ny in ((ax + 5.5, ay + 11), (bx - 5, ay + 12.5), (ax + 4.5, rows[0] + 9), (bx - 6, rows[0] + 7.5)):
-        art.blob(nx + jitter(r, 0.6), ny + jitter(r, 0.6), 1.3, 1.2, wood, "s", corners=6)
+    spans = ((ay + 3, rows[0] - 1.5), (rows[0] + 2, rows[1] - 1.5), (rows[1] + 2, dy - 2))
+    for share, (y0, y1) in zip(plan["joints"], spans):
+        art.strip((ax + share * (bx - ax), y0), (ax + share * (bx - ax) + 0.4, y1), 1.4, wood, "s")
+    grain(art, wood, "s", ax, bx, ay + 5, rows[0], 2)
+    grain(art, wood, "s", ax, bx, rows[0], rows[1], 2)
+    grain(art, wood, "b", ax + 6, bx + 8, ay - 11, ay - 3, 2)
+    for (nx, ny), row in zip(plan["nails"], (ay, ay, rows[0], rows[0])):
+        x = ax + nx if nx > 0 else bx + nx
+        art.blob(x + jitter(r, 0.6), row + ny + jitter(r, 0.6), 1.3, 1.2, wood, "s", corners=6)
     art.glint((ax + 3.6, ay + 8), (ax + 3.6, ay + 19), wood)
 
-    DETAILS[tier](art, a, b, c, d, rows)
+    if tier == "low":
+        plain_details(art, a, b, d, rows, variant)
+    elif tier == "mid":
+        strapped_details(art, a, b, d, variant)
+    else:
+        gilded_details(art, a, b, c, d, variant)
     return art
 
 
-def plain_details(art, a, b, c, d, rows):
+def plain_details(art, a, b, d, rows, variant):
     wood = "wood-low"
     x = a[0]
-    art.shape([(x - 3.4, rows[0] + 1.4), (x + 1.6, rows[0] + 1.2), (x + 1.6, rows[1] - 1.2), (x - 3.0, rows[1] - 1.6)], wood, "b")
-    art.shade([(x - 3.4, rows[0] + 1.4), (x + 1.6, rows[0] + 1.2), (x + 1.6, rows[1] - 1.2), (x - 3.0, rows[1] - 1.6)], wood, 3)
+    if variant == "a":
+        plank = [(x - 3.4, rows[0] + 1.4), (x + 1.6, rows[0] + 1.2), (x + 1.6, rows[1] - 1.2), (x - 3.0, rows[1] - 1.6)]
+        art.shape(plank, wood, "b")
+        art.shade(plank, wood, 3)
+        return
+    brace = [(x + 5, a[1] + 1.5), (x + 15, a[1] + 1.5), (b[0] - 5, d[1] - 1.5), (b[0] - 15, d[1] - 1.5)]
+    art.shape(brace, wood, "b")
+    art.shade(brace, wood, 5)
+    grain(art, wood, "s", x + 22, b[0] - 22, a[1] + 14, d[1] - 14, 2)
+    for nx, ny in ((x + 10, a[1] + 6), (b[0] - 10, d[1] - 6)):
+        art.blob(nx, ny, 1.4, 1.3, wood, "s", corners=6)
 
 
-def strapped_details(art, a, b, c, d, rows):
-    for left, width in ((a[0] + 15.5, 9.4), (a[0] + 50.5, 8.6)):
-        top, bottom = a[1] - 0.4, d[1] + 1.8
+def strapped_details(art, a, b, d, variant):
+    top, bottom = a[1] - 0.4, d[1] + 1.8
+    straps = ((a[0] + 15.5, 9.4), (a[0] + 50.5, 8.6)) if variant == "a" else ((a[0] + 22, 8.6), (a[0] + 60, 9.8))
+    for left, width in straps:
         art.shape([(left, top), (left + width, top), (left + width + 17, top - 14), (left + 17, top - 14)], "steel", "b")
-        art.shape([(left, top), (left + width, top - 0.2), (left + width + 0.5, bottom), (left + 0.3, bottom - 0.3)], "steel", "b")
-        art.shade([(left, top), (left + width, top - 0.2), (left + width + 0.5, bottom), (left + 0.3, bottom - 0.3)], "steel", 4.5)
+        body = [(left, top), (left + width, top - 0.2), (left + width + 0.5, bottom), (left + 0.3, bottom - 0.3)]
+        art.shape(body, "steel", "b")
+        art.shade(body, "steel", 4.5)
         art.glint((left + 2.4, top + 7), (left + 2.4, top + 20), "steel")
         for y in (top + 6, top + 28):
             art.blob(left + width / 2 + jitter(art.rng, 0.4), y, 1.2, 1.2, "steel", "h", corners=6)
+        for y in (top + art.rng.uniform(17, 24), top + art.rng.uniform(33, 40)):
+            x = left + art.rng.choice((1.8, width - 1.8))
+            art.blob(x, y, 1.5, 2.2, "wood-mid", "s", corners=6)
+            art.strip((x, y + 1), (x + 0.2, y + art.rng.uniform(5, 8)), 1.0, "wood-mid", "s")
+    if variant == "b":
+        art.shape(box(a[0] - 2.2, top - 2, a[0] + 8.5, top + 9), "steel", "b")
+        art.shape(box(b[0] - 8.5, top - 2, b[0] + 2.2, top + 9), "steel", "b")
+        art.blob(a[0] + 3.4, top + 3.5, 1.1, 1.1, "steel", "h", corners=6)
+        art.blob(b[0] - 3.4, top + 3.5, 1.1, 1.1, "steel", "h", corners=6)
 
 
-def gilded_details(art, a, b, c, d, rows):
+def gilded_details(art, a, b, c, d, variant):
     gold = "gold"
-    art.shape([a, b, (b[0], b[1] + 8), (a[0], a[1] + 8)], gold, "b")
-    art.shade([a, b, (b[0], b[1] + 8), (a[0], a[1] + 8)], gold, 2.5)
+    band = 8 if variant == "a" else 6
+    art.shape([a, b, (b[0], b[1] + band), (a[0], a[1] + band)], gold, "b")
+    art.shade([a, b, (b[0], b[1] + band), (a[0], a[1] + band)], gold, 2.5)
     for corner, sx, sy in ((a, -1, -1), (b, 1, -1), (d, -1, 1), (c, 1, 1)):
         x, y = corner
-        x0, x1 = (x - 2.4, x + 9.6) if sx < 0 else (x - 9.6, x + 2.4)
-        y0, y1 = (y - 2.2, y + 11.8) if sy < 0 else (y - 9.8, y + 2.2)
+        grow = 1.0 if variant == "a" or sy < 0 else 0.7
+        x0, x1 = (x - 2.4, x + 9.6 * grow) if sx < 0 else (x - 9.6 * grow, x + 2.4)
+        y0, y1 = (y - 2.2, y + 11.8 * grow) if sy < 0 else (y - 9.8 * grow, y + 2.2)
         art.shape(box(x0, y0, x1, y1), gold, "b")
         art.shade(box(x0, y0, x1, y1), gold, 3)
+        art.blob(x - 3.6 * sx, y - 4.4 * sy, 1.1, 1.1, gold, "s", corners=6)
     art.glint((a[0] + 0.8, a[1] + 1), (a[0] + 0.8, a[1] + 9), gold)
-    x0 = a[0] + 33
+    x0 = a[0] + (33 if variant == "a" else 14)
     art.shape(box(x0, a[1] + 2.5, x0 + 13, a[1] + 22), gold, "b")
     art.shade(box(x0, a[1] + 2.5, x0 + 13, a[1] + 22), gold, 4)
-    art.blob(x0 + 6.8, a[1] + 11.5, 2.1, 2.1, None, "i", corners=7)
-    art.strip((x0 + 6.8, a[1] + 12), (x0 + 6.9, a[1] + 17), 1.8, None, "i")
-
-
-DETAILS = {"low": plain_details, "mid": strapped_details, "high": gilded_details}
+    if variant == "a":
+        art.blob(x0 + 6.8, a[1] + 11.5, 2.1, 2.1, None, "i", corners=7)
+        art.strip((x0 + 6.8, a[1] + 12), (x0 + 6.9, a[1] + 17), 1.8, None, "i")
+    else:
+        art.blob(x0 + 6.6, a[1] + 11.5, 3.0, 3.4, "gem", "b", outline=True, corners=7)
+        for x in (a[0] + 36, a[0] + 49, a[0] + 63):
+            art.blob(x + jitter(art.rng, 1.5), a[1] + band / 2 + 0.3, 1.2, 1.2, gold, "h", corners=6)
+    for _ in range(3):
+        x, y = art.rng.uniform(a[0] + 18, b[0] - 14), a[1] + art.rng.uniform(1.5, band - 1.5)
+        art.strip((x, y), (x + art.rng.uniform(3, 6), y - 0.8), 0.9, gold, "h")
+        art.strip((x - 7, y + 0.6), (x - 3, y + 0.9), 0.9, gold, "s")
 
 
 def air_tank():
@@ -308,10 +374,114 @@ def air_tank():
 
 def well(variant):
     art = Art(f"well-{variant}", TILE)
-    art.shape(rounded_box(1.5, 1.5, TILE[0] - 1.5, TILE[1] - 1.5, 9), "well", "h")
-    floor = rounded_box(7, 7, TILE[0] - 7, TILE[1] - 7, 6)
-    art.shape(floor, "well", "b")
-    art.shade(floor, "well", 11, toward_light=True)
+    art.shape(rounded_box(1.2, 1.2, TILE[0] - 1.2, TILE[1] - 1.2, 9), "well", "s", outline=False)
+    floor = rounded_box(3.2, 3.2, TILE[0] - 3.2, TILE[1] - 3.2, 7.5)
+    art.shape(floor, "well", "b", outline=False)
+    art.shade(floor, "well", 7, toward_light=True)
+    r = art.rng
+    x, y = 22 + 40 * r.random(), 50 + 14 * r.random()
+    art.glint((x, TILE[1] - 6.5), (x + 8 + 8 * r.random(), TILE[1] - 6.5), "well")
+    if variant != "a":
+        art.glint((TILE[0] - 6.5, y), (TILE[0] - 6.5, y + 7 + 6 * r.random()), "well")
+    return art
+
+
+def disc(cx, cy, radius, steps=24):
+    return arc(cx, cy, radius, radius, 0, 360, steps)[:-1]
+
+
+def burst(cx, cy, outer, inner, spikes):
+    def at(k):
+        angle = math.tau * k / (spikes * 2) - math.pi / 2
+        reach = outer if k % 2 == 0 else inner
+        return cx + reach * math.cos(angle), cy + reach * math.sin(angle)
+    return [at(k) for k in range(spikes * 2)]
+
+
+def scallop(cx, cy, radius, depth, bumps, per=5):
+    points = []
+    for k in range(bumps * per):
+        t = math.tau * k / (bumps * per)
+        r = radius - depth + depth * abs(math.sin(bumps * t / 2))
+        points.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+    return points
+
+
+def rim_glint(art, cx, cy, radius, material):
+    """The glint of a round piece sits on its upper left and bends along the rim."""
+    def at(degrees):
+        return cx + radius * math.cos(math.radians(degrees)), cy + radius * math.sin(math.radians(degrees))
+    art.glint(at(205), at(240), material, via=at(222.5))
+
+
+def feather(art, base, end, width, material):
+    nx, ny = -(end[1] - base[1]), end[0] - base[0]
+    norm = math.hypot(nx, ny)
+    nx, ny = nx / norm * width / 2, ny / norm * width / 2
+    mid = ((base[0] + end[0]) / 2, (base[1] + end[1]) / 2)
+    art.shape([base, (mid[0] + nx, mid[1] + ny), end, (mid[0] - nx, mid[1] - ny)], material, "s")
+
+
+def medal(kind):
+    art = Art(f"medal-{kind}", TILE)
+    cx = 57.5
+    if kind == "mini":
+        cy, m = 42, "steel"
+        face = disc(cx, cy, 30)
+        art.shape(face, m, "b")
+        art.shade(face, m, 8)
+        art.shape(disc(cx, cy, 21.5), m, "s", outline=False)
+        art.blob(cx, cy - 1, 5.5, 5.5, m, "h", corners=9)
+        rim_glint(art, cx, cy, 26, m)
+    elif kind == "minor":
+        cy, m = 43, "verdigris"
+        face = scallop(cx, cy, 36, 3.0, 14)
+        art.shape(face, m, "b")
+        art.shade(face, m, 8)
+        art.shape(disc(cx, cy, 23.5), m, "s", outline=False)
+        art.shape([(cx, cy - 14), (cx + 9.5, cy - 1), (cx, cy + 13), (cx - 9.5, cy - 1)], m, "h", outline=False)
+        rim_glint(art, cx, cy, 29, m)
+    elif kind == "major":
+        cy, m = 44, "gold"
+        face = burst(cx, cy, 41, 33, 12)
+        art.shape(face, m, "b")
+        art.shade(face, m, 8)
+        inner = disc(cx, cy, 25)
+        art.shape(inner, m, "b")
+        art.shade(inner, m, 6)
+        art.shape(burst(cx, cy - 1, 14, 6, 5), m, "h", outline=False)
+        rim_glint(art, cx, cy, 20, m)
+    else:
+        cy, m = 56, "gold"
+        for side in (-1, 1):
+            for tip, length, width in ((-12, 27, 9), (10, 31, 10), (32, 25, 9)):
+                angle = math.radians(tip + art.rng.uniform(-3, 3))
+                base = (cx + side * 23, cy - 3)
+                feather(art, base, (base[0] + side * length * math.cos(angle), base[1] - length * math.sin(angle)), width, m)
+        face = disc(cx, cy, 28)
+        art.shape(face, m, "b")
+        art.shade(face, m, 8)
+        art.shape(disc(cx, cy, 20), m, "s", outline=False)
+        art.shape([(cx, cy - 15), (cx + 10, cy), (cx, cy + 15), (cx - 10, cy)], "gem", "b")
+        crown = [(cx - 22, cy - 18), (cx - 22, cy - 41), (cx - 11, cy - 31), (cx, cy - 50), (cx + 11, cy - 31), (cx + 22, cy - 41), (cx + 22, cy - 18)]
+        art.shape(crown, m, "b")
+        art.shade(crown, m, 6)
+        for gx, gy in ((cx - 22, cy - 42), (cx, cy - 51), (cx + 22, cy - 42)):
+            art.blob(gx, gy, 3.6, 3.6, "gem", "b", outline=True, corners=8)
+        art.glint((cx - 18, cy - 28), (cx - 18, cy - 20), m)
+    return art
+
+
+def bottle(state):
+    body_material, cap = {"full": ("tank", "gold"), "empty": ("empty", "steel"), "low": ("amber", "gold")}[state]
+    art = Art(f"bottle-{state}", BOTTLE, seed="bottle")
+    body = arc(10, 18, 7.5, 6, 180, 360, 6) + arc(10, 31, 7.5, 6, 0, 180, 6)
+    art.shape(body, body_material, "b")
+    art.shade(body, body_material, 5)
+    art.shape(box(7, 6, 13, 13.5), "steel", "b")
+    art.shape(rounded_box(4.5, 1.5, 15.5, 7.5, 1.5), cap, "b")
+    if state != "empty":
+        art.glint((5.4, 19), (5.4, 27), body_material)
     return art
 
 
@@ -347,17 +517,21 @@ def style(materials, with_plate):
             parts += [f"--art-{material}-{tone}:{colour}" for tone, colour in zip("bsh", p[material])]
         return ";".join(parts)
 
-    rules = (f".o{{stroke:var(--art-ink);stroke-width:{num(2 * OUTLINE)};paint-order:stroke;stroke-linejoin:round}}"
+    # Only the outer half of a stroke shows, so the stroke is twice the weight. The weight is in pixels so that it does not shrink with a small tile.
+    weight = f"var(--ow,{num(2 * OUTLINE)}px)"
+    rules = (f".o{{stroke:var(--art-ink);stroke-width:{weight};vector-effect:non-scaling-stroke;paint-order:stroke;stroke-linejoin:round}}"
              ".b{fill:var(--b)}.s{fill:var(--s)}.h{fill:var(--h)}.i{fill:var(--art-ink)}"
-             f".g{{fill:none;stroke:var(--h);stroke-width:{num(GLINT)};stroke-linecap:round}}")
+             f".g{{fill:none;stroke:var(--h);stroke-width:calc({weight}*{GLINT});vector-effect:non-scaling-stroke;stroke-linecap:round}}")
     uses = "".join(f".{CODES[m]}{{--b:var(--art-{m}-b);--s:var(--art-{m}-s);--h:var(--art-{m}-h)}}" for m in sorted(materials))
     return f":root{{{tokens('dark')}}}@media (prefers-color-scheme:light){{:root{{{tokens('light')}}}}}{rules}{uses}"
 
 
 def symbols():
-    drawn = {f"crate-{tier}": crate(tier) for tier in ("low", "mid", "high")}
+    drawn = {f"crate-{tier}-{v}": crate(tier, v) for tier in ("low", "mid", "high") for v in VARIANTS}
     drawn["air-tank"] = air_tank()
     drawn.update({f"well-{v}": well(v) for v in WELLS})
+    drawn.update({f"medal-{kind}": medal(kind) for kind in ("mini", "minor", "major", "grand")})
+    drawn.update({f"bottle-{state}": bottle(state) for state in ("full", "empty", "low")})
     drawn["panel"] = panel()
     return drawn
 
@@ -407,6 +581,9 @@ def audit(files):
         problems.append("the art is over the total budget")
 
     for theme, colours in PALETTE.items():
+        if set(colours) - NOT_MATERIALS != set(MATERIALS):
+            problems.append(f"{theme}: the palette and the material list disagree")
+            continue
         for material in MATERIALS:
             base, shade, light = colours[material]
             if not contrast(shade, "#ffffff") > contrast(base, "#ffffff") > contrast(light, "#ffffff"):
@@ -432,10 +609,13 @@ def main():
     problems = audit(files)
     if problems:
         sys.exit("\n".join(problems))
+    gone = [path for path in OUT.glob("*.svg") if path.name not in files]
     stale = [name for name, text in files.items() if not (OUT / name).is_file() or (OUT / name).read_text(encoding="utf-8") != text]
     if check:
-        sys.exit(f"stale art: {', '.join(stale)}" if stale else 0)
+        sys.exit(f"stale art: {', '.join(stale + [path.name for path in gone])}" if stale or gone else 0)
     OUT.mkdir(parents=True, exist_ok=True)
+    for path in gone:
+        path.unlink()
     for name, text in files.items():
         (OUT / name).write_text(text, encoding="utf-8", newline="\n")
         print(f"{name:18}{len(text.encode()):>7} bytes")

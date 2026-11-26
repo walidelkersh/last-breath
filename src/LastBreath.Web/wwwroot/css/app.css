@@ -12,13 +12,6 @@
     --warn: #f0b45a;
     --focus: #9ad4f2;
 
-    --tile-mini: #3d9a92;
-    --tile-mini-ink: #04201d;
-    --tile-minor: #86b36a;
-    --tile-minor-ink: #0e1f06;
-    --tile-major: #d9805f;
-    --tile-major-ink: #2a0e04;
-
     --sans: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --serif: Georgia, "Times New Roman", serif;
     --s1: 0.25rem;
@@ -417,28 +410,21 @@ main {
     gap: var(--s2);
 }
 
-.pip {
-    background: var(--line);
-}
-
-.pip.on {
-    background: var(--accent);
-}
-
-.pip.low.on {
-    background: var(--warn);
-}
-
 .bottle {
-    width: 0.9rem;
-    height: 1.6rem;
-    border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
+    width: 1rem;
+    height: 2rem;
+    --ow: 2.6px;
 }
 
 .segment {
     width: 2rem;
     height: 0.6rem;
+    background: var(--line);
     border-radius: 0.2rem;
+}
+
+.segment.on {
+    background: var(--accent);
 }
 
 .total {
@@ -466,6 +452,7 @@ main {
     background: var(--surface-2);
     border: 1px solid var(--line);
     border-radius: 0.75rem;
+    container-type: inline-size;
 }
 
 .panel {
@@ -477,6 +464,8 @@ main {
 }
 
 .tile {
+    /* The art draws its outline in pixels, so a small tile keeps a clear line and a large one stays light. */
+    --ow: clamp(3px, 0.62cqw, 4.2px);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -496,8 +485,7 @@ main {
     height: 100%;
 }
 
-.tile-crate .art,
-.tile-tank .art {
+.tile-drawn .art {
     transform: rotate(var(--tilt, 0deg));
 }
 
@@ -509,23 +497,21 @@ main {
 }
 
 .tile-label {
-    font-size: clamp(0.6875rem, 2.8vw, 0.875rem);
+    font-size: clamp(0.6875rem, 2.4vw, 0.75rem);
 }
 
 .tile-value {
-    font-size: clamp(0.75rem, 3.2vw, 1.125rem);
+    font-size: clamp(0.75rem, 2.8vw, 0.9375rem);
     font-weight: 700;
 }
 
 /* The plate keeps the text on a flat colour whatever the art does behind it. Without the art file it falls back to the page colours. */
-.tile-crate,
-.tile-tank {
+.tile-drawn {
     justify-content: flex-end;
     padding-bottom: 4%;
 }
 
-.tile-crate .tile-plate,
-.tile-tank .tile-plate {
+.tile-drawn .tile-plate {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
@@ -534,29 +520,8 @@ main {
     padding: 0.05rem 0.4rem;
     color: var(--art-plate-ink, var(--text));
     background: var(--art-plate, transparent);
-    border: 2px solid var(--art-ink, transparent);
+    border: calc(var(--ow, 3.4px) * 0.55) solid var(--art-ink, transparent);
     border-radius: 0.3rem;
-}
-
-.tile-mini,
-.tile-minor,
-.tile-major {
-    clip-path: polygon(0.5rem 0, calc(100% - 0.5rem) 0, 100% 0.5rem, 100% calc(100% - 0.5rem), calc(100% - 0.5rem) 100%, 0.5rem 100%, 0 calc(100% - 0.5rem), 0 0.5rem);
-}
-
-.tile-mini {
-    color: var(--tile-mini-ink);
-    background: var(--tile-mini);
-}
-
-.tile-minor {
-    color: var(--tile-minor-ink);
-    background: var(--tile-minor);
-}
-
-.tile-major {
-    color: var(--tile-major-ink);
-    background: var(--tile-major);
 }
 
 .prizes {
@@ -581,6 +546,12 @@ main {
 .prize.hit {
     border: 2px solid var(--accent);
     padding: calc(var(--s2) - 1px) calc(var(--s1) - 1px);
+}
+
+.medal {
+    width: 2.75rem;
+    height: 2.4rem;
+    --ow: 2.6px;
 }
 
 .prize-name {
@@ -798,14 +769,8 @@ code {
         aspect-ratio: 1 / 1;
     }
 
-    .tile-crate .art,
-    .tile-tank .art {
+    .tile-drawn .art {
         height: 66%;
-    }
-
-    .tile-crate .tile-plate,
-    .tile-tank .tile-plate {
-        border-width: 1px;
     }
 }
 
