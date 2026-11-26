@@ -246,20 +246,22 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 667, height: 375 }
   });
 }
 
-test("the cards leave out about where the mean number of spins is a whole number within 0.01, as Drift is exactly six, and Tank says how many tanks a round", async ({ page }) => {
+test("the cards put about before the typical length unless every round is as long as that, which only Drift is, and Tank says how many tanks a round", async ({ page }) => {
   await open(page);
 
   const length = async (name: string) =>
     (await page.locator(".card", { has: page.getByText(name, { exact: true }) }).locator(".fact", { hasText: "Typical length" }).locator(".fact-value").textContent())!.trim();
-  // Written again from the reports: Classic 7.40, Drift 6.00 and Tank 5.01 rounded to a whole number, with about unless the mean is within 0.01 of it.
+  // Written again from the reports: the mean spins of the solve report rounded to a whole number, with about unless the spin variance of the
+  // simulate report is under 0.01. Tank's mean is 5.0089, near a whole number, but its rounds vary (variance 2.02), so it is about 5.
   const expected = (slug: string) => {
-    const mean = JSON.parse(readFileSync(join(__dirname, "..", "..", "..", "reports", `solve-${slug}.json`), "utf8")).mean_spins as number;
-    return `${Math.abs(mean - Math.round(mean)) <= 0.01 ? "" : "about "}${Math.round(mean)} spins`;
+    const report = (kind: string) => JSON.parse(readFileSync(join(__dirname, "..", "..", "..", "reports", `${kind}-${slug}.json`), "utf8"));
+    return `${report("simulate").spin_variance < 0.01 ? "" : "about "}${Math.round(report("solve").mean_spins)} spins`;
   };
   expect(await length("Classic Dive")).toBe(expected("classic"));
   expect(await length("Drift Dive")).toBe(expected("static"));
   expect(await length("Tank Dive")).toBe(expected("tank"));
   expect(await length("Drift Dive")).toBe("6 spins");
   expect(await length("Classic Dive")).toBe("about 7 spins");
+  expect(await length("Tank Dive")).toBe("about 5 spins");
   await expect(page.locator(".card", { has: page.getByText("Tank Dive", { exact: true }) }).locator(".rule")).toHaveText("Four breaths with no refill. Air tanks add breaths, up to three tanks a round.");
 });

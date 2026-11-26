@@ -14,17 +14,12 @@ public sealed record Figures(
     double SimulatedRtp,
     double SimulatedZ,
     long SimulatedRounds,
+    double SpinVariance,
     IReadOnlyList<double> FinalCrates)
 {
-    // "about" only where the mean is not already a whole number of spins, as Drift's six is.
-    public string TypicalLength
-    {
-        get
-        {
-            var whole = Math.Round(MeanSpins, MidpointRounding.AwayFromZero);
-            return $"{(Math.Abs(MeanSpins - whole) <= 0.01 ? "" : "about ")}{whole:0} spins";
-        }
-    }
+    // The mean number of spins, rounded, with "about" in front. Only a dive whose rounds do not vary, which is a spin variance under 0.01, as Drift's
+    // exactly six, drops it. A mean that happens to be near a whole number says nothing of the rounds: Tank's is 5.01 and its rounds run from 1 to 14.
+    public string TypicalLength => $"{(SpinVariance < 0.01 ? "" : "about ")}{Math.Round(MeanSpins, MidpointRounding.AwayFromZero):0} spins";
 
     public long GrandOdds => (long)Math.Round(1 / GrandProbability);
 }
@@ -66,6 +61,7 @@ public static class Catalog
             mean.GetProperty("simulated").GetDouble(),
             mean.GetProperty("z").GetDouble(),
             simulate.RootElement.GetProperty("rounds").GetInt64(),
+            simulate.RootElement.GetProperty("spin_variance").GetDouble(),
             [.. exact.GetProperty("final_crate_probabilities").EnumerateArray().Select(chance => chance.GetDouble())]);
     }
 

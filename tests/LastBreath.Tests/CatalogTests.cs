@@ -13,7 +13,7 @@ public sealed class CatalogTests
         """;
 
     private const string Simulate = """
-        { "dive": "x", "rounds": 10000000, "seed": 1,
+        { "dive": "x", "rounds": 10000000, "seed": 1, "spin_variance": 2.0,
           "mean_award": { "simulated": 0.97, "exact": 0.96, "z": 1.5, "within_three_se": true } }
         """;
 
@@ -40,18 +40,26 @@ public sealed class CatalogTests
         Assert.Equal("about 8 spins", figures.TypicalLength);
     }
 
+    // Drift always plays six spins, so its variance is 0. Tank's mean is 5.0089 and yet its rounds vary (variance 2.02), so it is about 5.
     [Theory]
-    [InlineData(6.0, "6 spins")]
-    [InlineData(6.004, "6 spins")]
-    [InlineData(5.992, "6 spins")]
-    [InlineData(6.02, "about 6 spins")]
-    [InlineData(7.40, "about 7 spins")]
-    [InlineData(5.01, "5 spins")]
-    public void TheTypicalLengthSaysAboutOnlyWhenTheMeanIsNotAWholeNumberOfSpins(double mean, string printed)
+    [InlineData(0.0, 6.0, "6 spins")]
+    [InlineData(0.005, 6.0, "6 spins")]
+    [InlineData(0.01, 6.0, "about 6 spins")]
+    [InlineData(2.02, 5.0089, "about 5 spins")]
+    [InlineData(17.3, 7.40, "about 7 spins")]
+    public void TheTypicalLengthSaysAboutUnlessTheLengthOfARoundDoesNotVary(double variance, double mean, string printed)
     {
-        var json = Solve.Replace("\"mean_spins\": 7.5", $"\"mean_spins\": {mean.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        var solve = Solve.Replace("\"mean_spins\": 7.5", $"\"mean_spins\": {mean.ToString(invariant)}");
+        var simulate = Simulate.Replace("\"spin_variance\": 2.0", $"\"spin_variance\": {variance.ToString(invariant)}");
 
-        Assert.Equal(printed, Catalog.Parse(json, Simulate).TypicalLength);
+        Assert.Equal(printed, Catalog.Parse(solve, simulate).TypicalLength);
+    }
+
+    [Fact]
+    public void TheSpinVarianceComesFromTheSimulateReport()
+    {
+        Assert.Equal(2.0, Catalog.Parse(Solve, Simulate).SpinVariance);
     }
 
     [Fact]
