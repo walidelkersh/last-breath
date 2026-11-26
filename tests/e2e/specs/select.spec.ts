@@ -8,7 +8,11 @@ test("each card draws its rule from symbols that are in the sprite", async ({ pa
   const drawn = await page.evaluate(() =>
     [...document.querySelectorAll(".card")].map((card) => {
       const hrefs = [...card.querySelectorAll<SVGUseElement>(".pic use")].map((use) => use.getAttribute("href")!);
-      return { hrefs, missing: hrefs.filter((href) => (document.querySelector(`symbol${href}`)?.querySelectorAll("path").length ?? 0) === 0) };
+      return {
+        hrefs,
+        renders: card.querySelectorAll("picture img").length,
+        missing: hrefs.filter((href) => (document.querySelector(`symbol${href}`)?.querySelectorAll("path").length ?? 0) === 0),
+      };
     }),
   );
   const count = (hrefs: string[], prefix: string) => hrefs.filter((href) => href.startsWith(prefix)).length;
@@ -17,8 +21,44 @@ test("each card draws its rule from symbols that are in the sprite", async ({ pa
   expect(drawn).toHaveLength(3);
   expect([count(drawn[0].hrefs, "#crate"), count(drawn[0].hrefs, "#bottle")]).toEqual([1, 3]);
   expect(count(drawn[1].hrefs, "#well")).toBe(6);
-  expect([count(drawn[2].hrefs, "#air-tank"), count(drawn[2].hrefs, "#crate")]).toEqual([1, 1]);
+  expect([count(drawn[2].hrefs, "#air-tank"), count(drawn[2].hrefs, "#crate")]).toEqual([0, 1]);
+  expect(drawn.map((card) => card.renders)).toEqual([0, 0, 1]);
 });
+
+for (const colorScheme of ["dark", "light"] as const) {
+  test.describe(`in the ${colorScheme} theme`, () => {
+    test.use({ colorScheme });
+
+    test("the Tank card shows the render of this theme, inside the drawing", async ({ page }) => {
+      const loaded: string[] = [];
+      page.on("response", (response) => {
+        if (response.url().includes("/art/air-tank")) loaded.push(new URL(response.url()).pathname.split("/").pop()!);
+      });
+      await open(page);
+
+      const picture = page.locator(".card", { has: page.getByText("Tank Dive", { exact: true }) }).locator(".pic-tank img");
+      await expect(picture).toBeVisible();
+      const box = await picture.evaluate(async (element) => {
+        const image = element as HTMLImageElement;
+        await image.decode().catch(() => undefined);
+        const frame = image.closest(".pic-frame")!.getBoundingClientRect();
+        const own = image.getBoundingClientRect();
+        return {
+          source: new URL(image.currentSrc).pathname.split("/").pop(),
+          natural: [image.naturalWidth, image.naturalHeight],
+          inside: own.left >= frame.left && own.right <= frame.right && own.top >= frame.top && own.bottom <= frame.bottom,
+          size: [own.width, own.height],
+        };
+      });
+
+      expect(box.source).toBe(`air-tank-${colorScheme}.webp`);
+      expect(box.natural).toEqual([256, 256]);
+      expect(box.inside).toBe(true);
+      expect(box.size.every((side) => side > 40)).toBe(true);
+      expect(new Set(loaded)).toEqual(new Set([`air-tank-${colorScheme}.webp`]));
+    });
+  });
+}
 
 test("the chosen card and the hovered card differ from the others by more than colour", async ({ page }) => {
   await open(page);

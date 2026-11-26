@@ -1,4 +1,4 @@
-"""Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals, the air tank and the oxygen bottles,
+"""Draws the art for the board: the water panel, the empty cell wells, the crates, the jackpot medals and the oxygen bottles,
 and the mark of the game, a bottle with a bubble, which is also written out as the favicon.
 
 Every symbol is flat and cel shaded. The rules sit in the data below, and the audit at the end of
@@ -6,8 +6,8 @@ the script fails the build when a file or a colour breaks them. The sprite holds
 The page inlines it, so the colours come from CSS variables and follow the theme. The single files
 carry their own palette, so they also work as an image.
 
-scripts/art/blender/air_tank.py renders the air tank into two WebP files, one for each theme, which sit beside the SVG files.
-This script never writes or removes them. The audit only checks that they are there and small.
+The air tank is not drawn here. scripts/art/blender/air_tank.py renders it into two WebP files, one for each theme,
+which sit beside the SVG files. This script never writes or removes them. The audit only checks that they are there and small.
 
     python -I scripts/art/build_art.py           write the files
     python -I scripts/art/build_art.py --check   exit 1 if a file differs from what would be written
@@ -359,28 +359,6 @@ def gilded_details(art, a, b, c, d, variant):
         art.strip((x - 7, y + 0.6), (x - 3, y + 0.9), 0.9, gold, "s")
 
 
-def air_tank():
-    art = Art("air-tank", TILE, rot=48.0, shift=(-2, -6))
-    cx, oy = 57.5, 5.0
-    gold, steel, tank = "gold", "steel", "tank"
-    body = arc(cx, 38 + oy, 15.2, 11, 180, 360, 9) + arc(cx, 72 + oy, 15.6, 9, 0, 180, 9)
-    art.shape(body, tank, "b")
-    art.shade(body, tank, 9)
-    band = box(cx - 15.6, 52 + oy, cx + 15.8, 59.5 + oy)
-    art.shape(band, steel, "b")
-    art.shade(band, steel, 2.5)
-    art.shape(box(cx - 8.8, 24 + oy, cx + 8.6, 29.5 + oy), steel, "b")
-    art.shape(box(cx - 5, 15 + oy, cx + 5, 25 + oy), steel, "b")
-    art.shape(box(cx - 15.5, 7.5 + oy, cx - 7.5, 12.5 + oy), gold, "b")
-    valve = rounded_box(cx - 9, 5 + oy, cx + 9, 16.5 + oy, 2.5)
-    art.shape(valve, gold, "b")
-    art.shade(valve, gold, 3)
-    art.blob(cx + 14.5, 10.5 + oy, 6, 6, gold, "b", outline=True, corners=11)
-    art.blob(cx + 14.5, 10.5 + oy, 1.4, 1.4, None, "i", corners=6)
-    art.glint((cx - 11, 35 + oy), (cx - 11, 49 + oy), tank)
-    return art
-
-
 def well(variant):
     art = Art(f"well-{variant}", TILE)
     art.shape(rounded_box(1.2, 1.2, TILE[0] - 1.2, TILE[1] - 1.2, 9), "well", "s", outline=False)
@@ -552,7 +530,6 @@ def style(materials, with_plate):
 
 def symbols():
     drawn = {f"crate-{tier}-{v}": crate(tier, v) for tier in ("low", "mid", "high") for v in VARIANTS}
-    drawn["air-tank"] = air_tank()
     drawn.update({f"well-{v}": well(v) for v in WELLS})
     drawn.update({f"medal-{kind}": medal(kind) for kind in ("mini", "minor", "major", "grand")})
     drawn.update({f"bottle-{state}": bottle(state) for state in ("full", "empty", "low")})

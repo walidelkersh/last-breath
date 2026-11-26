@@ -333,6 +333,20 @@ button.quiet {
     border-radius: var(--r2);
 }
 
+.pic-frame {
+    position: relative;
+    display: block;
+}
+
+/* The air tank is a picture laid over the drawing, 88 by 76 at 118, 14 of 300 by 120. The render has margins of its own, and this box sits it midway between the bottles and the crate. */
+.pic-tank {
+    position: absolute;
+    left: 39.3%;
+    top: 11.7%;
+    width: 29.3%;
+    height: 63.3%;
+}
+
 .pic-arrow {
     fill: none;
     stroke: var(--art-plate-ink, var(--text));
@@ -610,6 +624,14 @@ button.quiet {
 
 .tile-drawn .art {
     transform: rotate(var(--tilt, 0deg));
+}
+
+/* A render is square and keeps its shape in whatever box it gets. It has its own margin, so the box can be the whole tile. */
+picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .tile-plate {
@@ -977,6 +999,12 @@ code {
         left: -9%;
         width: 118%;
         height: 112%;
+    }
+
+    .tile-drawn picture.art {
+        inset: 0;
+        width: 100%;
+        height: 100%;
     }
 }
 

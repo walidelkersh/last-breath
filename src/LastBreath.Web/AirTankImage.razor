@@ -1,0 +1,8 @@
+<picture class="@Class">
+    <source media="(prefers-color-scheme: dark)" srcset="art/air-tank-dark.webp" />
+    <img src="art/air-tank-light.webp" alt="" aria-hidden="true" width="256" height="256" decoding="async" />
+</picture>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+}
