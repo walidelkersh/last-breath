@@ -9,7 +9,9 @@ const rounds = [
   { name: "Tank", key: "3", seed: 4 },
 ];
 
+// The last of these is a phone on its side, which also gets the stage, with a smaller board.
 const screens = [
+  { width: 844, height: 390 },
   { width: 1024, height: 700 },
   { width: 1280, height: 800 },
   { width: 1366, height: 768 },

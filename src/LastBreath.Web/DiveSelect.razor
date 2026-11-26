@@ -1,99 +1,101 @@
 <section class="select" aria-labelledby="dives-title">
-    <h2 id="dives-title">Choose a dive</h2>
-    <p class="lede">Pick a dive. One bet buys one round.</p>
-    <div class="cards" role="radiogroup" aria-labelledby="dives-title">
-        @for (var i = 0; i < Dives.Count; i++)
-        {
-            var dive = Dives[i];
-            var key = i + 1;
-            <label class="card">
-                <input type="radio" name="dive" class="sr-only" value="@dive.Id"
-                       checked="@(Selected == dive.Id)" @onchange="() => SelectedChanged.InvokeAsync(dive.Id)"
-                       aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id facts-@dive.Id"
-                       aria-keyshortcuts="@key" />
-                <span class="card-body">
-                    <span class="pic-frame">
-                        <svg class="pic" viewBox="0 0 300 120" aria-hidden="true" focusable="false">
-                            <use href="#panel" />
-                            @switch (dive.Id)
+    <div class="select-body">
+        <h2 id="dives-title">Choose a dive</h2>
+        <p class="lede">Pick a dive. One bet buys one round.</p>
+        <div class="cards" role="radiogroup" aria-labelledby="dives-title">
+            @for (var i = 0; i < Dives.Count; i++)
+            {
+                var dive = Dives[i];
+                var key = i + 1;
+                <label class="card">
+                    <input type="radio" name="dive" class="sr-only" value="@dive.Id"
+                           checked="@(Selected == dive.Id)" @onchange="() => SelectedChanged.InvokeAsync(dive.Id)"
+                           aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id facts-@dive.Id"
+                           aria-keyshortcuts="@key" />
+                    <span class="card-body">
+                        <span class="pic-frame">
+                            <svg class="pic" viewBox="0 0 300 120" aria-hidden="true" focusable="false">
+                                <use href="#panel" />
+                                @switch (dive.Id)
+                                {
+                                    case "Classic":
+                                        <use href="#crate-mid-a" x="10" y="12" width="115" height="100" />
+                                        <path class="pic-arrow" d="M132 64h26m-8-8l8 8l-8 8" />
+                                        <use href="#bottle-full" x="172" y="26" width="34" height="68" />
+                                        <use href="#bottle-full" x="212" y="26" width="34" height="68" />
+                                        <use href="#bottle-full" x="252" y="26" width="34" height="68" />
+                                        break;
+                                    case "Static":
+                                        for (var cell = 0; cell < 6; cell++)
+                                        {
+                                            <use href="#well-@("abcabc"[cell])" x="@(6 + cell * 48)" y="40" width="44" height="38.3" />
+                                        }
+                                        <use href="#crate-low-a" x="@(6 + 48 - 6)" y="34" width="56" height="48.7" />
+                                        <use href="#crate-low-b" x="@(6 + 4 * 48 - 6)" y="34" width="56" height="48.7" />
+                                        break;
+                                    default:
+                                        for (var breath = 0; breath < 4; breath++)
+                                        {
+                                            <use href="#bottle-full" x="@(14 + breath * 27)" y="38" width="24" height="48" />
+                                        }
+                                        <use href="#crate-mid-b" x="200" y="20" width="92" height="80" />
+                                        break;
+                                }
+                            </svg>
+                            @if (dive.Id == "Tank")
                             {
-                                case "Classic":
-                                    <use href="#crate-mid-a" x="10" y="12" width="115" height="100" />
-                                    <path class="pic-arrow" d="M132 64h26m-8-8l8 8l-8 8" />
-                                    <use href="#bottle-full" x="172" y="26" width="34" height="68" />
-                                    <use href="#bottle-full" x="212" y="26" width="34" height="68" />
-                                    <use href="#bottle-full" x="252" y="26" width="34" height="68" />
-                                    break;
-                                case "Static":
-                                    for (var cell = 0; cell < 6; cell++)
-                                    {
-                                        <use href="#well-@("abcabc"[cell])" x="@(6 + cell * 48)" y="40" width="44" height="38.3" />
-                                    }
-                                    <use href="#crate-low-a" x="@(6 + 48 - 6)" y="34" width="56" height="48.7" />
-                                    <use href="#crate-low-b" x="@(6 + 4 * 48 - 6)" y="34" width="56" height="48.7" />
-                                    break;
-                                default:
-                                    for (var breath = 0; breath < 4; breath++)
-                                    {
-                                        <use href="#bottle-full" x="@(14 + breath * 27)" y="38" width="24" height="48" />
-                                    }
-                                    <use href="#crate-mid-b" x="200" y="20" width="92" height="80" />
-                                    break;
+                                <AirTankImage Class="pic-tank" />
                             }
-                        </svg>
-                        @if (dive.Id == "Tank")
-                        {
-                            <AirTankImage Class="pic-tank" />
-                        }
+                        </span>
+                        <span class="card-top">
+                            <span class="key" aria-hidden="true">@key</span>
+                            <span class="name" id="name-@dive.Id">@dive.Name</span>
+                            <span class="mark" aria-hidden="true"></span>
+                        </span>
+                        <span class="rule" id="rule-@dive.Id">@dive.Rule</span>
+                        <span class="facts" id="facts-@dive.Id">
+                            <span class="fact"><span class="fact-name">Volatility</span> <span class="fact-value">@dive.Volatility</span></span>
+                            <span class="fact"><span class="fact-name">Hit frequency</span> <span class="fact-value">@Format.Percent(dive.Figures.HitFrequency)</span></span>
+                            <span class="fact"><span class="fact-name">Typical length</span> <span class="fact-value">@dive.Figures.TypicalLength</span></span>
+                            <span class="fact"><span class="fact-name">RTP</span> <span class="fact-value">@Format.Percent(dive.Figures.Rtp)</span></span>
+                        </span>
                     </span>
-                    <span class="card-top">
-                        <span class="key" aria-hidden="true">@key</span>
-                        <span class="name" id="name-@dive.Id">@dive.Name</span>
-                        <span class="mark" aria-hidden="true"></span>
-                    </span>
-                    <span class="rule" id="rule-@dive.Id">@dive.Rule</span>
-                    <span class="facts" id="facts-@dive.Id">
-                        <span class="fact"><span class="fact-name">Volatility</span> <span class="fact-value">@dive.Volatility</span></span>
-                        <span class="fact"><span class="fact-name">Hit frequency</span> <span class="fact-value">@Format.Percent(dive.Figures.HitFrequency)</span></span>
-                        <span class="fact"><span class="fact-name">Typical length</span> <span class="fact-value">@dive.Figures.TypicalLength</span></span>
-                        <span class="fact"><span class="fact-name">RTP</span> <span class="fact-value">@Format.Percent(dive.Figures.Rtp)</span></span>
-                    </span>
-                </span>
-            </label>
-        }
-    </div>
+                </label>
+            }
+        </div>
 
-    <ol class="steps" aria-label="How a round goes">
-        <li>
-            <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                <use href="#panel" />
-                <use href="#well-a" x="8" y="12" width="44" height="38.3" />
-                <use href="#well-b" x="58" y="12" width="44" height="38.3" />
-                <use href="#well-c" x="108" y="12" width="44" height="38.3" />
-            </svg>
-            <p><span class="step-no" aria-hidden="true">1</span> The board starts empty</p>
-        </li>
-        <li>
-            <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                <use href="#panel" />
-                <use href="#well-a" x="8" y="12" width="44" height="38.3" />
-                <use href="#well-b" x="58" y="12" width="44" height="38.3" />
-                <use href="#well-c" x="108" y="12" width="44" height="38.3" />
-                <use href="#crate-mid-a" x="2" y="6" width="56" height="48.7" />
-                <use href="#crate-low-b" x="102" y="6" width="56" height="48.7" />
-            </svg>
-            <p><span class="step-no" aria-hidden="true">2</span> Coins land and lock in their cell</p>
-        </li>
-        <li>
-            <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                <use href="#panel" />
-                <use href="#bottle-full" x="24" y="8" width="24" height="48" />
-                <use href="#bottle-low" x="68" y="8" width="24" height="48" />
-                <use href="#bottle-empty" x="112" y="8" width="24" height="48" />
-            </svg>
-            <p><span class="step-no" aria-hidden="true">3</span> The clock of breaths decides when the round ends</p>
-        </li>
-    </ol>
+        <ol class="steps" aria-label="How a round goes">
+            <li>
+                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                    <use href="#panel" />
+                    <use href="#well-a" x="8" y="12" width="44" height="38.3" />
+                    <use href="#well-b" x="58" y="12" width="44" height="38.3" />
+                    <use href="#well-c" x="108" y="12" width="44" height="38.3" />
+                </svg>
+                <p><span class="step-no" aria-hidden="true">1</span> The board starts empty</p>
+            </li>
+            <li>
+                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                    <use href="#panel" />
+                    <use href="#well-a" x="8" y="12" width="44" height="38.3" />
+                    <use href="#well-b" x="58" y="12" width="44" height="38.3" />
+                    <use href="#well-c" x="108" y="12" width="44" height="38.3" />
+                    <use href="#crate-mid-a" x="2" y="6" width="56" height="48.7" />
+                    <use href="#crate-low-b" x="102" y="6" width="56" height="48.7" />
+                </svg>
+                <p><span class="step-no" aria-hidden="true">2</span> Coins land and lock in their cell</p>
+            </li>
+            <li>
+                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                    <use href="#panel" />
+                    <use href="#bottle-full" x="24" y="8" width="24" height="48" />
+                    <use href="#bottle-low" x="68" y="8" width="24" height="48" />
+                    <use href="#bottle-empty" x="112" y="8" width="24" height="48" />
+                </svg>
+                <p><span class="step-no" aria-hidden="true">3</span> The clock of breaths decides when the round ends</p>
+            </li>
+        </ol>
+    </div>
 
     <div class="stake">
         <div class="bets" role="radiogroup" aria-labelledby="bet-title">

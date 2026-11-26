@@ -69,7 +69,7 @@
 
 /* The root size grows a little on a large screen, so the type and the spacing, which are in rem, grow with it. */
 html {
-    font-size: clamp(100%, 0.45vw + 0.6rem, 1.3rem);
+    font-size: clamp(100%, 0.55vw + 0.5rem, 1.5rem);
     /* Room for the bar at the foot of a narrow screen, so a focused control is never scrolled in behind it. */
     scroll-padding-bottom: 5rem;
 }
@@ -270,6 +270,11 @@ button.quiet {
     display: flex;
     flex: 1;
     flex-direction: column;
+}
+
+/* When the window is taller than the content, the free room goes above and below the dives, and the bar stays at the foot. */
+.select-body {
+    margin-block: auto;
 }
 
 .select h2,
@@ -505,7 +510,7 @@ button.quiet {
     display: flex;
     flex-direction: column;
     gap: var(--s3);
-    margin: auto calc(var(--edge) * -1) 0;
+    margin: 0 calc(var(--edge) * -1);
     padding: var(--s3) var(--edge);
     background: var(--surface);
     border-top: 1px solid var(--line);
@@ -825,6 +830,7 @@ picture img {
 
 .badge {
     padding: 0 0.6em;
+    white-space: nowrap;
     color: var(--on-accent);
     background: var(--accent);
     border-radius: 1em;
@@ -983,7 +989,7 @@ picture img {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 0.2rem;
-    height: 3rem;
+    height: clamp(3rem, 7dvh, 7rem);
 }
 
 .bars::before {
@@ -1231,9 +1237,9 @@ code {
 
 @keyframes rise {
     0% { opacity: 0; transform: translate(0, 0); }
-    8% { opacity: 0.2; }
+    8% { opacity: 0.14; }
     50% { transform: translate(1.2rem, -55vh); }
-    92% { opacity: 0.2; }
+    92% { opacity: 0.14; }
     100% { opacity: 0; transform: translate(-0.6rem, -112vh); }
 }
 
@@ -1318,10 +1324,6 @@ code {
 /* A tile of a narrow board is too small for the art and a two-line plate. The art takes the tile and the plate shows only the value. */
 
 @container (max-width: 26rem) {
-    .tile {
-        aspect-ratio: 1 / 1;
-    }
-
     .tile-label {
         display: none;
     }
@@ -1345,6 +1347,15 @@ code {
     }
 }
 
+/* Square tiles give the art more room on a tall phone. A phone on its side has no height to spare and keeps the wide tile. */
+@media (orientation: portrait) {
+    @container (max-width: 26rem) {
+        .tile {
+            aspect-ratio: 1 / 1;
+        }
+    }
+}
+
 @media (max-width: 30rem) {
     .math-body {
         padding-inline: var(--s4);
@@ -1362,7 +1373,7 @@ code {
 
 /* Phones and narrow windows. The actions sit in a bar at the foot of the screen so they never scroll away. */
 
-@media (max-width: 55.99rem) {
+@media (max-width: 39.99rem), (max-width: 55.99rem) and (min-height: 32.01rem) {
     main {
         padding-bottom: 0;
     }
@@ -1441,7 +1452,7 @@ code {
     }
 }
 
-@media (min-width: 56rem) {
+@media (min-width: 56rem), (min-width: 40rem) and (max-height: 32rem) {
     .app.staged {
         height: 100dvh;
         grid-template-rows: auto minmax(0, 1fr) auto;
@@ -1507,13 +1518,13 @@ code {
     }
 
     .side > .session {
-        order: 3;
+        order: 2;
         padding-top: var(--s3);
         border-top: 1px solid var(--line);
     }
 
     .side > .ticker {
-        order: 2;
+        order: 3;
         flex: 1 1 0;
         min-height: 0;
         padding-top: var(--s3);
@@ -1536,6 +1547,58 @@ code {
 
     .summary dl > .win {
         padding-bottom: var(--s2);
+    }
+}
+
+/* A phone on its side has little height: the header and footer shrink, and the side panel keeps only what is needed to play. */
+@media (min-width: 40rem) and (max-height: 32rem) {
+    :root {
+        --chrome: 6.5rem;
+        --fit: 0.95;
+        --side: 20rem;
+    }
+
+    .round-head h2 {
+        font-size: var(--text-lg);
+    }
+
+    .meta {
+        gap: var(--s3);
+        white-space: nowrap;
+    }
+
+    .medal {
+        width: 2rem;
+    }
+
+    .prize {
+        padding: var(--s1);
+    }
+
+    .prize-state {
+        min-height: 1.2em;
+    }
+
+    .top {
+        padding-block: var(--s1);
+    }
+
+    footer {
+        padding-block: var(--s1);
+        font-size: var(--text-xs);
+    }
+
+    .keys {
+        display: none;
+    }
+
+    .app.staged main {
+        padding-block: var(--s2);
+    }
+
+    .session,
+    .ticker {
+        display: none;
     }
 }
 
