@@ -26,26 +26,44 @@ for (const colorScheme of ["dark", "light"] as const) {
   test(`text on every tile and on the card rule meets WCAG AA in the ${colorScheme} theme`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
     await open(page);
+    // The plate colours come from the art sprite, which the page loads after the game starts.
+    await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue("--art-plate") !== "");
 
-    const pairs: { name: string; foreground: number[]; background: number[] }[] = await page.evaluate(() => {
-      const rgb = (value: string) => (value.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-      const probe = (classes: string, parent: Element) => {
+    const pairs: { name: string; foreground: number[]; background: number[]; opaque: boolean }[] = await page.evaluate(() => {
+      const channels = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number);
+      const pair = (name: string, text: Element, surface: Element) => {
+        const background = channels(getComputedStyle(surface).backgroundColor);
+        return { name, foreground: channels(getComputedStyle(text).color).slice(0, 3), background: background.slice(0, 3), opaque: (background[3] ?? 1) === 1 };
+      };
+      const probe = (classes: string, parent: Element, surface?: Element) => {
         const element = document.createElement("div");
         element.className = classes;
         parent.append(element);
-        const style = getComputedStyle(element);
-        const pair = { name: classes, foreground: rgb(style.color), background: rgb(style.backgroundColor) };
+        const result = pair(classes, element, surface ?? element);
         element.remove();
-        return pair;
+        return result;
       };
-      const tiles = ["tile tile-crate", "tile tile-mini", "tile tile-minor", "tile tile-major", "tile tile-tank"];
+      const plate = (kind: string) => {
+        const tile = document.createElement("div");
+        tile.className = `tile tile-${kind}`;
+        tile.innerHTML = '<span class="tile-plate"></span>';
+        document.body.append(tile);
+        const result = pair(`plate on tile-${kind}`, tile.firstElementChild!, tile.firstElementChild!);
+        tile.remove();
+        return result;
+      };
       const card = document.querySelector(".card-body")!;
-      const rule = probe("rule", card);
-      return [...tiles.map((classes) => probe(classes, document.body)), { ...rule, background: rgb(getComputedStyle(card).backgroundColor) }];
+      return [
+        ...["mini", "minor", "major"].map((kind) => probe(`tile tile-${kind}`, document.body)),
+        plate("crate"),
+        plate("tank"),
+        probe("rule", card, card),
+      ];
     });
 
     expect(pairs).toHaveLength(6);
-    for (const { name, foreground, background } of pairs) {
+    for (const { name, foreground, background, opaque } of pairs) {
+      expect(opaque, `${name} sits on a solid colour`).toBe(true);
       expect(contrast(foreground, background), name).toBeGreaterThanOrEqual(4.5);
     }
   });

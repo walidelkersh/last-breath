@@ -36,3 +36,10 @@ window.lastBreath = {
         return ((BigInt(words[0]) << 32n) | BigInt(words[1])).toString();
     },
 };
+
+// The art sprite goes into the page itself, not into an <img>, so that its colours come from the page's CSS variables
+// and follow the theme. A failed request leaves the game playable, with text on the plain page colours.
+fetch("art/sprite.svg")
+    .then((response) => (response.ok ? response.text() : ""))
+    .then((sprite) => document.body.insertAdjacentHTML("afterbegin", sprite))
+    .catch(() => { });

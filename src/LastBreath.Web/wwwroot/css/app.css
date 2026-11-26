@@ -12,16 +12,12 @@
     --warn: #f0b45a;
     --focus: #9ad4f2;
 
-    --tile-crate: #c9983f;
-    --tile-crate-ink: #1b1304;
     --tile-mini: #3d9a92;
     --tile-mini-ink: #04201d;
     --tile-minor: #86b36a;
     --tile-minor-ink: #0e1f06;
     --tile-major: #d9805f;
     --tile-major-ink: #2a0e04;
-    --tile-tank: #5f9fd3;
-    --tile-tank-ink: #06182a;
 
     --sans: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --serif: Georgia, "Times New Roman", serif;
@@ -458,6 +454,7 @@ main {
 }
 
 .board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: repeat(3, auto);
@@ -465,9 +462,22 @@ main {
     gap: var(--s2);
     max-width: 36rem;
     margin: 0 auto;
+    padding: var(--s2);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+}
+
+.panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
 }
 
 .tile {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -479,6 +489,25 @@ main {
     line-height: 1.15;
 }
 
+.art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.tile-crate .art,
+.tile-tank .art {
+    transform: rotate(var(--tilt, 0deg));
+}
+
+.tile-plate {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .tile-label {
     font-size: clamp(0.6875rem, 2.8vw, 0.875rem);
 }
@@ -488,13 +517,25 @@ main {
     font-weight: 700;
 }
 
-.tile-empty {
-    border: 2px dashed var(--line);
+/* The plate keeps the text on a flat colour whatever the art does behind it. Without the art file it falls back to the page colours. */
+.tile-crate,
+.tile-tank {
+    justify-content: flex-end;
+    padding-bottom: 4%;
 }
 
-.tile-crate {
-    color: var(--tile-crate-ink);
-    background: var(--tile-crate);
+.tile-crate .tile-plate,
+.tile-tank .tile-plate {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    column-gap: 0.35em;
+    padding: 0.05rem 0.4rem;
+    color: var(--art-plate-ink, var(--text));
+    background: var(--art-plate, transparent);
+    border: 2px solid var(--art-ink, transparent);
+    border-radius: 0.3rem;
 }
 
 .tile-mini,
@@ -516,12 +557,6 @@ main {
 .tile-major {
     color: var(--tile-major-ink);
     background: var(--tile-major);
-}
-
-.tile-tank {
-    color: var(--tile-tank-ink);
-    background: var(--tile-tank);
-    border-radius: 999px;
 }
 
 .prizes {
@@ -753,6 +788,24 @@ code {
     *, *::before, *::after {
         animation: none !important;
         transition: none !important;
+    }
+}
+
+/* Narrow screens. A tile is too small for the art and the plate together, so the art takes the top and the plate the foot. */
+
+@media (max-width: 30rem) {
+    .tile {
+        aspect-ratio: 1 / 1;
+    }
+
+    .tile-crate .art,
+    .tile-tank .art {
+        height: 66%;
+    }
+
+    .tile-crate .tile-plate,
+    .tile-tank .tile-plate {
+        border-width: 1px;
     }
 }
 
