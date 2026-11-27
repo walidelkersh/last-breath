@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { diveButton, mathsSwitch, open, summary, tabTo } from "./play";
+import { atRest, diveButton, mathsSwitch, open, summary, tabTo } from "./play";
 
 // The player view is the default: the board, the clock, the total and the result, and no figures for an analyst. The switch in the header turns on
 // the maths view, which shows the odds line, the session tally and strip, the spin log and the figures on the cards. Seed 154 is a Classic round that
@@ -185,6 +185,7 @@ for (const maths of [false, true]) {
 
       await page.keyboard.press("s");
       await expect(summary(page)).toBeVisible();
+      await atRest(page);
       await expectFit(page, [...always, ".board-foot button"], `${label}, at the end`, !maths);
       await expect(page.getByRole("button", { name: "Dive again" })).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole("button", { name: "Change dive" })).toBeInViewport({ ratio: 1 });

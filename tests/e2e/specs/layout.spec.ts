@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { diveButton, open, summary } from "./play";
+import { atRest, diveButton, open, summary } from "./play";
 
 // Each seed gives its dive the tallest screen it can show. Seed 154 is a Classic round that lands a Minor and
 // pays 21.65 times the bet. Seed 4 is a Tank round with two air tanks on the first spin, so the clock has two lines.
@@ -54,6 +54,7 @@ async function playToTheEnd(page: Page, round: (typeof rounds)[number], maths = 
   await diveButton(page).click();
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
+  await atRest(page);
 }
 
 for (const viewport of screens) {
@@ -143,6 +144,7 @@ test.describe("on a phone", () => {
 
     await page.keyboard.press("s");
     await expect(summary(page)).toBeFocused();
+    await atRest(page);
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again");
     await expectInside(page, page.getByRole("button", { name: "Change dive" }), "Change dive");
     expect(await page.evaluate(() => document.querySelector("main")!.scrollHeight <= document.querySelector("main")!.clientHeight + 1)).toBe(true);

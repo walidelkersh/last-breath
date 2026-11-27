@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { diveButton, open, summary } from "./play";
+import { atRest, diveButton, open, summary } from "./play";
 import { expectedLine } from "./odds";
 
 // Seeds, found with "lab play": Classic 154 lands a Minor and returns 21.65 times the bet, Classic 1 returns 2.5,
@@ -12,6 +12,7 @@ async function finish(page: Page, seed: number, key = "1", maths = true) {
   await diveButton(page).click();
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
+  await atRest(page);
 }
 
 const plate = (page: Page) => page.locator(".board .result-plate");
@@ -197,6 +198,7 @@ for (const colorScheme of ["dark", "light"] as const) {
       for (const viewport of sizes) {
         await page.setViewportSize(viewport);
         await finish(page, seed);
+        await atRest(page);
         const found = await page.evaluate(() => {
           const plate = document.querySelector(".result-plate")!;
           const box = plate.getBoundingClientRect();

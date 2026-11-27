@@ -78,7 +78,7 @@ test("Tank: the air is what is left over the starting air plus every breath the 
   expect(steps[0].air).toBeCloseTo(6 / 7, 2);
 });
 
-test("the water darkens by about a half of what is lost, under the tiles and behind the round, and clears at the end", async ({ page }) => {
+test("the water darkens by about a half of what is lost, under the tiles and behind the round, is at its darkest on the last breath, and clears at the end", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await open(page, "/?seed=33");
   await page.keyboard.press("1");
@@ -96,8 +96,8 @@ test("the water darkens by about a half of what is lost, under the tiles and beh
     }));
   const last = await dark();
   expect(last.air).toBeCloseTo(1 / 3, 2);
-  expect(last.board).toBeCloseTo((1 - last.air) * 0.55, 2);
-  expect(last.page).toBeCloseTo((1 - last.air) * 0.55, 2);
+  expect(last.board, "the last breath is the darkest step").toBeCloseTo(0.55, 2);
+  expect(last.page).toBeCloseTo(0.55, 2);
   expect(last.boardLayer).toBe("absolute");
   expect(last.pageLayer).toBe("fixed");
 

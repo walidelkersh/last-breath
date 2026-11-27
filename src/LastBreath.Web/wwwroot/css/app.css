@@ -836,6 +836,12 @@ button.quiet:disabled {
     pointer-events: none;
 }
 
+/* The last breath is the darkest the water gets, whatever share of the air is left, so it is the moment the round feels closest to its end. */
+.board.last-breath::before,
+.round:has(.board.last-breath)::before {
+    opacity: var(--depth-strength);
+}
+
 .round.moves .board::before,
 .round.moves::before {
     transition: opacity 0.6s ease;
@@ -1875,7 +1881,7 @@ code {
 }
 
 .anim-in {
-    animation: tile-in 0.45s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+    animation: tile-in 0.45s cubic-bezier(0.3, 0.7, 0.4, 1) backwards;
 }
 
 .prize.anim-in {
@@ -1898,7 +1904,7 @@ code {
     border: 2px solid color-mix(in srgb, var(--on-board) 70%, transparent);
     border-radius: 50%;
     opacity: 0;
-    animation: ripple 0.7s ease-out 0.15s both;
+    animation: ripple 0.7s ease-out 0.15s backwards;
 }
 
 .splash i {
@@ -1909,7 +1915,7 @@ code {
     border: 1.5px solid color-mix(in srgb, var(--on-board) 85%, transparent);
     border-radius: 50%;
     opacity: 0;
-    animation: fizz 0.75s ease-out both;
+    animation: fizz 0.75s ease-out backwards;
 }
 
 .splash i:nth-child(1) { left: 26%; animation-delay: 0.12s; }
@@ -1925,9 +1931,109 @@ code {
     background: var(--art-gold-h, #ffe070);
     clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
     opacity: 0;
-    animation: glint 0.7s ease-out 0.3s both;
+    animation: glint 0.7s ease-out 0.3s backwards;
     pointer-events: none;
 }
+
+/* The last breath is felt as well as shown. The last bottle breathes slowly and the rim beats twice and rests, like a heart, about once in a
+   second and a half, which is far slower than three flashes a second. Only transform and opacity change, so nothing moves. */
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.16); }
+}
+
+@keyframes heartbeat {
+    0%, 62%, 100% { opacity: 0; }
+    12% { opacity: 1; }
+    24% { opacity: 0.3; }
+    36% { opacity: 0.85; }
+}
+
+.bottle.pulse {
+    transform-origin: 50% 85%;
+    animation: breathe 1.6s ease-in-out infinite;
+}
+
+.round.moves .board.last-breath::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--rim) * -1);
+    border-radius: var(--board-radius);
+    box-shadow: 0 0 0 7px var(--amber);
+    opacity: 0;
+    animation: heartbeat 1.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Surfacing. The water clears, and the result rises into the console with Dive again a beat behind it. */
+@keyframes surface {
+    from { opacity: 0; transform: translateY(40%); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes medal-in {
+    from { opacity: 0; transform: perspective(30rem) rotateY(100deg) scale(0.6); }
+    to { opacity: 1; transform: none; }
+}
+
+.round.moves.over .summary {
+    animation: surface 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) backwards;
+}
+
+.round.moves.over .board-foot .actions {
+    animation: surface 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) 0.18s backwards;
+}
+
+.round.moves.over .plate-medal {
+    animation: medal-in 0.8s cubic-bezier(0.2, 0.8, 0.3, 1.15) 0.15s backwards;
+}
+
+/* A big win: the coins on the board light one after another while the number counts up, and a few bubbles rise through the water. Each coin
+   lights once, so nothing flashes. */
+@keyframes light {
+    0% { filter: none; transform: none; }
+    35% { filter: brightness(1.5) saturate(1.15); transform: translateY(-5%) scale(1.07); }
+    100% { filter: none; transform: none; }
+}
+
+@keyframes burst {
+    0% { opacity: 0; transform: translateY(0); }
+    12% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(-62cqw); }
+}
+
+.round.celebrate .tile-drawn .coin {
+    animation: light 0.6s ease-out calc(var(--order, 0) * var(--step, 100ms) + 0.3s) backwards;
+}
+
+.burst {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    overflow: hidden;
+    border-radius: calc(var(--board-radius) - var(--rim));
+    pointer-events: none;
+}
+
+.burst i {
+    position: absolute;
+    bottom: 6%;
+    width: 1.6cqw;
+    aspect-ratio: 1;
+    border: 2px solid color-mix(in srgb, var(--on-board) 85%, transparent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: burst 1.9s ease-out backwards;
+}
+
+.burst i:nth-child(1) { left: 7%; animation-delay: 0.2s; }
+.burst i:nth-child(2) { left: 19%; width: 1.1cqw; animation-delay: 0.55s; }
+.burst i:nth-child(3) { left: 31%; width: 2.2cqw; animation-delay: 0.35s; }
+.burst i:nth-child(4) { left: 46%; width: 1.3cqw; animation-delay: 0.7s; }
+.burst i:nth-child(5) { left: 57%; width: 1.9cqw; animation-delay: 0.25s; }
+.burst i:nth-child(6) { left: 69%; width: 1.2cqw; animation-delay: 0.6s; }
+.burst i:nth-child(7) { left: 81%; width: 2.4cqw; animation-delay: 0.4s; }
+.burst i:nth-child(8) { left: 92%; width: 1.4cqw; animation-delay: 0.8s; }
 
 /* One ring, 700 ms, out from the edge and fading: it is not repeated and it does not flash. */
 .anim-ring::after {

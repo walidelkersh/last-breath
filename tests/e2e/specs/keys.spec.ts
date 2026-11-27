@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { diveButton, open, summary } from "./play";
+import { atRest, diveButton, open, summary } from "./play";
 
 // The list of keys is a popover over the page, anchored above its control, so opening it never changes the height of the footer or the layout
 // of the stage, which is sized from the footer. Seed 33 is a sparse Classic round that lasts long enough to open the list in the middle of it.
@@ -127,6 +127,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1920, height: 108
       await page.keyboard.press("s");
       await expect(summary(page)).toBeVisible();
       await expect(page.locator(".result-plate")).toBeVisible();
+      await atRest(page);
       const end = await geometry(page);
       await toggle(page).click();
       await expect(popover(page)).toBeVisible();

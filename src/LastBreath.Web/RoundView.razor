@@ -3,17 +3,18 @@
 @inject IJSRuntime JS
 @inject IReadOnlyList<DiveInfo> Dives
 
-<section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
+<section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves") @(Celebrates ? "celebrate" : "")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
     <h2 id="round-title" class="sr-only">@dive.Name</h2>
     <div class="stage">
-        <div class="board @(showsBreathBand ? "last-breath" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows">
+        <div class="board @(showsBreathBand ? "last-breath" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows" style="--step: @(LightStepMs)ms">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
             @if (DiveId != "Static") { <p class="breath-band @(showsBreathBand ? "" : "off")" aria-hidden="true">Last breath</p> }
             @for (var index = 0; index < Board.Size; index++)
             {
                 var tile = TileAt(index);
                 var rich = tile.Art?.StartsWith("crate-high", StringComparison.Ordinal) == true || tile.Kind is "mini" or "minor" or "major";
-                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew)" role="img" aria-label="@tile.Name" title="@tile.Tip">
+                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew)" role="img" aria-label="@tile.Name" title="@tile.Tip"
+                     style="@(Celebrates && tile.Kind != "empty" ? $"--order: {LitBefore(index)}" : null)">
                     <svg class="well" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#well-@WellPattern[index]" /></svg>
                     @if (tile.IsNew && !ReduceMotion)
                     {
@@ -39,6 +40,10 @@
                     }
                 </div>
             }
+            @if (Celebrates)
+            {
+                <span class="burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            }
             <div class="board-foot @(finished ? $"result-plate {outcome.Kind}" : "console")">
                 @if (finished)
                 {
@@ -54,7 +59,7 @@
                             }
                             else
                             {
-                                <p class="plate-win"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
+                                <p class="plate-win"><strong data-testid="win" @ref="winValue">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
                                 @if (Maths) { <p class="plate-times">@PlateTimes</p> }
                             }
                             @if (!CanDiveAgain) { <p class="note">Not enough credits for another dive at this bet.</p> }
@@ -76,7 +81,7 @@
                                 case "Classic":
                                     for (var i = 0; i < dive.RefillTo; i++)
                                     {
-                                        <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
+                                        <svg class="pip bottle @(lastBreath && i == 0 && !ReduceMotion ? "pulse" : "")" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
                                     }
                                     break;
                                 case "Static":
@@ -89,7 +94,7 @@
                                     // Tank air has no fixed top, so it is drawn as the bottles there are, with the spare tanks beside them.
                                     for (var i = 0; i < clock; i++)
                                     {
-                                        <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(true, lastBreath))" /></svg>
+                                        <svg class="pip bottle @(lastBreath && !ReduceMotion ? "pulse" : "")" aria-hidden="true" focusable="false"><use href="#@(Bottle(true, lastBreath))" /></svg>
                                     }
                                     <span class="tanks">
                                         @for (var i = 0; i < dive.TankLimit; i++)
@@ -196,6 +201,9 @@
     private const int CountMs = 300;
     private const int JackpotCountMs = 900;
 
+    // A big win that plays out counts its number up from nothing while the coins on the board light one after another.
+    private const int CelebrationMs = 1600;
+
     private readonly CancellationTokenSource stop = new();
     private DiveConfig dive = default!;
     private Spin[] spins = [];
@@ -203,11 +211,13 @@
     private int shown;
     private bool finished;
     private bool focusSummary;
+    private bool countWin;
     private int countedUnits;
     private ElementReference skipButton;
     private ElementReference summary;
     private ElementReference boardRef;
     private ElementReference totalValue;
+    private ElementReference winValue;
 
     [Parameter, EditorRequired] public Round Round { get; set; } = default!;
     [Parameter, EditorRequired] public string DiveId { get; set; } = "";
@@ -259,6 +269,13 @@
     private bool lastBreath => clock == 1 && !finished;
     private bool showsBreathBand => lastBreath && DiveId != "Static";
 
+    private bool Celebrates => finished && outcome.BigWin && !ReduceMotion;
+
+    // The coins light in board order, closer together when there are more of them, so that the last one lights before the count ends.
+    private int Coins => current?.Cells.Count(cell => !cell.IsEmpty) ?? 0;
+    private int LightStepMs => Math.Clamp((CelebrationMs - 500) / Math.Max(1, Coins), 60, 160);
+    private int LitBefore(int index) => current!.Cells.Take(index).Count(cell => !cell.IsEmpty);
+
     // The words of the clock: on the side panel in the maths view, and for a screen reader only in the player view, where the bottles say it.
     private RenderFragment ClockWords => __builder =>
     {
@@ -305,6 +322,11 @@
             await summary.FocusAsync(preventScroll: true);
             await JS.InvokeVoidAsync("lastBreath.reveal", boardRef);
         }
+        if (countWin)
+        {
+            countWin = false;
+            await JS.InvokeVoidAsync("lastBreath.countUp", winValue, 0, Settlement.Credits(outcome.Units, Bet), CelebrationMs);
+        }
     }
 
     private async Task Play()
@@ -338,6 +360,8 @@
     {
         finished = true;
         focusSummary = true;
+        // Skip asks for the result now, so the number of a skipped round is there at once and only the lights play.
+        countWin = Celebrates && !skipped;
         StateHasChanged();
         await Announce.InvokeAsync(Narration.Result(Config, Bet, outcome, skipped));
         await Finished.InvokeAsync(Settlement.Credits(outcome.Units, Bet));

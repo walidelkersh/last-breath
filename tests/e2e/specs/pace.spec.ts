@@ -45,7 +45,7 @@ test("each spin stays for as long as what it held deserves", async ({ page }) =>
   expect([...kinds].sort((a, b) => a - b)).toEqual([450, 800, 1100, 1300]);
 });
 
-test("on the last breath the rim of the board turns amber and the band shows, and neither is animated", async ({ page }) => {
+test("on the last breath the rim of the board turns amber and the band shows, the band does not move, and only the beat of the rim and the breath of the last bottle run on the board", async ({ page }) => {
   test.setTimeout(60_000);
   await open(page, "/?seed=33");
   await diveButton(page).click();
@@ -64,13 +64,13 @@ test("on the last breath the rim of the board turns amber and the band shows, an
       amber,
       bandAnimation: getComputedStyle(band).animationName,
       boardAnimation: getComputedStyle(board).animationName,
-      // The fade of the depth is a transition and is allowed. No keyframe animation runs on the board or in it.
-      running: board.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).length,
+      // The fade of the depth is a transition and is allowed. The only keyframe animations on the board or in it are the beat of the rim and the breath of the last bottle.
+      running: board.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).map((animation) => (animation as CSSAnimation).animationName).sort().join(","),
     };
   });
   expect(look.amber).toBe("#e0a94a");
   expect(look.edge).toBe("rgb(224, 169, 74)");
-  expect([look.bandAnimation, look.boardAnimation, look.running].toString()).toBe(["none", "none", 0].toString());
+  expect([look.bandAnimation, look.boardAnimation, look.running]).toEqual(["none", "none", "breathe,heartbeat"]);
 
   // The band goes with the last breath: a spin later the clock has gone or been refilled, and the board is plain again.
   await expect(page.locator(".breath-band")).toBeHidden({ timeout: 15_000 });

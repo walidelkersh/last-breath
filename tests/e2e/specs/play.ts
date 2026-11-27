@@ -20,6 +20,10 @@ export const diveButton = (page: Page) => page.getByRole("button", { name: "Dive
 
 export const summary = (page: Page) => page.getByRole("region", { name: "Round over" });
 
+// The result rises into the console when a round ends. A test that measures the console waits for it to come to rest.
+export const atRest = (page: Page) =>
+  expect.poll(() => page.evaluate(() => document.querySelector(".board-foot")?.getAnimations({ subtree: true }).length ?? 0)).toBe(0);
+
 export const cents = (text: string | null) => Math.round(Number((text ?? "").replace(/,/g, "")) * 100);
 
 export const credits = (amount: number) =>
@@ -54,7 +58,7 @@ export async function watchAnimations(page: Page) {
   await page.addInitScript(() => {
     (window as any).sawAnimation = false;
     new MutationObserver(() => {
-      if (document.querySelector(".anim-in, .anim-fly, .splash, .sparkle") || document.getAnimations().length > 0) (window as any).sawAnimation = true;
+      if (document.querySelector(".anim-in, .anim-fly, .splash, .sparkle, .burst, .celebrate, .pulse") || document.getAnimations().length > 0) (window as any).sawAnimation = true;
     }).observe(document, { subtree: true, childList: true, attributes: true });
   });
 }

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { diveButton, open, summary } from "./play";
+import { atRest, diveButton, open, summary } from "./play";
 
 // The serif face belongs to the wordmark and to the result plate and nowhere else, and headings are sans. The board is the one thing to
 // look at: its buttons are on the console at its foot in both views, and the side panel of the maths view stands beside it.
@@ -122,6 +122,7 @@ test("the board stands alone in the player view, and in the maths view the side 
 
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
+  await atRest(page);
   const after = await page.evaluate(() => {
     const board = document.querySelector(".board")!.getBoundingClientRect();
     const buttons = [...document.querySelectorAll(".board-foot .actions button")].map((button) => ({ box: button.getBoundingClientRect(), primary: button.classList.contains("primary"), text: button.textContent }));
@@ -140,6 +141,7 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }
     await diveButton(page).click();
     await page.keyboard.press("s");
     await expect(summary(page)).toBeVisible();
+    await atRest(page);
 
     const found = await page.evaluate(() => {
       const badge = document.querySelector(".prize.hit .badge")!.getBoundingClientRect();
