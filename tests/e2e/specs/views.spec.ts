@@ -176,6 +176,13 @@ for (const maths of [false, true]) {
         expect(left, `${label}: a card starts on the screen`).toBeGreaterThanOrEqual(0);
         expect(right, `${label}: a card ends on the screen`).toBeLessThanOrEqual(viewport.width);
       }
+      const outside = await page.evaluate(() =>
+        [...document.querySelectorAll(".card-body")].flatMap((card) => {
+          const edge = card.getBoundingClientRect().right;
+          return [...card.querySelectorAll(".wave, .rule, .name, .fact")].filter((part) => part.getBoundingClientRect().right > edge + 0.5).map((part) => part.className.baseVal ?? part.className);
+        }),
+      );
+      expect(outside, `${label}: nothing runs past the edge of its card`).toEqual([]);
 
       // Seed 4 is a Tank round, whose clock has the most to draw.
       await page.keyboard.press("3");
