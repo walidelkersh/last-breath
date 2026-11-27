@@ -1818,12 +1818,6 @@ code {
 
 /* Motion. The markup leaves these classes off when motion is reduced, and the media query is a second guard. */
 
-@keyframes tile-in {
-    from { opacity: 0; transform: scale(0.8); }
-    60% { opacity: 1; transform: scale(1.07); }
-    to { transform: scale(1); }
-}
-
 @keyframes rise {
     0% { opacity: 0; transform: translate(0, 0); }
     8% { opacity: 0.1; }
@@ -1844,12 +1838,95 @@ code {
     to { opacity: 1; transform: translateY(-0.35rem); }
 }
 
-.anim-in {
-    animation: tile-in 0.3s ease-out;
-}
-
 .anim-fly {
     animation: gain-fly 0.6s ease-out both;
+}
+
+/* A coin drops into its well, sinks a little past its place and settles, and the water answers with a ring and three bubbles from under
+   it. A gilded crate or a jackpot catches the light once as it lands. Each of these plays once, in under a second, and only with motion. */
+@keyframes tile-in {
+    0% { opacity: 0; transform: translateY(-24%) scale(1.06); }
+    55% { opacity: 1; transform: translateY(4%) scale(0.97); }
+    80% { transform: translateY(-1%) scale(1.01); }
+    100% { transform: none; }
+}
+
+@keyframes card-in {
+    from { opacity: 0; transform: scale(0.8); }
+    60% { opacity: 1; transform: scale(1.07); }
+    to { transform: scale(1); }
+}
+
+@keyframes ripple {
+    0% { opacity: 0.85; transform: scale(0.3); }
+    100% { opacity: 0; transform: scale(1.3); }
+}
+
+@keyframes fizz {
+    0% { opacity: 0; transform: translateY(0); }
+    20% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(-9cqw); }
+}
+
+@keyframes glint {
+    0% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+    45% { opacity: 1; transform: scale(1) rotate(45deg); }
+    100% { opacity: 0; transform: scale(0.5) rotate(90deg); }
+}
+
+.anim-in {
+    animation: tile-in 0.45s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+.prize.anim-in {
+    animation-name: card-in;
+}
+
+.splash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.splash::before {
+    content: "";
+    position: absolute;
+    left: 3%;
+    right: 3%;
+    top: 60%;
+    height: 32%;
+    border: 2px solid color-mix(in srgb, var(--on-board) 70%, transparent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: ripple 0.7s ease-out 0.15s both;
+}
+
+.splash i {
+    position: absolute;
+    top: 40%;
+    width: 7%;
+    aspect-ratio: 1;
+    border: 1.5px solid color-mix(in srgb, var(--on-board) 85%, transparent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: fizz 0.75s ease-out both;
+}
+
+.splash i:nth-child(1) { left: 26%; animation-delay: 0.12s; }
+.splash i:nth-child(2) { left: 50%; width: 5%; animation-delay: 0.22s; }
+.splash i:nth-child(3) { left: 68%; width: 9%; animation-delay: 0.06s; }
+
+.sparkle {
+    position: absolute;
+    top: 4%;
+    left: 12%;
+    width: 24%;
+    aspect-ratio: 1;
+    background: var(--art-gold-h, #ffe070);
+    clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+    opacity: 0;
+    animation: glint 0.7s ease-out 0.3s both;
+    pointer-events: none;
 }
 
 /* One ring, 700 ms, out from the edge and fading: it is not repeated and it does not flash. */

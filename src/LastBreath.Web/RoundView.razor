@@ -12,8 +12,13 @@
             @for (var index = 0; index < Board.Size; index++)
             {
                 var tile = TileAt(index);
+                var rich = tile.Art?.StartsWith("crate-high", StringComparison.Ordinal) == true || tile.Kind is "mini" or "minor" or "major";
                 <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew)" role="img" aria-label="@tile.Name" title="@tile.Tip">
                     <svg class="well" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#well-@WellPattern[index]" /></svg>
+                    @if (tile.IsNew && !ReduceMotion)
+                    {
+                        <span class="splash" aria-hidden="true"><i></i><i></i><i></i></span>
+                    }
                     @if (tile.Kind != "empty")
                     {
                         <span class="coin @(tile.IsNew && !ReduceMotion ? "anim-in" : "")">
@@ -24,6 +29,10 @@
                             else
                             {
                                 <svg class="art" viewBox="0 0 115 100" aria-hidden="true" focusable="false" style="--tilt: @Tilts[index * 7 % Tilts.Length]"><use href="#@tile.Art" /></svg>
+                            }
+                            @if (rich && tile.IsNew && !ReduceMotion)
+                            {
+                                <span class="sparkle" aria-hidden="true"></span>
                             }
                             <span class="tile-plate"><span class="tile-value">@tile.Value</span></span>
                         </span>

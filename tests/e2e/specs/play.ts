@@ -54,7 +54,7 @@ export async function watchAnimations(page: Page) {
   await page.addInitScript(() => {
     (window as any).sawAnimation = false;
     new MutationObserver(() => {
-      if (document.querySelector(".anim-in, .anim-fly") || document.getAnimations().length > 0) (window as any).sawAnimation = true;
+      if (document.querySelector(".anim-in, .anim-fly, .splash, .sparkle") || document.getAnimations().length > 0) (window as any).sawAnimation = true;
     }).observe(document, { subtree: true, childList: true, attributes: true });
   });
 }
