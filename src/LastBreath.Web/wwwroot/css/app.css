@@ -974,8 +974,9 @@ picture img {
     margin: 0;
 }
 
+/* The clock takes the room the total and the buttons leave, so a long Tank clock narrows its bottles and never runs under the total. */
 .console {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas: "clock total actions";
 }
 
@@ -1036,13 +1037,15 @@ picture img {
 /* The spare tanks are the render of the air tank, and a tank that is used is faded. */
 .tanks {
     display: flex;
-    margin-left: 0.4em;
+    flex: none;
+    margin-left: 0.2em;
 }
 
 .tank-pip {
     flex: none;
-    width: clamp(2rem, 4.2cqw, 4.2rem);
-    height: clamp(2rem, 4.2cqw, 4.2rem);
+    width: clamp(2.3rem, 5.4cqw, 5.4rem);
+    height: clamp(2.3rem, 5.4cqw, 5.4rem);
+    margin-inline: -0.25em;
 }
 
 .tank-pip.spent {
@@ -1203,7 +1206,7 @@ picture img {
     }
 
     .console {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) auto;
         grid-template-areas: "clock total" "actions actions";
     }
 
@@ -1465,7 +1468,7 @@ picture img {
     color: var(--muted);
 }
 
-/* After the round the spins fold into a line that opens on request. Opened, the list scrolls inside the panel and never pushes the actions out. */
+/* After the round the spins fold into a line that opens on request. Opened, the list scrolls inside the panel and never makes it taller than the window. */
 .spinlog {
     font-size: var(--text-sm);
 }
@@ -2520,7 +2523,7 @@ code {
     }
 
     .maths .console {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) auto;
         grid-template-areas: "clock total" "actions actions";
     }
 
@@ -2534,7 +2537,7 @@ code {
     }
 
     .console {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
         grid-template-areas: "clock total actions";
     }
 

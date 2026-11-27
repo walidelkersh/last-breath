@@ -173,3 +173,19 @@ for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800
     else expect(Math.abs(found.total.right - found.skip.right), "on a narrow board the total keeps to the right edge, over Skip").toBeLessThan(2);
   });
 }
+
+test("on a phone a Tank clock with seven breaths and its spare tanks stays clear of the board total", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, "/?seed=4");
+  await page.keyboard.press("3");
+  await diveButton(page).click();
+  // Seed 4 lands +1 and +2 on its first spin and +2 on its second, which leaves seven breaths.
+  await expect(page.locator(".pips .bottle")).toHaveCount(7, { timeout: 15_000 });
+
+  const found = await page.evaluate(() => {
+    const total = document.querySelector(".total")!.getBoundingClientRect();
+    const parts = [...document.querySelectorAll(".clock .bottle, .clock .tank-pip, .clock .gain")].map((part) => part.getBoundingClientRect().right);
+    return { right: Math.max(...parts), total: total.left };
+  });
+  expect(found.right).toBeLessThanOrEqual(found.total);
+});

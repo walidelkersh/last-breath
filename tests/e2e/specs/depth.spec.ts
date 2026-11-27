@@ -83,8 +83,9 @@ test("the water darkens by about a half of what is lost, under the tiles and beh
   await open(page, "/?seed=33");
   await page.keyboard.press("1");
   await diveButton(page).click();
+  // The fade is held off, so the step is read the moment the last breath shows and not after a wait that a busy machine can overrun.
+  await page.addStyleTag({ content: ".board::before, .round::before { transition: none !important; }" });
   await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
-  await page.waitForTimeout(800);
 
   const dark = () =>
     page.evaluate(() => ({
