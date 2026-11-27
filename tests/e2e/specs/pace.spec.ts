@@ -7,15 +7,16 @@ import { diveButton, open, sawAnimation, summary, watchAnimations } from "./play
 
 const tolerance = 160;
 
+// Each spin is read from the live region, which says it as "Spin 5. Landed: ... . Board ... . Oxygen 1 of 3. Last breath."
 async function recordSpins(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
     const spins: { n: number; at: number; what: string; last: boolean }[] = [];
     (window as any).spinLog = spins;
     new MutationObserver(() => {
-      const label = document.querySelector(".board-foot.status .foot-spin")?.textContent ?? "";
-      const n = Number(label.replace("Spin ", ""));
+      const said = document.querySelector("[aria-live]")?.textContent ?? "";
+      const n = Number(/^Spin (\d+)\./.exec(said)?.[1] ?? 0);
       if (n > 0 && spins.at(-1)?.n !== n) {
-        spins.push({ n, at: performance.now(), what: document.querySelector(".board-foot.status .foot-what")?.textContent ?? "", last: document.querySelector(".last:not(.off)") !== null });
+        spins.push({ n, at: performance.now(), what: said.includes("Nothing landed.") ? "Nothing landed" : said, last: said.includes("Last breath.") });
       }
     }).observe(document, { subtree: true, childList: true, characterData: true });
   });
@@ -44,7 +45,7 @@ test("each spin stays for as long as what it held deserves", async ({ page }) =>
   expect([...kinds].sort((a, b) => a - b)).toEqual([450, 800, 1100, 1300]);
 });
 
-test("on the last breath the board has an amber edge and a band, and neither is animated", async ({ page }) => {
+test("on the last breath the rim of the board turns amber and the band shows, and neither is animated", async ({ page }) => {
   test.setTimeout(60_000);
   await open(page, "/?seed=33");
   await diveButton(page).click();
@@ -69,7 +70,6 @@ test("on the last breath the board has an amber edge and a band, and neither is 
   });
   expect(look.amber).toBe("#e0a94a");
   expect(look.edge).toBe("rgb(224, 169, 74)");
-  expect(look.ring).toContain("rgb(224, 169, 74)");
   expect([look.bandAnimation, look.boardAnimation, look.running].toString()).toBe(["none", "none", 0].toString());
 
   // The band goes with the last breath: a spin later the clock has gone or been refilled, and the board is plain again.

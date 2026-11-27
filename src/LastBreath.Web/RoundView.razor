@@ -4,131 +4,7 @@
 @inject IReadOnlyList<DiveInfo> Dives
 
 <section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
-    <div class="side">
-        <div class="round-head">
-            <h2 id="round-title">@dive.Name</h2>
-            <p class="meta"><span class="bet">Bet @Format.Credits(Bet)</span> <span class="spin">Spin @shown</span></p>
-        </div>
-
-        <div class="hud">
-            @switch (DiveId)
-            {
-                case "Classic":
-                    <div class="clock">
-                        <p class="clock-text">Oxygen <strong>@clock of @dive.RefillTo</strong></p>
-                        <span class="pips" aria-hidden="true">
-                            @for (var i = 0; i < dive.RefillTo; i++)
-                            {
-                                <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
-                            }
-                        </span>
-                        <p class="last @(lastBreath ? "" : "off")">Last breath</p>
-                    </div>
-                    break;
-                case "Static":
-                    <div class="clock">
-                        <p class="clock-text">Spins left <strong>@clock of @dive.StartingClock</strong></p>
-                        <span class="pips" aria-hidden="true">
-                            @for (var i = 0; i < dive.StartingClock; i++)
-                            {
-                                <span class="pip segment @(i < clock ? "on" : "")"></span>
-                            }
-                        </span>
-                    </div>
-                    break;
-                default:
-                    <div class="clock">
-                        <p class="clock-text">
-                            Air <strong>@clock</strong>
-                            @if (gain > 0)
-                            {
-                                <span class="gain @(ReduceMotion ? "" : "anim-fly")" data-testid="gain" @key="shown">+@gain</span>
-                            }
-                        </p>
-                        <p class="clock-text">Spare tanks <strong>@tanksLeft of @dive.TankLimit</strong></p>
-                        <span class="pips" aria-hidden="true">
-                            @for (var i = 0; i < dive.TankLimit; i++)
-                            {
-                                <AirTankImage Class="@(i < tanksLeft ? "pip tank-pip" : "pip tank-pip spent")" />
-                            }
-                        </span>
-                        <p class="last @(lastBreath ? "" : "off")">Last breath</p>
-                    </div>
-                    break;
-            }
-            <p class="total" title="@(Format.Multiple(units))× bet">Board <strong @ref="totalValue">@Format.Credits(Settlement.Credits(units, Bet))</strong><span class="sr-only"> credits, @(Format.Multiple(units)) times the bet</span></p>
-        </div>
-
-        @if (finished)
-        {
-            <div class="result">
-                <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
-                    <h3 id="summary-title">Round over</h3>
-                    <dl>
-                        <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
-                        <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
-                        @if (outcome.Jackpots.Length > 0)
-                        {
-                            <div><dt>Jackpots</dt><dd>@string.Join(", ", outcome.Jackpots)</dd></div>
-                        }
-                        @if (outcome.Grand)
-                        {
-                            <div><dt>Grand</dt><dd>Won, @Narration.Credits(Config.Grand, Bet)</dd></div>
-                        }
-                    </dl>
-                    @if (!CanDiveAgain)
-                    {
-                        <p class="note">Not enough credits for another dive at this bet.</p>
-                    }
-                </section>
-            </div>
-        }
-
-        @if (!finished)
-        {
-            <ol class="ticker" aria-label="Spins so far, newest first">
-                @if (shown == 0)
-                {
-                    <li class="ticker-empty">No spin yet.</li>
-                }
-                @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
-                {
-                    <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
-                }
-            </ol>
-        }
-
-        @if (Session.Rounds > 0)
-        {
-            <SessionPanel Session="Session" Dive="info" />
-        }
-
-        <div class="actions">
-            @if (finished)
-            {
-                <button type="button" class="primary" disabled="@(!CanDiveAgain)" @onclick="DiveAgain">Dive again</button>
-                <button type="button" @onclick="ChangeDive">Change dive</button>
-            }
-            else
-            {
-                <button type="button" @ref="skipButton" @onclick="Skip" aria-keyshortcuts="S">Skip</button>
-            }
-        </div>
-
-        @if (finished)
-        {
-            <details class="spinlog">
-                <summary>Spin by spin (@spins.Length)</summary>
-                <ol class="ticker" aria-label="Spin by spin, newest first">
-                    @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
-                    {
-                        <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
-                    }
-                </ol>
-            </details>
-        }
-    </div>
-
+    <h2 id="round-title" class="sr-only">@dive.Name</h2>
     <div class="stage">
         <div class="board @(showsBreathBand ? "last-breath" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
@@ -154,33 +30,76 @@
                     }
                 </div>
             }
-            <div class="board-foot @(finished ? $"result-plate {outcome.Kind}" : "status")">
+            <div class="board-foot @(finished ? $"result-plate {outcome.Kind}" : "console")">
                 @if (finished)
                 {
-                    <div class="plate-main">
+                    <section class="summary" tabindex="-1" @ref="summary" aria-labelledby="summary-title">
+                        <h3 id="summary-title" class="sr-only">Round over</h3>
                         @if (outcome.BigWin) { <svg class="plate-medal" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#medal-major" /></svg> }
-                        @if (outcome.Units == 0)
-                        {
-                            <p class="plate-zero">Surfaced with nothing</p>
-                            <span class="sr-only">Total win <strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits</span>
-                        }
-                        else
-                        {
-                            <div class="plate-figures">
+                        <div class="plate-figures">
+                            @if (outcome.BigWin) { <p class="big-win">Big win</p> }
+                            @if (outcome.Units == 0)
+                            {
+                                <p class="plate-zero">Surfaced with nothing</p>
+                                <span class="sr-only">Total win <strong data-testid="win">@Format.Credits(0)</strong> credits</span>
+                            }
+                            else
+                            {
                                 <p class="plate-win"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
-                                <p class="plate-times">@PlateTimes</p>
-                            </div>
-                        }
-                    </div>
-                    <div class="plate-note">
-                        @if (outcome.BigWin) { <p class="big-win">Big win</p> }
-                        @if (OddsLine is { } line) { <p class="odds">@line</p> }
+                                @if (Maths) { <p class="plate-times">@PlateTimes</p> }
+                            }
+                            @if (!CanDiveAgain) { <p class="note">Not enough credits for another dive at this bet.</p> }
+                        </div>
+                        @if (Maths && OddsLine is { } line) { <p class="odds">@line</p> }
+                    </section>
+                    <div class="actions">
+                        <button type="button" class="primary" disabled="@(!CanDiveAgain)" @onclick="DiveAgain">Dive again</button>
+                        <button type="button" @onclick="ChangeDive">Change dive</button>
                     </div>
                 }
                 else
                 {
-                    <p class="foot-spin">Spin @shown</p>
-                    <p class="foot-what">@(current is { } landed ? Narration.Brief(Config, Bet, landed) : "Nothing has landed yet")</p>
+                    <div class="clock">
+                        @if (!Maths) { <div class="sr-only">@ClockWords</div> }
+                        <span class="pips" aria-hidden="true">
+                            @switch (DiveId)
+                            {
+                                case "Classic":
+                                    for (var i = 0; i < dive.RefillTo; i++)
+                                    {
+                                        <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(i < clock, lastBreath))" /></svg>
+                                    }
+                                    break;
+                                case "Static":
+                                    for (var i = 0; i < dive.StartingClock; i++)
+                                    {
+                                        <span class="pip segment @(i < clock ? "on" : "")"></span>
+                                    }
+                                    break;
+                                default:
+                                    // Tank air has no fixed top, so it is drawn as the bottles there are, with the spare tanks beside them.
+                                    for (var i = 0; i < clock; i++)
+                                    {
+                                        <svg class="pip bottle" aria-hidden="true" focusable="false"><use href="#@(Bottle(true, lastBreath))" /></svg>
+                                    }
+                                    <span class="tanks">
+                                        @for (var i = 0; i < dive.TankLimit; i++)
+                                        {
+                                            <AirTankImage Class="@(i < tanksLeft ? "pip tank-pip" : "pip tank-pip spent")" />
+                                        }
+                                    </span>
+                                    break;
+                            }
+                        </span>
+                        @if (gain > 0)
+                        {
+                            <span class="gain @(ReduceMotion ? "" : "anim-fly")" data-testid="gain" @key="shown">+@gain</span>
+                        }
+                    </div>
+                    <p class="total" title="@(Format.Multiple(units))× bet">Board <strong @ref="totalValue">@Format.Credits(Settlement.Credits(units, Bet))</strong><span class="sr-only"> credits, @(Format.Multiple(units)) times the bet</span></p>
+                    <div class="actions">
+                        <button type="button" @ref="skipButton" @onclick="Skip" aria-keyshortcuts="S">Skip</button>
+                    </div>
                 }
             </div>
         </div>
@@ -199,6 +118,68 @@
             }
         </ul>
     </div>
+
+    @if (Maths)
+    {
+        <div class="side">
+            <div class="round-head">
+                <p class="round-name" aria-hidden="true">@dive.Name</p>
+                <p class="meta"><span class="spin">Spin @shown</span></p>
+            </div>
+
+            <div class="clock-words">@ClockWords</div>
+
+            @if (finished)
+            {
+                <section class="round-facts" aria-labelledby="facts-title">
+                    <h3 id="facts-title">This round</h3>
+                    <dl>
+                        <div><dt>Spins</dt><dd>@outcome.Spins</dd></div>
+                        <div><dt>Crates</dt><dd>@outcome.Crates</dd></div>
+                        @if (outcome.Jackpots.Length > 0)
+                        {
+                            <div><dt>Jackpots</dt><dd>@string.Join(", ", outcome.Jackpots)</dd></div>
+                        }
+                        @if (outcome.Grand)
+                        {
+                            <div><dt>Grand</dt><dd>Won, @Narration.Credits(Config.Grand, Bet)</dd></div>
+                        }
+                    </dl>
+                </section>
+            }
+            else
+            {
+                <ol class="ticker" aria-label="Spins so far, newest first">
+                    @if (shown == 0)
+                    {
+                        <li class="ticker-empty">No spin yet.</li>
+                    }
+                    @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
+                    {
+                        <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
+                    }
+                </ol>
+            }
+
+            @if (Session.Rounds > 0)
+            {
+                <SessionPanel Session="Session" Dive="info" />
+            }
+
+            @if (finished)
+            {
+                <details class="spinlog">
+                    <summary>Spin by spin (@spins.Length)</summary>
+                    <ol class="ticker" aria-label="Spin by spin, newest first">
+                        @foreach (var row in Narration.Ticker(Config, Bet, spins, shown))
+                        {
+                            <li @key="row.Key" title="@row.What"><span class="ticker-spin">@row.Label</span> <span class="ticker-what">@row.What</span></li>
+                        }
+                    </ol>
+                </details>
+            }
+        </div>
+    }
 </section>
 
 @code {
@@ -224,6 +205,7 @@
     [Parameter] public decimal Bet { get; set; }
     [Parameter, EditorRequired] public Session Session { get; set; } = default!;
     [Parameter] public bool ReduceMotion { get; set; }
+    [Parameter] public bool Maths { get; set; }
     [Parameter] public bool CanDiveAgain { get; set; }
     [Parameter] public EventCallback<string> Announce { get; set; }
     [Parameter] public EventCallback<decimal> Finished { get; set; }
@@ -268,6 +250,24 @@
     private bool lastBreath => clock == 1 && !finished;
     private bool showsBreathBand => lastBreath && DiveId != "Static";
 
+    // The words of the clock: on the side panel in the maths view, and for a screen reader only in the player view, where the bottles say it.
+    private RenderFragment ClockWords => __builder =>
+    {
+        switch (DiveId)
+        {
+            case "Classic":
+                <p class="clock-text">Oxygen <strong>@clock of @dive.RefillTo</strong></p>
+                break;
+            case "Static":
+                <p class="clock-text">Spins left <strong>@clock of @dive.StartingClock</strong></p>
+                break;
+            default:
+                <p class="clock-text">Air <strong>@clock</strong></p>
+                <p class="clock-text">Spare tanks <strong>@tanksLeft of @dive.TankLimit</strong></p>
+                break;
+        }
+    };
+
     protected override void OnInitialized()
     {
         dive = Config.Dives[DiveId];
@@ -280,10 +280,11 @@
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("scrollTo", 0, 0);
+            await JS.InvokeVoidAsync("lastBreath.toTop");
             await skipButton.FocusAsync(preventScroll: true);
         }
-        if (units != countedUnits)
+        // The total is on the board only while the round runs. At the end the plate shows the win instead.
+        if (!finished && units != countedUnits)
         {
             var from = Settlement.Credits(countedUnits, Bet);
             countedUnits = units;

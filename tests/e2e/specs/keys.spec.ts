@@ -19,7 +19,7 @@ const geometry = (page: Page) =>
       board: rect(".board"),
       prizes: rect(".prizes"),
       side: rect(".side"),
-      actions: [...document.querySelectorAll(".actions button")].map((button) => place(button.getBoundingClientRect())),
+      actions: [...document.querySelectorAll(".board-foot .actions button")].map((button) => place(button.getBoundingClientRect())),
       hero: rect(".select h2"),
       cards: rect(".cards"),
       stake: rect(".stake"),
@@ -65,13 +65,15 @@ function expectNoOverlap(found: Awaited<ReturnType<typeof geometry>>, label: str
   if (board) {
     expect(board.top, `${label}: the board starts below the header`).toBeGreaterThanOrEqual(header!.bottom - 0.5);
     expect(prizes!.bottom, `${label}: the prizes end above the footer`).toBeLessThanOrEqual(footer!.top + 0.5);
-    expect(side!.bottom, `${label}: the side panel ends above the footer`).toBeLessThanOrEqual(footer!.top + 0.5);
     for (const button of actions) {
-      expect(button.left, `${label}: a button is inside the side panel`).toBeGreaterThanOrEqual(side!.left - 0.5);
-      expect(button.right, `${label}: a button is inside the side panel`).toBeLessThanOrEqual(side!.right + 0.5);
-      expect(button.bottom, `${label}: a button is inside the side panel`).toBeLessThanOrEqual(side!.bottom + 0.5);
+      expect(button.left, `${label}: a button is on the board`).toBeGreaterThanOrEqual(board.left - 0.5);
+      expect(button.right, `${label}: a button is on the board`).toBeLessThanOrEqual(board.right + 0.5);
+      expect(button.bottom, `${label}: a button is on the board`).toBeLessThanOrEqual(board.bottom + 0.5);
     }
-    expect(board.right, `${label}: the board is left of the side panel`).toBeLessThanOrEqual(side!.left + 0.5);
+    if (side) {
+      expect(side.bottom, `${label}: the side panel ends above the footer`).toBeLessThanOrEqual(footer!.top + 0.5);
+      expect(board.right, `${label}: the board is left of the side panel`).toBeLessThanOrEqual(side.left + 0.5);
+    }
   }
 }
 
@@ -99,12 +101,12 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1920, height: 108
       expect(looks.wide).toBeLessThanOrEqual(looks.measure + 1);
     });
 
-    test("through a round, in the middle of it and at the end, the open list moves no part of the stage and nothing lies over anything", async ({ page }) => {
+    for (const maths of [false, true]) test(`through a round in the ${maths ? "maths" : "player"} view, in the middle of it and at the end, the open list moves no part of the stage and nothing lies over anything`, async ({ page }) => {
       test.setTimeout(60_000);
-      await open(page, "/?seed=33");
+      await open(page, "/?seed=33", { maths });
       await page.keyboard.press("1");
       await diveButton(page).click();
-      await expect(page.locator(".spin")).toHaveText(/^Spin [2-9]/, { timeout: 15_000 });
+      await expect(page.locator("[aria-live]")).toHaveText(/^Spin [2-9]\./, { timeout: 15_000 });
 
       const middle = await geometry(page);
       expectNoOverlap(middle, "before");

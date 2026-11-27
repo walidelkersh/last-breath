@@ -65,7 +65,6 @@ for (const colorScheme of ["dark", "light"] as const) {
         ...["crate", "tank", "mini", "minor", "major"].map(plate),
         probe("rule", card, card),
         pair("body text on the page", document.body, document.body),
-        probe("last", document.body, document.body),
         probe("rule", chosen, chosen),
         probe("key", chosen),
         pair("chosen bet chip", chip, chip),
@@ -75,7 +74,7 @@ for (const colorScheme of ["dark", "light"] as const) {
       ];
     });
 
-    expect(pairs).toHaveLength(14);
+    expect(pairs).toHaveLength(13);
     for (const { name, foreground, background, opaque } of pairs) {
       expect(opaque, `${name} sits on a solid colour`).toBe(true);
       expect(contrast(foreground, background), name).toBeGreaterThanOrEqual(4.5);

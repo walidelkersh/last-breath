@@ -42,10 +42,16 @@ window.lastBreath = {
         element.countFrame = requestAnimationFrame(step);
     },
 
-    // Brings a block into view only as far as it needs. A block that fits above the bar at the foot is shown whole, and one that does not fit starts at the top
-    // of the screen, so that it is never cut off at the top.
+    // The page itself never scrolls. What sits between the header and the footer does, on a small screen in the maths view, so a new round
+    // starts it at the top.
+    toTop() {
+        document.querySelector("main")?.scrollTo(0, 0);
+    },
+
+    // Brings a block into view only as far as it needs. A block that fits is shown whole, and one that does not starts at the top of the
+    // scrolling part, so that it is never cut off at the top.
     reveal(element) {
-        const room = innerHeight - 96;
+        const room = element.closest("main")?.clientHeight ?? innerHeight;
         element.scrollIntoView({ block: element.getBoundingClientRect().height <= room ? "nearest" : "start" });
     },
 

@@ -1,8 +1,7 @@
 <section class="select" aria-labelledby="dives-title">
     <div class="select-body">
         <h2 id="dives-title">Salvage what you can before your air runs out.</h2>
-        <p class="lede" id="dives-lede">Choose a dive. One bet buys one round.</p>
-        <div class="cards" role="radiogroup" aria-labelledby="dives-lede">
+        <div class="cards" role="radiogroup" aria-label="Choose a dive">
             @for (var i = 0; i < Dives.Count; i++)
             {
                 var dive = Dives[i];
@@ -10,7 +9,7 @@
                 <label class="card">
                     <input type="radio" name="dive" class="sr-only" value="@dive.Id"
                            checked="@(Selected == dive.Id)" @onchange="() => SelectedChanged.InvokeAsync(dive.Id)"
-                           aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id facts-@dive.Id"
+                           aria-labelledby="name-@dive.Id" aria-describedby="rule-@dive.Id waves-@dive.Id @(Maths ? $"facts-{dive.Id}" : "")"
                            aria-keyshortcuts="@key" />
                     <span class="card-body">
                         <span class="pic-frame">
@@ -52,54 +51,66 @@
                             <span class="name" id="name-@dive.Id">@dive.Name</span>
                             <span class="mark" aria-hidden="true"></span>
                         </span>
-                        <span class="rule" id="rule-@dive.Id">@dive.Rule</span>
-                        <span class="facts" id="facts-@dive.Id">
-                            <span class="fact"><span class="fact-name">Volatility</span> <span class="fact-value">@dive.Volatility</span></span>
-                            <span class="fact"><span class="fact-name">Hit frequency</span> <span class="fact-value">@Format.Percent(dive.Figures.HitFrequency)</span></span>
-                            <span class="fact"><span class="fact-name">Typical length</span> <span class="fact-value">@dive.Figures.TypicalLength</span></span>
-                            <span class="fact"><span class="fact-name">RTP</span> <span class="fact-value">@Format.Percent(dive.Figures.Rtp)</span></span>
+                        <span class="rule" id="rule-@dive.Id">@(Maths ? dive.Rule : dive.Line)</span>
+                        <span class="waves" id="waves-@dive.Id" title="Volatility @dive.Volatility.ToLowerInvariant()">
+                            <span class="waves-name">Volatility</span><span class="@(Maths ? "waves-level" : "sr-only")"> @dive.Volatility.ToLowerInvariant()</span>
+                            @for (var wave = 1; wave <= 3; wave++)
+                            {
+                                <svg class="wave @(wave <= dive.Waves ? "on" : "")" viewBox="0 0 24 12" aria-hidden="true" focusable="false"><path d="M2 8c3-6 7-6 10 0s7 6 10 0" /></svg>
+                            }
                         </span>
+                        @if (Maths)
+                        {
+                            <span class="facts" id="facts-@dive.Id">
+                                <span class="fact"><span class="fact-name">Hit frequency</span> <span class="fact-value">@Format.Percent(dive.Figures.HitFrequency)</span></span>
+                                <span class="fact"><span class="fact-name">Typical length</span> <span class="fact-value">@dive.Figures.TypicalLength</span></span>
+                                <span class="fact"><span class="fact-name">RTP</span> <span class="fact-value">@Format.Percent(dive.Figures.Rtp)</span></span>
+                            </span>
+                        }
                     </span>
                 </label>
             }
         </div>
 
-        <ol class="steps" aria-label="How a round goes">
-            <li>
-                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                    <use href="#panel" />
-                    <use href="#well-a" x="8" y="12" width="44" height="38.3" />
-                    <use href="#well-b" x="58" y="12" width="44" height="38.3" />
-                    <use href="#well-c" x="108" y="12" width="44" height="38.3" />
-                </svg>
-                <p><span class="step-no" aria-hidden="true">1</span> The board starts empty</p>
-            </li>
-            <li>
-                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                    <use href="#panel" />
-                    <use href="#well-a" x="8" y="12" width="44" height="38.3" />
-                    <use href="#well-b" x="58" y="12" width="44" height="38.3" />
-                    <use href="#well-c" x="108" y="12" width="44" height="38.3" />
-                    <use href="#crate-mid-a" x="2" y="6" width="56" height="48.7" />
-                    <use href="#crate-low-b" x="102" y="6" width="56" height="48.7" />
-                </svg>
-                <p><span class="step-no" aria-hidden="true">2</span> Crates land and lock in their cell</p>
-            </li>
-            <li>
-                <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
-                    <use href="#panel" />
-                    <use href="#bottle-full" x="24" y="8" width="24" height="48" />
-                    <use href="#bottle-low" x="68" y="8" width="24" height="48" />
-                    <use href="#bottle-empty" x="112" y="8" width="24" height="48" />
-                </svg>
-                <p><span class="step-no" aria-hidden="true">3</span> When the breaths run out, you surface</p>
-            </li>
-        </ol>
+        @if (Maths)
+        {
+            <ol class="steps" aria-label="How a round goes">
+                <li>
+                    <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                        <use href="#panel" />
+                        <use href="#well-a" x="8" y="12" width="44" height="38.3" />
+                        <use href="#well-b" x="58" y="12" width="44" height="38.3" />
+                        <use href="#well-c" x="108" y="12" width="44" height="38.3" />
+                    </svg>
+                    <p><span class="step-no" aria-hidden="true">1</span> The board starts empty</p>
+                </li>
+                <li>
+                    <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                        <use href="#panel" />
+                        <use href="#well-a" x="8" y="12" width="44" height="38.3" />
+                        <use href="#well-b" x="58" y="12" width="44" height="38.3" />
+                        <use href="#well-c" x="108" y="12" width="44" height="38.3" />
+                        <use href="#crate-mid-a" x="2" y="6" width="56" height="48.7" />
+                        <use href="#crate-low-b" x="102" y="6" width="56" height="48.7" />
+                    </svg>
+                    <p><span class="step-no" aria-hidden="true">2</span> Crates land and lock in their cell</p>
+                </li>
+                <li>
+                    <svg class="step-pic" viewBox="0 0 160 64" aria-hidden="true" focusable="false">
+                        <use href="#panel" />
+                        <use href="#bottle-full" x="24" y="8" width="24" height="48" />
+                        <use href="#bottle-low" x="68" y="8" width="24" height="48" />
+                        <use href="#bottle-empty" x="112" y="8" width="24" height="48" />
+                    </svg>
+                    <p><span class="step-no" aria-hidden="true">3</span> When the breaths run out, you surface</p>
+                </li>
+            </ol>
+        }
     </div>
 
     <div class="stake">
         <div class="bets" role="radiogroup" aria-labelledby="bet-title">
-            <p id="bet-title" class="field-title">Bet, in credits</p>
+            <p id="bet-title" class="field-title">Bet</p>
             <div class="chips">
                 @foreach (var amount in Bets)
                 {
@@ -130,6 +141,7 @@
     [Parameter, EditorRequired] public IReadOnlyList<DiveInfo> Dives { get; set; } = default!;
     [Parameter, EditorRequired] public decimal[] Bets { get; set; } = default!;
     [Parameter] public decimal Balance { get; set; }
+    [Parameter] public bool Maths { get; set; }
     [Parameter] public string Selected { get; set; } = "";
     [Parameter] public EventCallback<string> SelectedChanged { get; set; }
     [Parameter] public decimal Bet { get; set; }

@@ -18,6 +18,10 @@
     --on-board: #e6f4fb;
     --board-well: #0f4259;
     --abyss: #020c14;
+    /* The rim of the board is steel, the same in both themes, lit from the top left between two ink lines. */
+    --rim-light: #6d8ba1;
+    --rim-shade: #34495a;
+    --rim-ink: #05121b;
     --depth-strength: 0.55;
     --warn: #f0b45a;
     --focus: #9ad4f2;
@@ -50,12 +54,12 @@
     --gutter: clamp(1rem, 3vw, 3.5rem);
     --page: 118rem;
     --edge: max(var(--gutter), calc((100% - var(--page)) / 2 + var(--gutter)));
-    --side: clamp(21rem, 32vw, 30rem);
+    --side: clamp(21rem, 30vw, 30rem);
     /* The stage is as wide as the room left under the header and above the footer allows: its height is about --fit of its width
-       plus --fixed, which is what the foot of the board and the prize row keep whatever the width. */
+       plus --fixed, which is what the prize row keeps whatever the width. */
     --chrome: 9.75rem;
-    --fit: 0.71;
-    --fixed: 2.4rem;
+    --fit: 0.7;
+    --fixed: 3rem;
 }
 
 @media (prefers-color-scheme: light) {
@@ -83,8 +87,6 @@
 /* The root size grows a little on a large screen, so the type and the spacing, which are in rem, grow with it. */
 html {
     font-size: clamp(100%, 0.55vw + 0.5rem, 1.5rem);
-    /* Room for the bar at the foot of a narrow screen, so a focused control is never scrolled in behind it. */
-    scroll-padding-bottom: 5rem;
 }
 
 body {
@@ -204,11 +206,13 @@ a {
     font-size: var(--text-lg);
 }
 
+/* The page never scrolls. The header and the footer stay, and what is between them scrolls only when a small screen in the maths view has more
+   than fits. */
 .app {
     display: grid;
-    grid-template-rows: auto 1fr auto;
-    min-height: 100vh;
-    min-height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh;
+    height: 100dvh;
 }
 
 .top,
@@ -220,16 +224,21 @@ footer {
 main {
     display: flex;
     flex-direction: column;
+    min-height: 0;
     padding-block: var(--s5);
+    overflow-y: auto;
+}
+
+main:has(> .select) {
+    padding-bottom: 0;
 }
 
 /* Header and footer */
 
 .top {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
+    display: flex;
     align-items: center;
-    gap: var(--s2) var(--s4);
+    gap: var(--s4);
     padding-block: var(--s3);
     border-bottom: 1px solid var(--line);
 }
@@ -239,9 +248,16 @@ main {
     align-items: center;
     gap: var(--s3);
     min-width: 0;
+    margin-right: auto;
     font-family: var(--serif);
     font-size: var(--text-xl);
     font-weight: 700;
+}
+
+.brand-name,
+.switch-text,
+.big-win {
+    white-space: nowrap;
 }
 
 .logo {
@@ -251,15 +267,58 @@ main {
     height: 2.25rem;
 }
 
-.balance {
+.balance,
+.bet {
     color: var(--muted);
     white-space: nowrap;
 }
 
-.balance strong {
+.balance strong,
+.bet strong {
     margin-left: var(--s1);
     color: var(--text);
     font-size: var(--text-lg);
+}
+
+/* The maths view is a switch: a track with a knob that sits right and fills with amber when it is on, and the state is also in its role. */
+.switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+    padding-inline: var(--s2) var(--s3);
+    border-color: transparent;
+}
+
+.switch-track {
+    position: relative;
+    flex: none;
+    width: 2.4rem;
+    height: 1.4rem;
+    background: var(--surface-2);
+    border: 2px solid var(--control);
+    border-radius: 1rem;
+}
+
+.switch-track::after {
+    content: "";
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 0.8rem;
+    height: 0.8rem;
+    background: var(--control);
+    border-radius: 50%;
+}
+
+.switch[aria-checked="true"] .switch-track {
+    background: var(--accent);
+    border-color: var(--accent-edge);
+}
+
+.switch[aria-checked="true"] .switch-track::after {
+    left: auto;
+    right: 0.15rem;
+    background: var(--on-accent);
 }
 
 footer {
@@ -362,57 +421,42 @@ button.quiet:disabled {
 
 .select {
     display: flex;
-    flex: 1;
+    flex: 1 0 auto;
     flex-direction: column;
 }
 
-.select h2,
-.field-title {
-    font-size: var(--text-lg);
-    font-weight: 700;
+.select-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+    padding-bottom: var(--s5);
 }
 
-/* The premise is the first thing on the page, and the line under it says what to do. */
+/* The premise is the one line on the page that says what the game is. */
 .select h2 {
-    max-width: var(--measure);
-    font-size: clamp(var(--text-xl), 1.15rem + 1vw, var(--text-2xl));
-    line-height: 1.2;
-}
-
-@media (max-height: 56rem) {
-    .select h2 {
-        font-size: var(--text-xl);
-    }
+    max-width: 36ch;
+    font-size: clamp(var(--text-xl), 0.9rem + 1.4vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
 }
 
 .field-title {
-    margin-bottom: var(--s2);
     font-size: var(--text-base);
-}
-
-.lede {
-    max-width: var(--measure);
-    margin-top: var(--s1);
-    color: var(--muted);
-    font-size: var(--text-lg);
+    font-weight: 700;
 }
 
 .cards {
     display: grid;
-    gap: var(--s3);
-    margin-top: var(--s3);
+    gap: var(--s4);
 }
 
+/* The hidden radio spans the card. A card that takes focus is brought into view whole by the script, clear of the bet bar. */
 .card {
     position: relative;
     display: block;
     cursor: pointer;
-}
-
-/* The hidden radio spans the card. A card that takes focus is brought into view whole by the script, with a margin under it for the bet bar, which is
-   taller than the padding the page keeps for it. */
-.card {
-    scroll-margin-bottom: 6rem;
+    scroll-margin-bottom: 7rem;
 }
 
 .card input {
@@ -420,7 +464,7 @@ button.quiet:disabled {
     width: 100%;
     height: 100%;
     margin: 0;
-    scroll-margin-bottom: 6rem;
+    scroll-margin-bottom: 7rem;
 }
 
 .card-body {
@@ -428,7 +472,7 @@ button.quiet:disabled {
     flex-direction: column;
     gap: var(--s2);
     height: 100%;
-    padding: var(--s3);
+    padding: var(--s2) var(--s2) var(--s3);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r3);
@@ -467,7 +511,6 @@ button.quiet:disabled {
     height: auto;
     aspect-ratio: 300 / 120;
     background: var(--board);
-    border: 1px solid var(--line);
     border-radius: var(--r2);
 }
 
@@ -497,7 +540,7 @@ button.quiet:disabled {
     display: flex;
     align-items: center;
     gap: var(--s2);
-    padding: 0 var(--s1);
+    padding: var(--s1) var(--s2) 0;
 }
 
 .key {
@@ -537,22 +580,56 @@ button.quiet:disabled {
 }
 
 .rule {
-    padding: 0 var(--s1);
+    padding: 0 var(--s2);
     color: var(--muted);
+}
+
+/* Volatility is drawn as one to three waves. The level is in words for a screen reader, and on the page in the maths view. */
+.waves {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: auto;
+    padding: var(--s1) var(--s2) 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+.waves-name {
+    margin-right: 0.2rem;
+}
+
+.waves-level {
+    margin-right: 0.4rem;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.wave {
+    flex: none;
+    width: 1.6rem;
+    height: 0.8rem;
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+}
+
+.wave.on {
+    stroke: var(--accent-edge);
 }
 
 .facts {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 var(--s4);
-    margin-top: auto;
-    padding: 0 var(--s1);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 var(--s3);
+    padding: 0 var(--s2);
 }
 
 .fact {
     display: flex;
     flex-direction: column;
-    padding: var(--s2) 0;
+    padding-top: var(--s2);
     border-top: 1px solid var(--line);
 }
 
@@ -570,7 +647,6 @@ button.quiet:disabled {
 .steps {
     display: grid;
     gap: var(--s3) var(--s5);
-    margin: var(--s4) 0 var(--s3);
 }
 
 .steps li {
@@ -591,10 +667,6 @@ button.quiet:disabled {
     border-radius: var(--r2);
 }
 
-.steps p {
-    font-size: var(--text-base);
-}
-
 .step-no {
     display: inline-grid;
     place-items: center;
@@ -609,27 +681,31 @@ button.quiet:disabled {
     font-weight: 700;
 }
 
-/* The bet and Dive sit in a bar at the foot of the window on every screen, so Dive is never below the fold. */
+/* The bet and Dive sit in a bar at the foot of the window on every screen, so Dive is never out of view. */
 .stake {
     position: sticky;
     bottom: 0;
     z-index: 2;
     display: flex;
-    flex-direction: column;
-    gap: var(--s3);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s3) var(--s5);
     margin: auto calc(var(--edge) * -1) 0;
     padding: var(--s3) var(--edge);
     background: var(--surface);
     border-top: 1px solid var(--line);
 }
 
-main:has(> .select) {
-    padding-bottom: 0;
+.bets {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
 }
 
 .chips {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(3.25rem, 4.5rem));
     gap: var(--s2);
 }
 
@@ -659,151 +735,46 @@ main:has(> .select) {
     box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-edge);
 }
 
+.go {
+    text-align: right;
+}
+
 .dive {
-    width: 100%;
+    min-width: 14rem;
     min-height: 3.25rem;
     font-size: var(--text-lg);
 }
 
-/* Round screen. One column on a phone, with the actions in a bar that stays in view. From 56rem the stage and a side panel
-   fill the height of the window, and the board takes the room that is left. */
+/* Round screen. The board is the one thing to look at. It is framed like a hatch, its clock, its total and its buttons are on a console at its
+   foot, and the jackpots are under it. The side panel of words and figures is there only in the maths view. */
 
 .round {
     display: flex;
-    flex: 1;
+    flex: 1 0 auto;
     flex-direction: column;
+    justify-content: center;
     gap: var(--s4);
-}
-
-.round-head {
-    order: 1;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--s4);
-}
-
-.round-head h2 {
-    color: var(--muted);
-    font-size: var(--text-lg);
-    font-weight: 700;
-}
-
-.meta {
-    display: flex;
-    gap: var(--s4);
-    color: var(--muted);
-}
-
-.hud {
-    order: 2;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--s3) var(--s5);
-}
-
-.clock {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s1);
-}
-
-.clock-text {
-    color: var(--muted);
-}
-
-.clock-text strong {
-    color: var(--text);
-    font-size: var(--text-lg);
-}
-
-.last {
-    color: var(--warn);
-    font-weight: 600;
-}
-
-/* The line is always there and only its visibility changes, so the total under it never moves when the last breath comes. */
-.last.off,
-.breath-band.off {
-    visibility: hidden;
-}
-
-.gain {
-    display: inline-block;
-    margin-left: var(--s2);
-    color: var(--accent-text);
-    font-size: var(--text-lg);
-    font-weight: 700;
-}
-
-.pips {
-    display: flex;
-    gap: var(--s2);
-}
-
-.bottle {
-    width: 1rem;
-    height: 2rem;
-    --ow: 2.6px;
-}
-
-/* The spare tanks are the render of the air tank, small, and a tank that is used is faded. The words beside them say the same. */
-.tank-pip {
-    flex: none;
-    width: 2.4rem;
-    height: 2.4rem;
-}
-
-.tank-pip.spent {
-    opacity: 0.3;
-    filter: grayscale(1);
-}
-
-.segment {
-    width: 2rem;
-    height: 0.6rem;
-    background: var(--line);
-    border-radius: var(--r1);
-}
-
-.segment.on {
-    background: var(--accent);
-    box-shadow: inset 0 0 0 1px var(--accent-edge);
-}
-
-.total {
-    margin-left: auto;
-    color: var(--muted);
-    text-align: right;
-}
-
-.total strong {
-    display: block;
-    color: var(--text);
-    font-size: var(--text-2xl);
-    line-height: 1.1;
-}
-
-.side {
-    display: contents;
 }
 
 /* The stage is the container of everything drawn on it, so tiles, plates, outlines and the prize strip scale with its width. */
 .stage {
-    order: 3;
     display: flex;
     flex-direction: column;
-    gap: var(--s4);
+    gap: var(--s3);
     width: 100%;
     container-type: inline-size;
 }
 
+/* The rim is steel, lit from the top left like the art, between two ink lines. The board is deep water in both themes, so its focus ring is the
+   light one of the dark theme. */
 .board {
     --board-radius: clamp(var(--r3), 1.6cqw, 1.75rem);
-    --cell-gap: max(0.5rem, 1.4cqw);
+    --cell-gap: max(0.45rem, 1.3cqw);
+    --rim: clamp(5px, 0.75cqw, 12px);
+    --foot: clamp(4.75rem, 8.6cqw, 8.75rem);
+    --focus: #9ad4f2;
     position: relative;
+    isolation: isolate;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: repeat(3, auto);
@@ -811,15 +782,21 @@ main:has(> .select) {
     gap: var(--cell-gap);
     padding: var(--cell-gap);
     background: var(--board);
-    border: 1px solid var(--board-line);
+    border: var(--rim) solid;
+    border-color: var(--rim-light) var(--rim-shade) var(--rim-shade) var(--rim-light);
     border-radius: var(--board-radius);
+    box-shadow: 0 0 0 2px var(--rim-ink), inset 0 0 0 2px var(--rim-ink);
+    scroll-margin: var(--s3) 0;
 }
 
-/* The last breath is shown by a static band on the top edge and a 3 px amber edge round the board, a pixel of border and two of shadow so that
-   nothing moves. The depth does the rest. It is not motion, so reduced motion keeps it. */
+/* The last breath is shown by the rim turning amber and a static tab on the top edge, so nothing moves. The depth does the rest. */
 .board.last-breath {
     border-color: var(--amber);
-    box-shadow: 0 0 0 2px var(--amber);
+    box-shadow: 0 0 0 2px var(--rim-ink), inset 0 0 0 2px var(--rim-ink), 0 0 0 5px color-mix(in srgb, var(--amber) 45%, transparent);
+}
+
+.breath-band.off {
+    visibility: hidden;
 }
 
 /* The label is a tab on the top edge of the board. Its lower edge is level with the top of the tiles, so it never lies over one however small the board is. */
@@ -832,12 +809,13 @@ main:has(> .select) {
     padding: 0.05em 0.9em;
     color: var(--on-accent);
     background: var(--amber);
+    border: 2px solid var(--rim-ink);
     border-radius: 1em;
     font-size: clamp(var(--text-xs), 1.4cqw, 1.5rem);
     font-weight: 700;
     line-height: 1.4;
     white-space: nowrap;
-    transform: translate(-50%, calc(-100% + var(--cell-gap)));
+    transform: translate(-50%, calc(-100% + var(--cell-gap) - var(--rim) / 2));
 }
 
 .panel {
@@ -846,22 +824,17 @@ main:has(> .select) {
     z-index: -1;
     width: 100%;
     height: 100%;
-    border-radius: inherit;
+    border-radius: calc(var(--board-radius) - var(--rim));
 }
 
 /* Depth is the clock. The round sets --air, from 1 when the air is full to 0 when it is gone, and the water closes in as it falls: a dark layer
    under the tiles, and on a large screen one behind the whole round. Without the moves class, which reduced motion leaves off, the steps are
    the same and they do not fade. */
-.board {
-    isolation: isolate;
-    scroll-margin: var(--s3) 0 6rem;
-}
-
 .board::before {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: inherit;
+    border-radius: calc(var(--board-radius) - var(--rim));
     background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--abyss) 35%, transparent) 0%, var(--abyss) 100%);
     opacity: calc((1 - var(--air, 1)) * var(--depth-strength));
     pointer-events: none;
@@ -880,6 +853,7 @@ main:has(> .select) {
 .tile {
     /* The art draws its outline in pixels, so a small tile keeps a clear line and a large one carries a heavier one. */
     --ow: clamp(3px, 0.6cqw, 9px);
+    --grain: 1;
     position: relative;
     min-width: 0;
     aspect-ratio: 1.15 / 1;
@@ -911,11 +885,7 @@ main:has(> .select) {
 }
 
 /* The wood grain is drawn as a few long strokes. A smaller tile quiets them, so that they read as grain and not as scratches. */
-.tile {
-    --grain: 1;
-}
-
-@container (max-width: 52rem) {
+@container (max-width: 56rem) {
     .tile {
         --grain: 0.55;
     }
@@ -947,6 +917,13 @@ picture img {
     object-fit: contain;
 }
 
+.tile-drawn picture.art {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 .tile-plate {
     position: relative;
     display: flex;
@@ -973,110 +950,286 @@ picture img {
     border-radius: 0.3em;
 }
 
-/* The foot of the board keeps its height whatever it shows, so nothing moves when the round ends. While the round runs it is a line of text
-   on the water, and at the end it is a plate in the colours of the board, the same in both themes. */
+/* The console at the foot of the board keeps its height whatever it shows, so nothing moves when the round ends. While the round runs it holds
+   the clock, the total and Skip. At the end it is the result plate, with Dive again beside the result. */
 .board-foot {
     position: relative;
     grid-column: 1 / -1;
     grid-row: 4;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: var(--s1) var(--s4);
-    height: clamp(5.25rem, 9cqw, 9rem);
-    padding: 0.4em 0.9em;
+    gap: var(--s2) clamp(var(--s3), 2.2cqw, 2.75rem);
+    height: var(--foot);
+    padding: 0.3em 0.45em 0.3em 1em;
     color: var(--on-board);
-    border-radius: clamp(0.4rem, 1cqw, 1.1rem);
-    font-size: clamp(var(--text-sm), 1.9cqw, 1.5rem);
-}
-
-.board-foot.result-plate {
     background: var(--board-well);
+    border-radius: clamp(0.4rem, 1cqw, 1.1rem);
     box-shadow: inset 0 0 0 1px var(--board-line);
-}
-
-.board-foot.result-plate.big {
-    box-shadow: inset 0 0 0 3px var(--amber);
+    font-size: clamp(var(--text-sm), 1.7cqw, 1.5rem);
 }
 
 .board-foot p {
     margin: 0;
 }
 
-.foot-spin {
-    opacity: 0.75;
+.console {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "clock total actions";
 }
 
-.foot-what {
-    font-weight: 600;
+.result-plate {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "summary actions";
 }
 
-.plate-main {
+.result-plate.big {
+    box-shadow: inset 0 0 0 3px var(--amber);
+}
+
+/* The maths view adds the multiple under the number and the odds beside it, so its console is a little taller, in both states. */
+.maths .board {
+    --foot: clamp(5.75rem, 10.4cqw, 10.5rem);
+}
+
+.app.maths {
+    --fit: 0.712;
+    --fixed: 3.6rem;
+}
+
+.clock {
+    grid-area: clock;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    min-width: 0;
+}
+
+.pips {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.2rem, 0.7cqw, 0.75rem);
+    min-width: 0;
+}
+
+.bottle {
+    --ow: clamp(2.2px, 0.4cqw, 4.5px);
+    flex: 0 1 auto;
+    width: clamp(1.1rem, 2.6cqw, 2.6rem);
+    min-width: 0.55rem;
+    height: clamp(2.2rem, 5.2cqw, 5.2rem);
+}
+
+.segment {
+    width: clamp(1rem, 2.6cqw, 2.75rem);
+    height: clamp(0.45rem, 1cqw, 1.1rem);
+    background: color-mix(in srgb, var(--on-board) 22%, var(--board-well));
+    border: 2px solid var(--rim-ink);
+    border-radius: var(--r1);
+}
+
+.segment.on {
+    background: var(--amber);
+}
+
+/* The spare tanks are the render of the air tank, and a tank that is used is faded. */
+.tanks {
+    display: flex;
+    margin-left: 0.4em;
+}
+
+.tank-pip {
+    flex: none;
+    width: clamp(2rem, 4.2cqw, 4.2rem);
+    height: clamp(2rem, 4.2cqw, 4.2rem);
+}
+
+.tank-pip.spent {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.gain {
+    display: inline-block;
+    color: var(--amber);
+    font-size: 1.3em;
+    font-weight: 800;
+}
+
+.total {
+    grid-area: total;
+    justify-self: end;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color: color-mix(in srgb, var(--on-board) 82%, var(--board-well));
+    font-size: 0.85em;
+    line-height: 1.05;
+}
+
+.total strong {
+    color: var(--on-board);
+    font-size: clamp(1.6rem, 3.6cqw, 3.6rem);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-weight: 800;
+}
+
+.board-foot .actions {
+    grid-area: actions;
+    display: flex;
+    gap: clamp(var(--s2), 1cqw, var(--s3));
+}
+
+.board-foot button {
+    min-height: clamp(2.75rem, 5cqw, 4.5rem);
+    padding: 0 1.2em;
+    color: var(--on-board);
+    border: 2px solid color-mix(in srgb, var(--on-board) 60%, var(--board-well));
+    font-size: clamp(var(--text-base), 1.6cqw, 1.5rem);
+}
+
+.board-foot button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--on-board) 12%, var(--board-well));
+}
+
+.board-foot button.primary {
+    min-width: 8em;
+    color: var(--on-accent);
+    background: var(--amber);
+    border-color: var(--rim-ink);
+    font-weight: 700;
+}
+
+.board-foot button.primary:hover:not(:disabled) {
+    background: var(--amber);
+}
+
+.summary {
+    grid-area: summary;
     display: flex;
     align-items: center;
     gap: 0.8em;
+    min-width: 0;
+    height: 100%;
+    padding-right: 0.3em;
+    border-radius: 0.5em;
+}
+
+/* The plate takes focus at the end so that a screen reader reads the result, but it is not a control, so it draws no ring. */
+.summary:focus {
+    outline: none;
+}
+
+.plate-figures {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-width: 0;
 }
 
 .plate-medal {
     --ow: clamp(2.2px, 0.4cqw, 5px);
     flex: none;
-    height: clamp(3rem, 6.5cqw, 5.5rem);
+    height: clamp(3rem, 6.5cqw, 6rem);
     width: auto;
     aspect-ratio: 115 / 100;
+}
+
+.big-win {
+    color: var(--amber);
+    font-family: var(--serif);
+    font-size: 1.15em;
+    font-weight: 700;
+    line-height: 1.1;
 }
 
 /* The number is in the sans face with lining, tabular figures: the old-style figures of the serif read as letters. */
 .plate-win {
     color: var(--amber);
     font-family: var(--sans);
-    font-size: clamp(var(--text-2xl), 3.4cqw, 3.2rem);
+    font-size: clamp(var(--text-2xl), 4.4cqw, 4.6rem);
     font-variant-numeric: lining-nums tabular-nums;
     font-weight: 800;
-    line-height: 1.05;
+    line-height: 1.02;
+    white-space: nowrap;
 }
 
 .plate-win span {
     color: var(--on-board);
-    font-size: max(0.4em, var(--text-xs));
+    font-size: max(0.34em, var(--text-xs));
     font-weight: 500;
-}
-
-.result-plate.big .plate-win {
-    font-size: clamp(var(--text-2xl), 4cqw, 3.8rem);
 }
 
 .result-plate.under .plate-win {
     color: color-mix(in srgb, var(--on-board) 72%, var(--board-well));
 }
 
-.plate-times {
+.plate-times,
+.summary .note {
     color: color-mix(in srgb, var(--on-board) 82%, var(--board-well));
+    font-size: 0.85em;
+}
+
+.summary .note {
+    margin: 0;
 }
 
 .plate-zero {
     font-family: var(--serif);
-    font-size: clamp(var(--text-xl), 2.8cqw, 2.4rem);
+    font-size: clamp(var(--text-xl), 3cqw, 2.8rem);
     font-weight: 700;
-}
-
-.plate-note {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--s1);
-    text-align: right;
+    line-height: 1.1;
 }
 
 .odds {
-    max-width: 64ch;
-    font-size: 0.82em;
+    flex: 1 1 14em;
+    max-width: 42ch;
+    margin-left: auto;
+    color: color-mix(in srgb, var(--on-board) 88%, var(--board-well));
+    font-size: 0.78em;
     line-height: 1.3;
+    text-align: right;
 }
 
-/* On a narrow board the plate has room for one column, and it takes the height its lines need. */
+/* A narrow board puts the buttons on a row of their own under the clock or the result. */
+@container (max-width: 40rem) {
+    .board {
+        --foot: 7.5rem;
+    }
+
+    .maths .board {
+        --foot: 8.25rem;
+    }
+
+    .console {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: "clock total" "actions actions";
+    }
+
+    .result-plate {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "summary" "actions";
+    }
+
+    .board-foot {
+        padding: 0.45em 0.5em 0.5em 0.75em;
+    }
+
+    .board-foot .actions > * {
+        flex: 1;
+    }
+
+    .summary {
+        gap: 0.6em;
+    }
+
+    .odds {
+        flex-basis: 9em;
+        font-size: var(--text-xs);
+    }
+}
+
 .prizes {
-    --cell-gap: max(0.5rem, 1.4cqw);
+    --cell-gap: max(0.45rem, 1.3cqw);
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1.5fr;
     gap: var(--cell-gap);
@@ -1153,7 +1306,7 @@ picture img {
     line-height: 1.5;
 }
 
-/* On a tall phone the board is narrow: the prizes stack again and the plate has one column. */
+/* On a tall phone the board is narrow: the prizes stack their medal over the figures, and the tiles are square to give the art more room. */
 @media (orientation: portrait) {
     @container (max-width: 30rem) {
         .prizes {
@@ -1176,75 +1329,102 @@ picture img {
         }
     }
 
-    @container (max-width: 30rem) {
-        .board-foot {
-            grid-template-columns: minmax(0, 1fr);
-            height: auto;
-            min-height: 4.5rem;
-        }
-
-        .plate-note {
-            align-items: flex-start;
-            text-align: left;
-        }
-
-        .odds {
-            max-width: none;
+    @container (max-width: 26rem) {
+        .tile {
+            aspect-ratio: 1 / 1;
         }
     }
 }
 
-.result {
-    order: 4;
+/* A tile of a narrow board is small, so its coin takes all of it and the plate is snug. */
+@container (max-width: 26rem) {
+    .tile-drawn .tile-plate {
+        padding: 0.05rem 0.3rem;
+    }
+
+    .tile-drawn .art {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
 }
 
-.summary {
-    scroll-margin: var(--s3) 0 6rem;
-    padding: var(--s4);
+/* The side panel of the maths view: the name, the spin, the clock in words, what landed, then the round in figures and the session. */
+
+.round-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s4);
+}
+
+.round-name {
+    color: var(--muted);
+    font-size: var(--text-lg);
+    font-weight: 700;
+}
+
+.meta {
+    color: var(--muted);
+}
+
+.clock-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--s4);
+    color: var(--muted);
+}
+
+.clock-text strong {
+    color: var(--text);
+}
+
+.round-facts h3 {
+    font-size: var(--text-base);
+    font-weight: 700;
+}
+
+.round-facts dl {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: space-between;
+    gap: var(--s2) var(--s3);
+    margin-top: var(--s2);
+}
+
+.round-facts dl > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.round-facts dt {
+    color: var(--muted);
+    font-size: var(--text-sm);
+}
+
+.side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    min-height: 0;
+    padding: var(--s3) var(--s4);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--r3);
 }
 
-/* The ring is drawn inside the box, so that it is never cut by the edge of a narrow screen. */
-.summary:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: -3px;
-}
-
-.summary h3 {
-    font-size: var(--text-lg);
-    font-weight: 700;
-}
-
-.big-win {
-    color: var(--amber);
-    font-family: var(--serif);
-    font-size: 1.3em;
-    font-weight: 700;
-    line-height: 1.1;
-}
-
-.summary dl {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s3) var(--s4);
-    margin-top: var(--s3);
-}
-
-.summary dl > div {
-    display: flex;
-    flex-direction: column;
-}
-
-.summary dt {
-    color: var(--muted);
-    font-size: var(--text-sm);
+.side > .clock-words,
+.side > .round-facts,
+.side > .ticker,
+.side > .spinlog,
+.side > .session {
+    padding-top: var(--s3);
+    border-top: 1px solid var(--line);
 }
 
 /* The ticker lists a spin to a row, newest first. A row that does not fit wraps into a second column that is clipped, so the list never shows half a row. */
 .ticker {
-    order: 5;
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
@@ -1285,7 +1465,6 @@ picture img {
 
 /* After the round the spins fold into a line that opens on request. Opened, the list scrolls inside the panel and never pushes the actions out. */
 .spinlog {
-    order: 5;
     font-size: var(--text-sm);
 }
 
@@ -1307,7 +1486,6 @@ picture img {
 
 /* The session panel: what the page has seen so far, in numbers and in a strip of bars. */
 .session {
-    order: 6;
     display: flex;
     flex-direction: column;
     gap: var(--s2);
@@ -1484,17 +1662,6 @@ picture img {
     margin: 0;
     color: var(--muted);
     font-size: var(--text-xs);
-}
-
-.actions {
-    order: 7;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s3);
-}
-
-.actions button {
-    flex: 1;
 }
 
 /* Footer toggle and the Math panel */
@@ -1752,46 +1919,18 @@ code {
     }
 }
 
-/* A tile of a narrow board is small, so its coin takes all of it and the plate is snug. */
-
-@container (max-width: 26rem) {
-    .tile-drawn .tile-plate {
-        padding: 0.05rem 0.3rem;
-    }
-
-    .tile-drawn .art {
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-    }
-}
-
-.tile-drawn picture.art {
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-/* Square tiles give the art more room on a tall phone. A phone on its side has no height to spare and keeps the wide tile. */
-@media (orientation: portrait) {
-    @container (max-width: 26rem) {
-        .tile {
-            aspect-ratio: 1 / 1;
-        }
-    }
-}
+/* Phones held upright. The header keeps one row: in a round the bet takes the room of the name, and the switch shows its last word. The cards
+   lie flat, picture beside words, so the three dives and the bet fit on the screen at once. */
 
 @media (max-width: 39.99rem) {
     .top {
-        gap: var(--s2) var(--s3);
+        gap: var(--s2);
         padding-block: var(--s2);
     }
 
     .brand {
         gap: var(--s2);
-        font-size: var(--text-lg);
+        font-size: 1.1rem;
     }
 
     .logo {
@@ -1799,7 +1938,13 @@ code {
         height: 2rem;
     }
 
-    .balance {
+    .app.staged .brand-name,
+    .switch-long {
+        display: none;
+    }
+
+    .balance,
+    .bet {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
@@ -1807,8 +1952,153 @@ code {
         line-height: 1.1;
     }
 
-    .balance strong {
+    .balance strong,
+    .bet strong {
         margin: 0;
+        font-size: var(--text-base);
+    }
+
+    .top button {
+        padding-inline: 0.6rem;
+    }
+
+    /* On a phone the word sits under the track, so the switch takes the width of the track. */
+    .switch {
+        flex-direction: column;
+        gap: 0;
+        min-height: 2.75rem;
+        padding: 0 2px;
+        font-size: var(--text-xs);
+        line-height: 1.2;
+    }
+
+
+    main {
+        padding-top: var(--s3);
+    }
+
+    .select h2 {
+        font-size: var(--text-xl);
+    }
+
+    .select-body {
+        gap: var(--s3);
+        padding-bottom: var(--s3);
+    }
+
+    .cards {
+        gap: var(--s3);
+    }
+
+    .card-body {
+        display: grid;
+        grid-template-columns: 44% minmax(0, 1fr);
+        grid-template-areas: "pic top" "pic rule" "pic waves" "facts facts";
+        grid-template-rows: auto auto 1fr;
+        gap: var(--s1) var(--s3);
+        padding: var(--s2);
+    }
+
+    .pic-frame {
+        grid-area: pic;
+        align-self: center;
+    }
+
+    .card-top {
+        grid-area: top;
+        padding: 0;
+    }
+
+    .name {
+        font-size: var(--text-base);
+    }
+
+    .rule {
+        grid-area: rule;
+        padding: 0;
+        font-size: var(--text-sm);
+        line-height: 1.3;
+    }
+
+    .waves {
+        grid-area: waves;
+        align-self: end;
+        padding: 0;
+        font-size: var(--text-xs);
+    }
+
+    .facts {
+        grid-area: facts;
+        padding: 0;
+    }
+
+    .stake {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--s2);
+    }
+
+    .bets {
+        gap: var(--s2);
+    }
+
+    .chips {
+        flex: 1;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: var(--s1);
+    }
+
+    .go {
+        text-align: left;
+    }
+
+    .dive {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .side > .ticker li:nth-child(n + 7) {
+        display: none;
+    }
+
+    /* The bar at the foot is taller on a phone, so a card that takes focus stops further above it. */
+    .card,
+    .card input {
+        scroll-margin-bottom: 9.5rem;
+    }
+
+    /* Keys can end up at the right of the footer, so the list opens across the width of the footer, above it. */
+    footer {
+        position: relative;
+    }
+
+    .keys {
+        position: static;
+    }
+
+    .keys p {
+        left: var(--edge);
+        right: var(--edge);
+        width: auto;
+        max-width: none;
+    }
+}
+
+/* A small phone on its side keeps the header on one row with the short word of the switch. */
+@media (min-width: 40rem) and (max-width: 45.99rem) {
+    .top {
+        gap: var(--s3);
+    }
+
+    .switch-long {
+        display: none;
+    }
+}
+
+/* A phone narrower than 24rem has no room for the name beside the balance, the switch and Math, so the mark stands for it. */
+@media (max-width: 23.99rem) {
+    .brand-name {
+        display: none;
     }
 }
 
@@ -1827,86 +2117,18 @@ code {
     }
 }
 
-/* Phones and narrow windows. The actions sit in a bar at the foot of the screen so they never scroll away. */
-
-@media (max-width: 39.99rem), (max-width: 55.99rem) and (min-height: 32.01rem) {
-    main {
-        padding-bottom: 0;
-    }
-
-    .actions {
-        position: sticky;
-        bottom: 0;
-        z-index: 2;
-        margin: auto calc(var(--edge) * -1) 0;
-        padding: var(--s3) var(--edge);
-        background: var(--surface);
-        border-top: 1px solid var(--line);
-    }
-
-    .actions button {
-        flex: 1;
-    }
-
-    .side > .ticker li:nth-child(n + 7) {
-        display: none;
-    }
-}
-
-.over .hud {
-    display: none;
-}
-
-/* Wider screens */
-
 @media (min-width: 46rem) {
     .cards,
     .steps {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
-    .stake {
-        flex-direction: row;
-        align-items: flex-end;
-        justify-content: space-between;
-    }
-
-    .chips {
-        grid-template-columns: repeat(6, 4.5rem);
-    }
-
-    .dive {
-        width: auto;
-        min-width: 14rem;
-    }
-
-    .go {
-        text-align: right;
-    }
 }
 
-/* A short window drops the lines of the side panel that matter least, the note first, so the page still does not scroll. */
-@media (min-width: 56rem) and (max-height: 46rem) {
-    main {
-        padding-block: var(--s4);
-    }
-
-    .session .note {
-        display: none;
-    }
-}
-
-@media (min-width: 56rem) and (max-height: 42rem) {
-    .session h3,
-    .legend {
-        display: none;
-    }
-}
-
+/* From 56rem, and on a phone on its side, the round is a stage that fills the window. The board is as large as the height allows, with the water
+   round it, and in the maths view the side panel stands at its right. */
 @media (min-width: 56rem), (min-width: 40rem) and (max-height: 32rem) {
-    .app.staged {
-        height: 100dvh;
-        grid-template-rows: auto minmax(0, 1fr) auto;
+    .app.staged main {
+        padding-block: var(--s4);
     }
 
     /* On a staged screen the page itself darkens with the depth. Everything that carries text sits on a surface of its own, and the header and
@@ -1927,80 +2149,41 @@ code {
         background: color-mix(in srgb, var(--bg) 82%, transparent);
     }
 
-    .app.staged main {
-        min-height: 0;
-        padding-block: var(--s4);
-    }
-
     .round {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) var(--side);
+        flex: 1 1 0;
+        grid-template-columns: minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
+        align-items: center;
+        justify-items: center;
         gap: var(--s5);
         min-height: 0;
+    }
+
+    .app.maths .round {
+        grid-template-columns: minmax(0, 1fr) var(--side);
     }
 
     .stage {
         grid-column: 1;
         grid-row: 1;
-        align-self: center;
-        justify-self: center;
         width: min(100%, calc((100dvh - var(--chrome) - var(--fixed)) / var(--fit)));
     }
 
     .side {
-        display: flex;
-        flex-direction: column;
         grid-column: 2;
         grid-row: 1;
         align-self: stretch;
-        gap: var(--s3);
-        min-height: 0;
-        padding: var(--s3) var(--s4);
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--r3);
-    }
-
-    .side > * {
-        order: 0;
-    }
-
-    .hud,
-    .result,
-    .ticker,
-    .spinlog {
-        padding-top: var(--s3);
-        border-top: 1px solid var(--line);
-    }
-
-    .summary dl {
-        grid-template-columns: repeat(4, auto);
-        justify-content: space-between;
-        gap: var(--s2) var(--s3);
-    }
-
-    .side > .actions {
-        order: 4;
-        margin-top: auto;
-    }
-
-    .side > .session {
-        order: 2;
-        padding-top: var(--s3);
-        border-top: 1px solid var(--line);
+        justify-self: stretch;
     }
 
     .side > .ticker {
-        order: 3;
         flex: 1 1 0;
         min-height: 0;
-        padding-top: var(--s3);
         container-type: size;
     }
 
     .side > .spinlog {
-        order: 3;
         flex: 0 1 auto;
         min-height: 0;
     }
@@ -2011,7 +2194,6 @@ code {
         display: none;
     }
 
-    /* The opened log is the scroller, with its own line pinned at the top. */
     .side > .spinlog[open] {
         flex: 1 1 0;
         padding-top: 0;
@@ -2048,29 +2230,37 @@ code {
             display: none;
         }
     }
+}
 
-    .summary {
-        margin: calc(var(--s2) * -1);
-        padding: var(--s2);
-        background: none;
-        border: 0;
+/* A short window drops the lines of the side panel that matter least, the note first. */
+@media (min-width: 56rem) and (max-height: 46rem) {
+    main {
+        padding-block: var(--s4);
+    }
+
+    .session .note {
+        display: none;
     }
 }
 
-/* In a window taller than it is wide the board goes to the top, beside the panel, and the water shows under it. */
-@media (orientation: portrait) and (min-width: 56rem) {
-    .stage {
-        align-self: start;
+@media (min-width: 56rem) and (max-height: 42rem) {
+    .session h3,
+    .legend {
+        display: none;
     }
 }
 
-/* A phone on its side has little height: the header and footer shrink, the board takes what is left, and the side panel keeps only what is needed to play. */
+/* A phone on its side has little height: the header and footer shrink, the console is one slim row, and the side panel keeps only what is
+   needed to follow the round. */
 @media (min-width: 40rem) and (max-height: 32rem) {
     :root {
         --chrome: 5.4rem;
-        --fit: 0.71;
-        --fixed: 2.45rem;
+        --fixed: 2rem;
         --side: 15rem;
+    }
+
+    .app.maths {
+        --fixed: 6.4rem;
     }
 
     button {
@@ -2080,131 +2270,6 @@ code {
 
     button.quiet {
         min-height: 1.5rem;
-    }
-
-    .stage {
-        gap: var(--s2);
-    }
-
-    .board,
-    .prizes {
-        --cell-gap: 0.3rem;
-    }
-
-    .side {
-        gap: var(--s2);
-        padding: var(--s2) var(--s3);
-    }
-
-    .hud,
-    .result {
-        padding-top: var(--s2);
-    }
-
-    .clock-text strong {
-        font-size: var(--text-base);
-    }
-
-    .bottle {
-        width: 0.75rem;
-        height: 1.5rem;
-    }
-
-    .tank-pip {
-        width: 1.7rem;
-        height: 1.7rem;
-    }
-
-    .total strong {
-        font-size: var(--text-xl);
-    }
-
-    .round-head h2 {
-        font-size: var(--text-base);
-    }
-
-    .meta {
-        gap: var(--s3);
-        white-space: nowrap;
-    }
-
-    .board-foot {
-        grid-template-columns: auto minmax(0, 1fr);
-        height: 3.3rem;
-        padding: 0.15em 0.6em;
-        column-gap: 0.6em;
-        row-gap: 0;
-    }
-
-    .plate-main {
-        gap: 0.4em;
-    }
-
-    .plate-figures {
-        display: flex;
-        align-items: baseline;
-        gap: 0.5em;
-    }
-
-    .plate-medal {
-        height: 1.9rem;
-    }
-
-    .plate-win {
-        font-size: var(--text-lg);
-    }
-
-    .result-plate.big .plate-win {
-        font-size: var(--text-lg);
-    }
-
-    .plate-zero {
-        font-size: var(--text-base);
-    }
-
-    /* The odds line takes a row of its own under the figures, across the whole plate. */
-    .plate-note {
-        display: contents;
-    }
-
-    .big-win {
-        justify-self: end;
-        font-size: var(--text-base);
-    }
-
-    .odds {
-        grid-column: 1 / -1;
-        max-width: none;
-        font-size: var(--text-xs);
-        text-align: left;
-    }
-
-    .summary dl {
-        margin-top: var(--s1);
-    }
-
-    .medal {
-        height: 1.6rem;
-    }
-
-    .prize {
-        gap: 0.4em;
-        padding: 0.2rem 0.3rem;
-    }
-
-    .prize.hit {
-        padding: calc(0.2rem - 1px) calc(0.3rem - 1px);
-    }
-
-    /* The cards are too low for the badge to lie over them, so it sits on their top edge, clear of the name. */
-    .prize-state {
-        right: 0.35em;
-        transform: translateY(-92%);
-    }
-
-    .prize-name,
-    .prize-value {
-        font-size: var(--text-xs);
     }
 
     .top {
@@ -2236,35 +2301,225 @@ code {
         line-height: 1.2;
     }
 
-    .actions button {
-        padding-inline: var(--s2);
-        font-size: var(--text-sm);
-    }
-
-    .meta {
-        font-size: var(--text-sm);
-    }
-
     .keys {
         display: none;
     }
 
-    .stake {
+    /* The board starts clear of the header, with room above it for the Last breath tab. */
+    .app.staged main {
+        padding-block: 1.1rem var(--s1);
+    }
+
+    .stage {
+        gap: var(--s2);
+    }
+
+    .board,
+    .prizes {
+        --cell-gap: 0.3rem;
+    }
+
+    /* Wide tiles give the board the width the height cannot, so the result and both buttons fit on one row. */
+    .tile {
+        aspect-ratio: 1.45 / 1;
+    }
+
+    .plate-medal,
+    .plate-win span {
+        display: none;
+    }
+
+    .board,
+    .maths .board {
+        --foot: 3.3rem;
+        --rim: 4px;
+    }
+
+    /* The maths view has the odds to fit as well, so its console keeps the buttons on a row of their own. */
+    .maths .board {
+        --foot: 6.4rem;
+    }
+
+    .maths .console {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: "clock total" "actions actions";
+    }
+
+    .maths .result-plate {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "summary" "actions";
+    }
+
+    .maths .board-foot .actions > * {
+        flex: 1;
+    }
+
+    .console {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "clock total actions";
+    }
+
+    .result-plate {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "summary actions";
+    }
+
+    .board-foot {
+        padding: 0.15em 0.3em 0.15em 0.6em;
+        font-size: var(--text-sm);
+    }
+
+    .board-foot .actions > * {
+        flex: none;
+    }
+
+    .board-foot button {
+        min-height: 2.25rem;
+        padding: 0 0.8em;
+        font-size: var(--text-sm);
+    }
+
+    .board-foot button.primary {
+        min-width: 0;
+    }
+
+    /* The figures are one line, and in the maths view the odds take a second line under them. */
+    .summary {
+        gap: 0 0.5em;
+    }
+
+    .maths .summary {
+        flex-wrap: wrap;
+        align-content: center;
+    }
+
+    .plate-figures {
         flex-direction: row;
-        align-items: center;
+        align-items: baseline;
+        gap: 0.5em;
+    }
+
+    .bottle {
+        width: 0.8rem;
+        height: 1.6rem;
+    }
+
+    .tank-pip {
+        width: 1.7rem;
+        height: 1.7rem;
+    }
+
+    .total strong,
+    .plate-win {
+        font-size: var(--text-xl);
+    }
+
+    .plate-medal {
+        height: 1.9rem;
+    }
+
+    .plate-zero {
+        font-size: var(--text-base);
+    }
+
+    .big-win {
+        font-size: var(--text-sm);
+    }
+
+    .odds {
+        flex-basis: 100%;
+        max-width: none;
+        font-size: var(--text-xs);
+        text-align: left;
+    }
+
+    .medal {
+        height: 1.6rem;
+    }
+
+    .prize {
+        gap: 0.4em;
+        padding: 0.2rem 0.3rem;
+    }
+
+    .prize.hit {
+        padding: calc(0.2rem - 1px) calc(0.3rem - 1px);
+    }
+
+    /* The cards are too low for the badge to lie over them, so it sits on their top edge, clear of the name. */
+    .prize-state {
+        right: 0.35em;
+        transform: translateY(-92%);
+    }
+
+    .prize-name,
+    .prize-value {
+        font-size: var(--text-xs);
+    }
+
+    .breath-band {
+        line-height: 1.2;
+    }
+
+    .side {
+        gap: var(--s2);
+        padding: var(--s2) var(--s3);
+    }
+
+    .round-name {
+        font-size: var(--text-base);
+    }
+
+    .meta,
+    .clock-words,
+    .round-facts dt {
+        font-size: var(--text-sm);
+    }
+
+    .session,
+    .ticker,
+    .spinlog {
+        display: none;
+    }
+
+    .select h2 {
+        max-width: none;
+        font-size: var(--text-lg);
+    }
+
+    .select-body {
+        gap: var(--s2);
+        padding-bottom: var(--s2);
+    }
+
+    main:has(> .select) {
+        padding-top: var(--s2);
+    }
+
+    .cards,
+    .steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--s2);
+    }
+
+    .card-body {
+        gap: var(--s1);
+        padding: var(--s1) var(--s1) var(--s2);
+    }
+
+    .name {
+        font-size: var(--text-base);
+    }
+
+    .rule,
+    .waves {
+        font-size: var(--text-xs);
+    }
+
+    .stake {
+        flex-wrap: nowrap;
         gap: var(--s4);
         padding-block: var(--s1);
-    }
-
-    .bets {
-        display: flex;
-        align-items: center;
-        gap: var(--s3);
-    }
-
-    .field-title {
-        margin: 0;
-        white-space: nowrap;
     }
 
     /* A chip is wide enough for 10.00 with room at its sides. */
@@ -2286,16 +2541,6 @@ code {
         min-width: 0;
     }
 
-    /* A phone on its side is wide enough for the three dives side by side, and the steps stack their drawing over the line. */
-    .cards,
-    .steps {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .name {
-        font-size: var(--text-base);
-    }
-
     @media (max-width: 45.99rem) {
         .steps li {
             flex-direction: column;
@@ -2307,21 +2552,6 @@ code {
             width: 100%;
             max-width: 9rem;
         }
-    }
-
-    /* The board starts clear of the header, with room above it for the Last breath tab. */
-    .app.staged main {
-        padding-block: 1.1rem var(--s1);
-    }
-
-    .breath-band {
-        line-height: 1.2;
-    }
-
-    .session,
-    .ticker,
-    .spinlog {
-        display: none;
     }
 }
 

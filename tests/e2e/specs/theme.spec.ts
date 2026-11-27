@@ -102,7 +102,7 @@ test("the board, its wells and what is drawn on it are the same deep water in bo
 for (const colorScheme of ["dark", "light"] as const) {
   test(`the prize cards, the landed card and the legend read in the ${colorScheme} theme`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
-    await open(page, "/?seed=154");
+    await open(page, "/?seed=154", { maths: true });
     await diveButton(page).click();
     await page.keyboard.press("s");
     await expect(summary(page)).toBeVisible();

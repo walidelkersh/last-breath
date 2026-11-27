@@ -62,12 +62,22 @@ for (const colorScheme of ["dark", "light"] as const) {
   });
 }
 
-test("the heading says what the game is, and the line under it says what to do without saying it again", async ({ page }) => {
+test("one line says what the game is, and each card says its dive in one short line, with its volatility drawn as waves", async ({ page }) => {
   await open(page);
 
   await expect(page.getByRole("heading", { name: "Salvage what you can before your air runs out." })).toBeVisible();
-  await expect(page.locator(".lede")).toHaveText("Choose a dive. One bet buys one round.");
-  await expect(page.getByRole("radiogroup", { name: "Choose a dive. One bet buys one round." })).toBeVisible();
+  await expect(page.locator(".select p")).toHaveText(["Bet"]);
+  await expect(page.getByRole("radiogroup", { name: "Choose a dive" })).toBeVisible();
+  await expect(page.locator(".card .rule")).toHaveText([
+    "Every crate fills your air back to three.",
+    "Six spins, always. The calmest water.",
+    "No refills. Find air tanks to stay down.",
+  ]);
+  // Drift is the calmest and Classic the roughest, which is the order of their exact SD per round.
+  const waves = await page.evaluate(() => [...document.querySelectorAll(".card .waves")].map((meter) => meter.querySelectorAll(".wave.on").length));
+  expect(waves).toEqual([3, 1, 2]);
+  await expect(page.getByRole("radio", { name: "Drift Dive" })).toHaveAccessibleDescription(/Volatility low/);
+  await expect(page.getByRole("radio", { name: "Classic Dive" })).toHaveAccessibleDescription(/Volatility medium/);
 });
 
 test("the selection starts at the top of the page, under the header, and does not centre itself in a tall window", async ({ page }) => {
@@ -79,8 +89,8 @@ test("the selection starts at the top of the page, under the header, and does no
   }
 });
 
-test("a strip of three steps explains the game, each drawn from symbols that are in the sprite", async ({ page }) => {
-  await open(page);
+test("in the maths view a strip of three steps explains the game, each drawn from symbols that are in the sprite", async ({ page }) => {
+  await open(page, "/", { maths: true });
   await page.waitForFunction(() => document.querySelector("symbol#panel") !== null);
 
   const steps = page.getByRole("list", { name: "How a round goes" }).getByRole("listitem");
@@ -180,13 +190,13 @@ test("keyboard focus on a card shows a ring that stands off the card", async ({ 
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("the bet chips and Dive are in view on load and stay in view while the cards scroll", async ({ page }) => {
-    await open(page);
+  test("the bet chips and Dive are in view on load and stay in view while the cards of the maths view scroll", async ({ page }) => {
+    await open(page, "/", { maths: true });
     const dive = page.getByRole("button", { name: "Dive", exact: true });
     const chips = page.locator(".chips");
 
     for (const position of [0, 600, 1200]) {
-      await page.evaluate((top) => scrollTo(0, top), position);
+      await page.evaluate((top) => document.querySelector("main")!.scrollTo(0, top), position);
       for (const [name, target] of [["Dive", dive], ["the bet chips", chips]] as const) {
         const box = (await target.boundingBox())!;
         expect(box.y, `${name} at scroll ${position}`).toBeGreaterThanOrEqual(0);
@@ -197,10 +207,10 @@ test.describe("on a phone", () => {
   });
 
   test("a card that takes keyboard focus is scrolled clear of the bar", async ({ page }) => {
-    await open(page);
+    await open(page, "/", { maths: true });
     await page.getByRole("radio", { name: "Tank Dive" }).focus();
     // Back at the top, so that the Tank card is below the fold whatever the engine did when it took focus: WebKit scrolls to a card that is wholly out of view, but not to one that is partly in it.
-    await page.evaluate(() => scrollTo(0, 0));
+    await page.evaluate(() => document.querySelector("main")!.scrollTo(0, 0));
     await page.keyboard.press("ArrowLeft");
     await page.keyboard.press("ArrowRight");
 
@@ -246,8 +256,8 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 667, height: 375 }
   });
 }
 
-test("the cards put about before the typical length unless every round is as long as that, which only Drift is, and Tank says how many tanks a round", async ({ page }) => {
-  await open(page);
+test("in the maths view the cards put about before the typical length unless every round is as long as that, which only Drift is, and Tank says how many tanks a round", async ({ page }) => {
+  await open(page, "/", { maths: true });
 
   const length = async (name: string) =>
     (await page.locator(".card", { has: page.getByText(name, { exact: true }) }).locator(".fact", { hasText: "Typical length" }).locator(".fact-value").textContent())!.trim();

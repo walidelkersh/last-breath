@@ -7,6 +7,7 @@ import { chooseBet, diveButton, open, summary } from "./play";
 // seed 1 pays 2,500, 2 pays 0, 3 pays 1,250, 4 pays 0, 5 pays 600, 6 pays 500, 7 pays 150, 8 pays 750, 9 pays 400,
 // 10 pays 1,400, 11 pays 1,600, 12 pays 2,400, 13 pays 0, and seed 154 pays 21,650 with a Minor.
 // A page opened with ?seed=N plays seed N first and then N + 1, so the rounds below are those.
+// The session panel is part of the maths view, so every test here opens the page with it on.
 
 const tally = (page: Page) => ({
   rounds: page.getByTestId("session-rounds"),
@@ -30,7 +31,7 @@ async function playRounds(page: Page, count: number) {
 }
 
 test("there is no session block before the first round, and the note carries the exact figure from the report after it", async ({ page }) => {
-  await open(page);
+  await open(page, "/", { maths: true });
   await diveButton(page).click();
   await expect(page.locator(".round")).toBeVisible();
   await expect(page.locator(".session")).toHaveCount(0);
@@ -43,7 +44,7 @@ test("there is no session block before the first round, and the note carries the
 });
 
 test("after two scripted rounds the panel has the exact rounds, bet and returned, and no percentage yet", async ({ page }) => {
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   const { rounds, bet, returned, share } = tally(page);
 
   await diveButton(page).click();
@@ -64,7 +65,7 @@ test("after two scripted rounds the panel has the exact rounds, bet and returned
 
 test("the percentage returned appears from the tenth round, with the number of rounds it stands on", async ({ page }) => {
   test.setTimeout(90_000);
-  await open(page, "/?seed=1");
+  await open(page, "/?seed=1", { maths: true });
   const { rounds, returned, share } = tally(page);
 
   await playRounds(page, 9);
@@ -85,7 +86,7 @@ test("the percentage returned appears from the tenth round, with the number of r
 });
 
 test("rounds at different bets add up by their bets", async ({ page }) => {
-  await open(page, "/?seed=1");
+  await open(page, "/?seed=1", { maths: true });
   const { rounds, bet, returned } = tally(page);
 
   await chooseBet(page, "4.00");
@@ -104,7 +105,7 @@ test("rounds at different bets add up by their bets", async ({ page }) => {
 
 test("the strip holds the last twelve rounds, oldest out, each bar named and set by its tier", async ({ page }) => {
   test.setTimeout(90_000);
-  await open(page, "/?seed=1");
+  await open(page, "/?seed=1", { maths: true });
   const bars = page.locator(".bars .bar");
 
   await playRounds(page, 1);
@@ -136,7 +137,7 @@ test("the strip holds the last twelve rounds, oldest out, each bar named and set
 });
 
 test("ten bets fill the strip, one bet reaches under half, a round with nothing is a thin tick, and the bet is a dashed line with a label", async ({ page }) => {
-  await open(page, "/?seed=1");
+  await open(page, "/?seed=1", { maths: true });
   await playRounds(page, 2);
 
   const measured = await page.evaluate(() => {
@@ -160,7 +161,7 @@ test("ten bets fill the strip, one bet reaches under half, a round with nothing 
 });
 
 test("a Big win bar fills the strip to the room under its medal, and has the medal above it", async ({ page }) => {
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await diveButton(page).click();
   await skipRound(page);
 
@@ -186,7 +187,7 @@ test("a Big win bar fills the strip to the room under its medal, and has the med
 });
 
 test("the four kinds of bar differ by shape and not only by colour", async ({ page }) => {
-  await open(page, "/?seed=1");
+  await open(page, "/?seed=1", { maths: true });
   await playRounds(page, 1);
 
   const looks = await page.evaluate(() => {
@@ -216,7 +217,7 @@ test("the four kinds of bar differ by shape and not only by colour", async ({ pa
 for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }]) {
   test(`the labels of the tally stay on one line at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await open(page, "/?seed=154");
+    await open(page, "/?seed=154", { maths: true });
     await playRounds(page, 1);
 
     const labels = await page.evaluate(() =>
@@ -231,7 +232,7 @@ for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800
 }
 
 test("Reset balance clears the session", async ({ page }) => {
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await diveButton(page).click();
   await skipRound(page);
   await expect(tally(page).rounds).toHaveText("1");
@@ -243,7 +244,7 @@ test("Reset balance clears the session", async ({ page }) => {
 });
 
 test("the session is kept in memory only", async ({ page }) => {
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await diveButton(page).click();
   await skipRound(page);
 
@@ -269,7 +270,7 @@ const contrast = (foreground: number[], background: number[]) => {
 for (const colorScheme of ["dark", "light"] as const) {
   test(`the bars stand out from the panel by at least 3 to 1 in the ${colorScheme} theme, and the text of the panel meets AA`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
-    await open(page, "/?seed=1");
+    await open(page, "/?seed=1", { maths: true });
     await playRounds(page, 1);
 
     const found: { name: string; paint: number[]; surface: number[] }[] = await page.evaluate(() => {

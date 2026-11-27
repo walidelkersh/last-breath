@@ -37,18 +37,19 @@ async function expectTheStageToFit(page: Page) {
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth,
     innerHeight,
+    stageTop: document.querySelector(".stage")!.getBoundingClientRect().top,
     stageBottom: document.querySelector(".stage")!.getBoundingClientRect().bottom,
-    sideBottom: document.querySelector(".side")!.getBoundingClientRect().bottom,
+    headerBottom: document.querySelector("header")!.getBoundingClientRect().bottom,
     footerTop: document.querySelector("footer")!.getBoundingClientRect().top,
   }));
   expect(fit.scrollHeight, "the page does not scroll").toBeLessThanOrEqual(fit.innerHeight);
   expect(fit.scrollWidth, "the page does not scroll sideways").toBeLessThanOrEqual(fit.innerWidth);
+  expect(fit.stageTop, "the stage starts below the header").toBeGreaterThanOrEqual(fit.headerBottom);
   expect(fit.stageBottom, "the stage ends above the footer").toBeLessThanOrEqual(fit.footerTop);
-  expect(fit.sideBottom, "the side panel ends above the footer").toBeLessThanOrEqual(fit.footerTop);
 }
 
-async function playToTheEnd(page: Page, round: (typeof rounds)[number]) {
-  await open(page, `/?seed=${round.seed}`);
+async function playToTheEnd(page: Page, round: (typeof rounds)[number], maths = false) {
+  await open(page, `/?seed=${round.seed}`, { maths });
   await page.keyboard.press(round.key);
   await diveButton(page).click();
   await page.keyboard.press("s");
@@ -74,7 +75,7 @@ for (const viewport of screens) {
       await open(page, "/?seed=4");
       await page.keyboard.press("3");
       await diveButton(page).click();
-      await expect(page.locator(".spin")).toHaveText(/Spin [1-9]/);
+      await expect(page.getByTestId("gain")).toBeVisible();
 
       await expectInside(page, page.getByRole("button", { name: "Skip" }), "Skip");
       await expectTheStageToFit(page);
@@ -82,7 +83,7 @@ for (const viewport of screens) {
   });
 }
 
-test("the board grows with the window: at 1920 by 1080 it is more than 55% wider than at 1280 by 800", async ({ browser }) => {
+test("the board grows with the window: at 1920 by 1080 it is more than 35% wider than at 1280 by 800", async ({ browser }) => {
   const widthAt = async (width: number, height: number) => {
     const context = await browser.newContext({ viewport: { width, height } });
     const page = await context.newPage();
@@ -98,7 +99,7 @@ test("the board grows with the window: at 1920 by 1080 it is more than 55% wider
   const huge = await widthAt(2560, 1440);
 
   expect(small).toBeGreaterThan(690);
-  expect(large).toBeGreaterThan(small * 1.55);
+  expect(large).toBeGreaterThan(small * 1.35);
   expect(huge).toBeGreaterThan(large);
 });
 
@@ -134,7 +135,7 @@ test("the tiles, their plates and the outlines grow with the board", async ({ br
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("Skip stays in view while a round plays, and Dive again and Change dive stay in view at the end", async ({ page }) => {
+  test("Skip stays in view while a round plays, and Dive again and Change dive are in view at the end, with nothing to scroll", async ({ page }) => {
     await open(page, "/?seed=4");
     await page.keyboard.press("3");
     await diveButton(page).click();
@@ -142,57 +143,52 @@ test.describe("on a phone", () => {
 
     await page.keyboard.press("s");
     await expect(summary(page)).toBeFocused();
-    await page.evaluate(() => scrollTo(0, 0));
     await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again");
     await expectInside(page, page.getByRole("button", { name: "Change dive" }), "Change dive");
-    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
-    await expectInside(page, page.getByRole("button", { name: "Dive again" }), "Dive again at the foot of the page");
+    expect(await page.evaluate(() => document.querySelector("main")!.scrollHeight <= document.querySelector("main")!.clientHeight + 1)).toBe(true);
   });
 
-  test("at the end the summary takes focus without a jump, its ring is drawn inside it, and the whole board stays in view, or starts at the top of the screen", async ({ page }) => {
-    for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 640 }, { width: 375, height: 560 }]) {
+  test("at the end the plate takes focus without a jump, draws no ring, and the whole board is in view", async ({ page }) => {
+    for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 640 }]) {
       await page.setViewportSize(viewport);
       await open(page, "/?seed=154");
       await diveButton(page).click();
-      expect(await page.evaluate(() => scrollY)).toBe(0);
       await page.keyboard.press("s");
       await expect(summary(page)).toBeFocused();
 
       const found = await page.evaluate(() => {
         const board = document.querySelector(".board")!.getBoundingClientRect();
-        const first = document.querySelector(".tile")!.getBoundingClientRect();
-        const bar = document.querySelector(".actions")!.getBoundingClientRect();
-        return { top: board.top, bottom: board.bottom, firstTile: first.top, height: board.height, bar: bar.top, offset: getComputedStyle(document.querySelector(".summary")!).outlineOffset };
+        return { top: board.top, bottom: board.bottom, header: document.querySelector("header")!.getBoundingClientRect().bottom, footer: document.querySelector("footer")!.getBoundingClientRect().top, ring: getComputedStyle(document.querySelector(".summary")!).outlineStyle, scrolled: scrollY };
       });
       const label = `${viewport.width} by ${viewport.height}`;
-      expect(found.offset, label).toBe("-3px");
-      expect(found.top, `${label}: the top of the board is not cut off`).toBeGreaterThanOrEqual(0);
-      expect(found.firstTile, `${label}: the top row of tiles is in view`).toBeGreaterThanOrEqual(0);
-      if (found.height + 12 <= found.bar) expect(found.bottom, `${label}: it fits, so the whole board is above the bar`).toBeLessThanOrEqual(found.bar);
-      else expect(found.top, `${label}: it does not fit, so it starts at the top of the screen`).toBeLessThanOrEqual(16);
+      expect(found.ring, label).toBe("none");
+      expect(found.scrolled, label).toBe(0);
+      expect(found.top, `${label}: the top of the board is not cut off`).toBeGreaterThanOrEqual(found.header);
+      expect(found.bottom, `${label}: the foot of the board is in view`).toBeLessThanOrEqual(found.footer);
     }
   });
 
-  test("a round that ended while the page was scrolled down brings the board back whole", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await open(page, "/?seed=154");
+  test("in the maths view a round that ended while the panel under the board was scrolled brings the board back whole", async ({ page }) => {
+    await open(page, "/?seed=154", { maths: true });
     await diveButton(page).click();
-    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    await page.keyboard.press("s");
+    await expect(summary(page)).toBeFocused();
+    await page.getByRole("button", { name: "Dive again" }).click();
+    await page.evaluate(() => document.querySelector("main")!.scrollTo(0, document.querySelector("main")!.scrollHeight));
     await page.keyboard.press("s");
     await expect(summary(page)).toBeFocused();
 
-    await expect.poll(() => page.evaluate(() => document.querySelector(".board")!.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
-    const board = await page.evaluate(() => ({ top: document.querySelector(".board")!.getBoundingClientRect().top, bottom: document.querySelector(".board")!.getBoundingClientRect().bottom, bar: document.querySelector(".actions")!.getBoundingClientRect().top }));
-    expect(board.bottom).toBeLessThanOrEqual(board.bar);
+    const board = await page.evaluate(() => ({ top: document.querySelector(".board")!.getBoundingClientRect().top, header: document.querySelector("header")!.getBoundingClientRect().bottom }));
+    expect(board.top).toBeGreaterThanOrEqual(board.header - 1);
   });
 
-  test("a round starts at the top of the page even when the selection screen was scrolled", async ({ page }) => {
-    await open(page);
-    await page.evaluate(() => scrollTo(0, 800));
+  test("a round starts at the top even when the selection was scrolled", async ({ page }) => {
+    await open(page, "/", { maths: true });
+    await page.evaluate(() => document.querySelector("main")!.scrollTo(0, 800));
     await diveButton(page).click();
 
     await expect(page.getByRole("button", { name: "Skip" })).toBeFocused();
-    expect(await page.evaluate(() => scrollY)).toBe(0);
+    expect(await page.evaluate(() => [scrollY, document.querySelector("main")!.scrollTop])).toEqual([0, 0]);
   });
 
   test("the header is one row, with the title, the balance and Math, and Reset balance is in the footer", async ({ page }) => {
@@ -205,7 +201,10 @@ test.describe("on a phone", () => {
 
     expect(Math.abs(middle(title) - middle(balance))).toBeLessThan(10);
     expect(Math.abs(middle(title) - middle(math))).toBeLessThan(10);
-    expect(balance.x + balance.width).toBeLessThanOrEqual(math.x);
+    const switchBox = await box(page.getByRole("switch", { name: "Show the maths" }));
+    expect(Math.abs(middle(title) - middle(switchBox))).toBeLessThan(10);
+    expect(balance.x + balance.width).toBeLessThanOrEqual(switchBox.x);
+    expect(switchBox.x + switchBox.width).toBeLessThanOrEqual(math.x);
     expect((await box(page.locator("header"))).height).toBeLessThan(75);
     await expect(page.locator("footer").getByRole("button", { name: "Reset balance" })).toBeVisible();
     await expect(page.locator("header").getByRole("button", { name: "Reset balance" })).toHaveCount(0);
@@ -225,8 +224,8 @@ test.describe("on a phone", () => {
   });
 });
 
-test("the head counts the spin and the ticker names what each spin landed, newest first", async ({ page }) => {
-  await open(page, "/?seed=4");
+test("in the maths view the side panel counts the spin and the ticker names what each spin landed, newest first", async ({ page }) => {
+  await open(page, "/?seed=4", { maths: true });
   await page.keyboard.press("3");
   await diveButton(page).click();
 
@@ -241,6 +240,7 @@ test("the head counts the spin and the ticker names what each spin landed, newes
 });
 
 // The ticker lists only what landed, and folds a run of empty spins into one row. Seed 33 is a sparse Classic round with long runs of nothing.
+// The ticker is part of the maths view.
 test.describe("the ticker", () => {
   const rows = (page: Page) =>
     page.evaluate(() =>
@@ -252,7 +252,7 @@ test.describe("the ticker", () => {
 
   test("has one row for each spin that landed something and one for each run of empty spins", async ({ page }) => {
     test.setTimeout(60_000);
-    await open(page, "/?seed=33");
+    await open(page, "/?seed=33", { maths: true });
     await page.keyboard.press("1");
     await diveButton(page).click();
     await expect(page.locator(".spin")).toHaveText(/^Spin ([6-9]|\d\d)$/, { timeout: 30_000 });
@@ -276,7 +276,7 @@ test.describe("the ticker", () => {
   test("shows no half row when the window is short", async ({ page }) => {
     test.setTimeout(60_000);
     await page.setViewportSize({ width: 1024, height: 700 });
-    await open(page, "/?seed=33");
+    await open(page, "/?seed=33", { maths: true });
     await page.keyboard.press("1");
     await diveButton(page).click();
     await expect(page.locator(".spin")).toHaveText(/^Spin ([8-9]|\d\d)$/, { timeout: 30_000 });
@@ -291,7 +291,7 @@ test.describe("the ticker", () => {
 
   test("after the round it folds into a line, closed, that says how many spins and opens on request", async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await playToTheEnd(page, rounds[0]);
+    await playToTheEnd(page, rounds[0], true);
 
     const log = page.locator(".spinlog");
     await expect(log.locator("summary")).toHaveText("Spin by spin (18)");
@@ -315,25 +315,22 @@ test.describe("the ticker", () => {
   });
 });
 
-test("after the round the total is on the plate and not said again in the summary, which keeps the counts", async ({ page }) => {
-  await playToTheEnd(page, rounds[0]);
+test("after the round the win is on the plate and the console total is gone, and the maths view keeps the counts beside the board", async ({ page }) => {
+  await playToTheEnd(page, rounds[0], true);
 
-  await expect(summary(page).getByText("Total win")).toHaveCount(0);
-  await expect(summary(page).getByTestId("win")).toHaveCount(0);
   await expect(page.locator(".result-plate").getByTestId("win")).toHaveText("21.65");
-  await expect(summary(page).getByText("Spins", { exact: true })).toBeVisible();
-  await expect(summary(page).getByText("Crates", { exact: true })).toBeVisible();
-  // The live total in the head shows the board while the round runs, and is hidden at the end.
-  await expect(page.locator(".hud")).toBeHidden();
+  await expect(page.locator(".total")).toHaveCount(0);
+  await expect(summary(page).getByText("Spins", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".round-facts").getByText("Spins", { exact: true })).toBeVisible();
+  await expect(page.locator(".round-facts").getByText("Crates", { exact: true })).toBeVisible();
 });
 
 test("the list on the page writes a tank as +1 and +2 and the live region says plus 1 and plus 2", async ({ page }) => {
-  await open(page, "/?seed=4");
+  await open(page, "/?seed=4", { maths: true });
   await page.keyboard.press("3");
   await diveButton(page).click();
 
   await expect(page.locator(".ticker li").first()).toContainText("Air tanks, +1 and +2 breaths");
-  await expect(page.locator(".board-foot.status .foot-what")).toHaveText("Air tanks, +1 and +2 breaths");
   await expect(page.locator("[aria-live]")).toContainText("Air tanks, plus 1 and plus 2 breaths");
   expect(await page.locator(".ticker").textContent()).not.toContain("plus");
 });

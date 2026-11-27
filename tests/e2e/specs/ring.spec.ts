@@ -3,7 +3,7 @@ import { diveButton, open, summary } from "./play";
 
 // A jackpot lands like no crate. Seed 154 is a Classic round that lands a Minor on its fourth spin: its tile and its card each give one
 // ring, 700 ms and not repeated, and the board total counts up over 900 ms where a crate takes 300. With reduced motion the ring is still
-// and the total does not count.
+// and the total does not count. The spin is read from the side panel, so the rounds are played in the maths view.
 
 async function watch(page: Page) {
   await page.addInitScript(() => {
@@ -36,7 +36,7 @@ async function watch(page: Page) {
 
 async function play(page: Page) {
   await watch(page);
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await page.keyboard.press("1");
   await diveButton(page).click();
   await expect(summary(page)).toBeVisible({ timeout: 40_000 });
@@ -108,7 +108,7 @@ test.describe("with prefers-reduced-motion", () => {
 
 test("the in-game Reduce motion setting gives the still ring too", async ({ page }) => {
   await watch(page);
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await page.getByLabel("Reduce motion").check();
   await page.keyboard.press("1");
   await diveButton(page).click();

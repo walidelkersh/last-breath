@@ -24,25 +24,28 @@ public sealed record Figures(
     public long GrandOdds => (long)Math.Round(1 / GrandProbability);
 }
 
-// Id is the dive's key in config/dives.json. Drift is called Static there.
-public sealed record DiveInfo(string Id, string Name, string Rule, string Volatility, Figures Figures);
+// Id is the dive's key in config/dives.json. Drift is called Static there. Line is what the card says in the player view, and Rule
+// what it says in the maths view. Waves is the volatility drawn as one to three waves.
+public sealed record DiveInfo(string Id, string Name, string Line, string Rule, string Volatility, int Waves, Figures Figures);
 
 public static class Catalog
 {
     // Volatility follows the order of the exact SD per round: Drift, then Tank, then Classic.
-    private static readonly (string Id, string Rule, string Volatility)[] Dives =
+    private static readonly (string Id, string Line, string Rule, string Volatility, int Waves)[] Dives =
     [
-        ("Classic", "Three breaths, filled back to three whenever a crate lands.", "Medium"),
-        ("Static", "Exactly six spins. A crate never changes the count.", "Low"),
-        ("Tank", "Four breaths with no refill. Air tanks add breaths, up to three tanks a round.", "Low to medium"),
+        ("Classic", "Every crate fills your air back to three.", "Three breaths, filled back to three whenever a crate lands.", "Medium", 3),
+        ("Static", "Six spins, always. The calmest water.", "Exactly six spins. A crate never changes the count.", "Low", 1),
+        ("Tank", "No refills. Find air tanks to stay down.", "Four breaths with no refill. Air tanks add breaths, up to three tanks a round.", "Low to medium", 2),
     ];
 
     public static IReadOnlyList<DiveInfo> Load(GameConfig config) =>
         [.. Dives.Select(dive => new DiveInfo(
             dive.Id,
             config.Dives[dive.Id].Name,
+            dive.Line,
             dive.Rule,
             dive.Volatility,
+            dive.Waves,
             Parse(Resource($"solve-{dive.Id.ToLowerInvariant()}.json"), Resource($"simulate-{dive.Id.ToLowerInvariant()}.json"))))];
 
     internal static Figures Parse(string solveJson, string simulateJson)

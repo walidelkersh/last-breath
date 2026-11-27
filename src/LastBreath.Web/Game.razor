@@ -4,21 +4,29 @@
 
 @if (ready)
 {
-    <div class="app @(round is not null ? "staged" : "")">
+    <div class="app @(round is not null ? "staged" : "") @(maths ? "maths" : "")">
         @if (!reduceMotion)
         {
             <div class="bubbles" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
         }
         <header class="top">
-            <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg>Last Breath</h1>
+            <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg><span class="brand-name">Last Breath</span></h1>
             <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
+            @if (round is not null)
+            {
+                <p class="balance">Bet <strong>@Format.Credits(roundBet)</strong></p>
+            }
+            @* The visible word is short on a phone, and the name stays whole, so it always contains what is shown. *@
+            <button type="button" class="switch" role="switch" aria-checked="@(maths ? "true" : "false")" aria-label="Show the maths" @onclick="ToggleMaths">
+                <span class="switch-track" aria-hidden="true"></span><span class="switch-text"><span class="switch-long">Show the </span>maths</span>
+            </button>
             <button type="button" @ref="mathButton" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
         </header>
 
         <main>
             @if (round is null)
             {
-                <DiveSelect Dives="Dives" Bets="Config.Bets" Balance="balance"
+                <DiveSelect Dives="Dives" Bets="Config.Bets" Balance="balance" Maths="maths"
                             Selected="@selectedDive" SelectedChanged="Pick"
                             Bet="bet" BetChanged="PickBet"
                             FocusDive="returned" OnDive="StartRound" />
@@ -26,13 +34,13 @@
             else
             {
                 <RoundView @ref="roundView" @key="roundNumber" Round="round" DiveId="@selectedDive" Bet="roundBet" Session="session" ReduceMotion="reduceMotion"
-                           CanDiveAgain="balance >= bet"
+                           Maths="maths" CanDiveAgain="balance >= bet"
                            Announce="Say" Finished="Settle" DiveAgain="StartRound" ChangeDive="ChangeDive" />
             }
         </main>
 
         <footer>
-            <p>Demo only. The credits are play money, and nothing is paid out.</p>
+            <p>Demo with play money. Nothing is paid out.</p>
             <details class="keys">
                 <summary>Keys</summary>
                 <p>1 to 3 choose a dive. S skips to the end of a round. M opens the math. Escape closes the math or this list. Space or Enter presses the button in focus.</p>
@@ -55,10 +63,12 @@
     private const string DiveKey = "lastbreath.dive";
     private const string BetKey = "lastbreath.bet";
     private const string MotionKey = "lastbreath.reduce";
+    private const string MathsKey = "lastbreath.maths";
     private const decimal StartingBalance = 1000.00m;
 
     private readonly Session session = new();
     private bool ready;
+    private bool maths;
     private bool systemReducesMotion;
     private bool reduceMotionChoice;
     private bool returned;
@@ -95,6 +105,7 @@
 
         systemReducesMotion = await JS.InvokeAsync<bool>("lastBreath.prefersReducedMotion");
         reduceMotionChoice = await JS.InvokeAsync<string?>("lastBreath.read", MotionKey) == "1";
+        maths = await JS.InvokeAsync<string?>("lastBreath.read", MathsKey) == "1";
         await JS.InvokeVoidAsync("lastBreath.listenKeys", DotNetObjectReference.Create(this));
         ready = true;
         _ = WarmUp();
@@ -165,6 +176,12 @@
     {
         reduceMotionChoice = change.Value is true;
         await JS.InvokeVoidAsync("lastBreath.write", MotionKey, reduceMotionChoice ? "1" : "0");
+    }
+
+    private async Task ToggleMaths()
+    {
+        maths = !maths;
+        await JS.InvokeVoidAsync("lastBreath.write", MathsKey, maths ? "1" : "0");
     }
 
     private async Task OpenMath()

@@ -6,11 +6,15 @@ export const dives = [
   { name: "Tank Dive", key: "3" },
 ];
 
-// The page waits for the game to load before it shows the Dive button.
-export async function open(page: Page, path = "/") {
+// The page waits for the game to load before it shows the Dive button. The player view is the default; { maths: true } opens the page with the
+// maths view on, as a visitor who turned the switch on earlier would find it.
+export async function open(page: Page, path = "/", { maths = false } = {}) {
+  if (maths) await page.addInitScript(() => localStorage.setItem("lastbreath.maths", "1"));
   await page.goto(path);
   await expect(diveButton(page)).toBeVisible({ timeout: 60_000 });
 }
+
+export const mathsSwitch = (page: Page) => page.getByRole("switch", { name: "Show the maths" });
 
 export const diveButton = (page: Page) => page.getByRole("button", { name: "Dive", exact: true });
 

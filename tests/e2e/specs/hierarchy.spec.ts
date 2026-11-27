@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { diveButton, open, summary } from "./play";
 
-// The serif face belongs to the wordmark and to the result plate and nowhere else, headings are sans, and the round
-// screen reads in order: the board, then its side panel, with the actions at its foot.
+// The serif face belongs to the wordmark and to the result plate and nowhere else, and headings are sans. The board is the one thing to
+// look at: its buttons are on the console at its foot in both views, and the side panel of the maths view stands beside it.
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -79,18 +79,25 @@ test("the prizes are one slim row of four, with Grand wider and tinted, and the 
   expect(row.height / row.board, "the strip is a slim row").toBeLessThan(0.14);
 });
 
-test("the side panel is as tall as the board, with its actions pinned at the foot and full width", async ({ page }) => {
+test("the board stands alone in the player view, and in the maths view the side panel stands beside it as tall as the row", async ({ page }) => {
   await open(page, "/?seed=154");
   await diveButton(page).click();
-  await expect(page.locator(".session")).toHaveCount(0);
+  await expect(page.locator(".side")).toHaveCount(0);
+  const alone = await page.evaluate(() => {
+    const stage = document.querySelector(".stage")!.getBoundingClientRect();
+    return { left: stage.left, right: innerWidth - stage.right };
+  });
+  expect(Math.abs(alone.left - alone.right), "the board is in the middle").toBeLessThan(2);
 
+  await open(page, "/?seed=154", { maths: true });
+  await diveButton(page).click();
+  await expect(page.locator(".session")).toHaveCount(0);
   const during = await page.evaluate(() => {
     const side = document.querySelector(".side")!.getBoundingClientRect();
-    const pad = parseFloat(getComputedStyle(document.querySelector(".side")!).paddingBottom);
     const stage = document.querySelector(".stage")!.getBoundingClientRect();
-    const actions = document.querySelector(".actions")!.getBoundingClientRect();
-    const skip = document.querySelector(".actions button")!.getBoundingClientRect();
-    const name = document.querySelector(".round-head h2")!;
+    const skip = document.querySelector(".board-foot .actions button")!.getBoundingClientRect();
+    const board = document.querySelector(".board")!.getBoundingClientRect();
+    const name = document.querySelector(".round-name")!;
     const style = getComputedStyle(name);
     const muted = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim();
     const probe = document.createElement("i");
@@ -99,16 +106,16 @@ test("the side panel is as tall as the board, with its actions pinned at the foo
     const mutedColour = getComputedStyle(probe).color;
     probe.remove();
     return {
-      pad, sideTop: side.top, stageTop: stage.top, sideBottom: side.bottom, stageBottom: stage.bottom,
-      actionsBottom: actions.bottom, skipWidth: skip.width, actionsWidth: actions.width,
+      sideTop: side.top, stageTop: stage.top, sideBottom: side.bottom, stageBottom: stage.bottom, sideLeft: side.left, stageRight: stage.right,
+      skipInside: skip.left >= board.left && skip.right <= board.right && skip.bottom <= board.bottom,
       nameColour: style.color, mutedColour, nameSize: parseFloat(style.fontSize), rootSize: parseFloat(getComputedStyle(document.documentElement).fontSize),
-      skipClass: document.querySelector(".actions button")!.className,
+      skipClass: document.querySelector(".board-foot .actions button")!.className,
     };
   });
   expect(during.sideTop).toBeLessThanOrEqual(during.stageTop + 1);
   expect(during.sideBottom).toBeGreaterThanOrEqual(during.stageBottom - 2);
-  expect(during.actionsBottom).toBeGreaterThanOrEqual(during.sideBottom - during.pad - 2);
-  expect(during.skipWidth).toBeCloseTo(during.actionsWidth, 0);
+  expect(during.sideLeft).toBeGreaterThanOrEqual(during.stageRight);
+  expect(during.skipInside, "Skip is on the console of the board").toBe(true);
   expect(during.skipClass).not.toContain("primary");
   expect(during.nameColour).toBe(during.mutedColour);
   expect(during.nameSize).toBeLessThan(during.rootSize * 1.5);
@@ -116,14 +123,13 @@ test("the side panel is as tall as the board, with its actions pinned at the foo
   await page.keyboard.press("s");
   await expect(summary(page)).toBeVisible();
   const after = await page.evaluate(() => {
-    const side = document.querySelector(".side")!.getBoundingClientRect();
-    const buttons = [...document.querySelectorAll(".actions button")].map((button) => button.getBoundingClientRect());
-    const actions = document.querySelector(".actions")!.getBoundingClientRect();
-    const pad = parseFloat(getComputedStyle(document.querySelector(".side")!).paddingBottom);
-    return { pad, sideBottom: side.bottom, actionsBottom: actions.bottom, widths: buttons.map((box) => box.width), actionsWidth: actions.width, gap: buttons[1].left - buttons[0].right };
+    const board = document.querySelector(".board")!.getBoundingClientRect();
+    const buttons = [...document.querySelectorAll(".board-foot .actions button")].map((button) => ({ box: button.getBoundingClientRect(), primary: button.classList.contains("primary"), text: button.textContent }));
+    return { inside: buttons.every(({ box }) => box.left >= board.left && box.right <= board.right && box.bottom <= board.bottom), names: buttons.map((button) => button.text), primary: buttons.map((button) => button.primary) };
   });
-  expect(after.actionsBottom).toBeGreaterThanOrEqual(after.sideBottom - after.pad - 2);
-  expect(after.widths[0] + after.widths[1] + after.gap).toBeCloseTo(after.actionsWidth, 0);
+  expect(after.inside).toBe(true);
+  expect(after.names).toEqual(["Dive again", "Change dive"]);
+  expect(after.primary).toEqual([true, false]);
   await expect(page.locator(".session")).toBeVisible();
 });
 
@@ -145,20 +151,23 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }
 }
 
 for (const viewport of [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
-  test(`the Board total of a Drift round keeps to the right edge even when the segments wrap, at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+  test(`the clock is at the left of the console and the board total at its right, before Skip, in a Drift round at ${viewport.width} by ${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await open(page, "/?seed=11");
     await page.keyboard.press("2");
     await diveButton(page).click();
-    await expect(page.locator(".spin")).toHaveText(/^Spin [1-9]/, { timeout: 15_000 });
+    await expect(page.locator(".segment.on")).toHaveCount(5, { timeout: 15_000 });
 
     const found = await page.evaluate(() => {
-      const hud = document.querySelector(".hud")!.getBoundingClientRect();
-      const total = document.querySelector(".total")!.getBoundingClientRect();
-      const clock = document.querySelector(".clock")!.getBoundingClientRect();
-      return { hud: hud.right, total: total.right, wrapped: total.top >= clock.bottom - 1, margin: getComputedStyle(document.querySelector(".total")!).marginLeft };
+      const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const foot = box(".board-foot"), clock = box(".clock"), total = box(".total"), skip = box(".board-foot .actions");
+      return { foot, clock, total, skip, segments: document.querySelectorAll(".segment").length };
     });
-    expect(Math.abs(found.total - found.hud), "flush with the right edge of the head").toBeLessThan(1.5);
-    expect(found.margin).not.toBe("0px");
+    expect(found.segments).toBe(6);
+    expect(found.clock.left - found.foot.left, "the clock starts at the left").toBeLessThan(30);
+    expect(found.clock.right).toBeLessThanOrEqual(found.total.left);
+    expect(found.total.right).toBeLessThanOrEqual(found.foot.right);
+    if (found.skip.top < found.total.bottom) expect(found.total.right, "the total comes before Skip").toBeLessThanOrEqual(found.skip.left);
+    else expect(Math.abs(found.total.right - found.skip.right), "on a narrow board the total keeps to the right edge, over Skip").toBeLessThan(2);
   });
 }

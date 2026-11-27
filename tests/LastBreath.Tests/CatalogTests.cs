@@ -79,6 +79,7 @@ public sealed class CatalogTests
         var bySd = dives.OrderBy(dive => dive.Figures.Sd).Select(dive => dive.Volatility);
 
         Assert.Equal(["Low", "Low to medium", "Medium"], bySd);
+        Assert.Equal([1, 2, 3], dives.OrderBy(dive => dive.Figures.Sd).Select(dive => dive.Waves));
     }
 
     [Theory]

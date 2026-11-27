@@ -3,9 +3,10 @@ import { diveButton, open, summary } from "./play";
 
 // After the round the spins fold into a line that opens on request. On the staged layout the opened log has the room: the strip, its legend and
 // its note step aside, at least six rows show, and a shadow says that there are more. Seed 154 is a Classic round of 18 spins and 14 rows.
+// The log is part of the maths view.
 
 async function finish(page: Page) {
-  await open(page, "/?seed=154");
+  await open(page, "/?seed=154", { maths: true });
   await page.keyboard.press("1");
   await diveButton(page).click();
   await page.keyboard.press("s");

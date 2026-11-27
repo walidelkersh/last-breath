@@ -12,7 +12,8 @@ async function playClassic(page: Page, seed: number) {
   await diveButton(page).click();
 }
 
-// Samples what the board total shows on every frame, so a count-up shows as many values and a jump as one.
+// Samples what the board total shows on every frame, so a count-up shows as many values and a jump as one. The total is on the console only
+// while the round runs, so the test watches the first spin that puts something on the board, whose total the live region says.
 async function watchTotal(page: Page) {
   await page.addInitScript(() => {
     const seen: { text: string; at: number }[] = [];
@@ -28,11 +29,15 @@ async function watchTotal(page: Page) {
 
 const totals = (page: Page) => page.evaluate(() => (window as any).seenTotals as { text: string; at: number }[]);
 
-async function skipAndWaitForTheTotal(page: Page, final: string) {
-  await page.keyboard.press("s");
-  await expect(summary(page)).toBeVisible();
-  await expect.poll(async () => (await totals(page)).at(-1)?.text).toBe(final);
-  await page.waitForTimeout(400);
+// The totals seen up to and including the first that is not 0.00, once the count to it has ended.
+async function waitForTheFirstTotal(page: Page) {
+  const said = page.locator("[aria-live]");
+  await expect(said).toHaveText(/Board (?!0\.00)[\d.,]+ credits/, { timeout: 15_000 });
+  const first = /Board ([\d.,]+) credits/.exec((await said.textContent())!)![1];
+  await expect.poll(async () => (await totals(page)).map(({ text }) => text)).toContain(first);
+  await page.waitForTimeout(100);
+  const seen = await totals(page);
+  return seen.slice(0, seen.findIndex(({ text }) => text === first) + 1);
 }
 
 test("a jackpot that lands marks its card as landed with a badge, and no other card", async ({ page }) => {
@@ -83,9 +88,8 @@ test("a round under ten times the bet has no Big win line", async ({ page }) => 
 test("the board total counts up to its new value over about 300 ms", async ({ page }) => {
   await watchTotal(page);
   await playClassic(page, smallWin);
-  await skipAndWaitForTheTotal(page, "2.50");
 
-  const seen = await totals(page);
+  const seen = await waitForTheFirstTotal(page);
   const values = seen.map(({ text }) => Number(text));
   expect(seen[0].text).toBe("0.00");
   expect(seen.length).toBeGreaterThan(4);
@@ -111,9 +115,11 @@ test.describe("with prefers-reduced-motion", () => {
     await playClassic(page, smallWin);
     // The empty board's 0.00 is on screen for a frame or two, so the test waits to have seen it, and the skip cannot beat the sampler.
     await expect.poll(async () => (await totals(page)).map(({ text }) => text)).toEqual(["0.00"]);
-    await skipAndWaitForTheTotal(page, "2.50");
+    const seen = await waitForTheFirstTotal(page);
 
-    expect((await totals(page)).map(({ text }) => text)).toEqual(["0.00", "2.50"]);
+    expect(seen.map(({ text }) => text)).toEqual(["0.00", seen.at(-1)!.text]);
+    await page.keyboard.press("s");
+    await expect(summary(page)).toBeVisible();
     await expect(page.locator(".anim-in, .anim-fly")).toHaveCount(0);
     expect(await sawAnimation(page)).toBe(false);
   });
@@ -136,7 +142,7 @@ test("the in-game toggle also makes the board total jump", async ({ page }) => {
   await open(page, `/?seed=${smallWin}`);
   await page.getByLabel("Reduce motion").check();
   await diveButton(page).click();
-  await skipAndWaitForTheTotal(page, "2.50");
+  const seen = await waitForTheFirstTotal(page);
 
-  expect((await totals(page)).map(({ text }) => text)).toEqual(["0.00", "2.50"]);
+  expect(seen.map(({ text }) => text)).toEqual(["0.00", seen.at(-1)!.text]);
 });

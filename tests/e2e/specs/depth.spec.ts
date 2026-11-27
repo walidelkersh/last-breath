@@ -26,9 +26,10 @@ async function record(page: Page) {
   });
 }
 
+// The spin number is read from the side panel, so these rounds are played in the maths view. The depth is the same in both views.
 async function playOut(page: Page, path: string, key: string) {
   await record(page);
-  await open(page, path);
+  await open(page, path, { maths: true });
   await page.keyboard.press(key);
   await diveButton(page).click();
   await expect(summary(page)).toBeVisible({ timeout: 40_000 });
@@ -225,18 +226,24 @@ async function worstContrast(page: Page, selectors: string[]) {
   }, { b64: png.toString("base64"), boxes: items });
 }
 
-const desktopText = [
-  ".tile-value", ".foot-what", ".foot-spin", ".breath-band", ".round-head h2", ".meta", ".clock-text", ".total", ".last",
-  ".ticker-what", ".ticker-spin", ".prize-name", ".prize-value", ".top .brand", ".balance", "footer > p", "footer .toggle", ".actions button",
+const playerText = [
+  ".tile-value", ".breath-band", ".total", ".prize-name", ".prize-value", ".top .brand", ".balance", ".bet", ".switch-text", "footer > p", "footer .toggle",
+  ".board-foot button", ".top button", "footer button",
 ];
-const phoneText = [...desktopText, ".top button", "footer button"];
+const mathsText = [...playerText, ".round-name", ".meta", ".clock-text", ".ticker-what", ".ticker-spin"];
+
+// The player view is checked at every size, and the maths view, which adds the side panel, where it has one beside the board.
+const contrastRuns = [
+  ...[{ width: 1280, height: 800 }, { width: 1920, height: 1080 }, { width: 844, height: 390 }, { width: 390, height: 844 }].map((viewport) => ({ viewport, maths: false })),
+  ...[{ width: 1280, height: 800 }, { width: 1920, height: 1080 }].map((viewport) => ({ viewport, maths: true })),
+];
 
 for (const colorScheme of ["dark", "light"] as const) {
-  for (const viewport of [{ width: 1280, height: 800 }, { width: 1920, height: 1080 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
-    test(`all text keeps 4.5 to 1 at the darkest step, ${viewport.width} by ${viewport.height}, ${colorScheme} theme`, async ({ page }) => {
+  for (const { viewport, maths } of contrastRuns) {
+    test(`all text keeps 4.5 to 1 at the darkest step, ${maths ? "maths" : "player"} view, ${viewport.width} by ${viewport.height}, ${colorScheme} theme`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
       await page.setViewportSize(viewport);
-      await open(page, "/?seed=33");
+      await open(page, "/?seed=33", { maths });
       await page.keyboard.press("1");
       await diveButton(page).click();
       await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
@@ -247,7 +254,7 @@ for (const colorScheme of ["dark", "light"] as const) {
 
       const opacity = await page.evaluate(() => Number(getComputedStyle(document.querySelector(".board")!, "::before").opacity));
       expect(opacity).toBeCloseTo(0.55, 2);
-      const results = await worstContrast(page, viewport.width < 640 || viewport.height < 500 ? phoneText : desktopText);
+      const results = await worstContrast(page, maths ? mathsText : playerText);
       expect(results.length).toBeGreaterThan(10);
       for (const result of results) expect(result.ratio, `${result.sel} at ${viewport.width} by ${viewport.height}`).toBeGreaterThanOrEqual(4.5);
     });
@@ -264,29 +271,29 @@ test("the last breath moves nothing: the tiles, the board and the total stay whe
       page.evaluate(() => {
         const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().toJSON();
         return {
-          board: rect(".board"), hud: rect(".hud"), total: rect(".total"), head: rect(".round-head"), foot: rect(".board-foot"),
+          board: rect(".board"), total: rect(".total"), clock: rect(".clock"), foot: rect(".board-foot"), prizes: rect(".prizes"),
           tiles: [...document.querySelectorAll(".tile")].map((tile) => tile.getBoundingClientRect().toJSON()),
         };
       });
 
     // The spin before the last breath is the first one that leaves 2 of 3.
     await expect(page.locator(".clock-text strong")).toHaveText("2 of 3", { timeout: 30_000 });
-    await expect(page.locator(".last")).toBeHidden();
+    await expect(page.locator(".breath-band")).toBeHidden();
     const before = await geometry();
     await expect(page.locator(".clock-text strong")).toHaveText("1 of 3", { timeout: 30_000 });
-    await expect(page.locator(".last")).toBeVisible();
+    await expect(page.locator(".breath-band")).toBeVisible();
     const during = await geometry();
 
     const label = `${viewport.width} by ${viewport.height}`;
     expect(during.board, label).toEqual(before.board);
     expect(during.tiles, label).toEqual(before.tiles);
     expect(during.total, label).toEqual(before.total);
-    expect(during.hud, label).toEqual(before.hud);
-    expect(during.head, label).toEqual(before.head);
+    expect(during.clock, label).toEqual(before.clock);
     expect(during.foot, label).toEqual(before.foot);
+    expect(during.prizes, label).toEqual(before.prizes);
 
-    const edge = await page.locator(".board").evaluate((board) => ({ shadow: getComputedStyle(board).boxShadow, border: getComputedStyle(board).borderTopWidth }));
-    expect(edge.shadow).toContain("rgb(224, 169, 74) 0px 0px 0px 2px");
-    expect(edge.border).toBe("1px");
+    const edge = await page.locator(".board").evaluate((board) => ({ before: getComputedStyle(board).borderTopColor, width: getComputedStyle(board).borderTopWidth }));
+    expect(edge.before, "the rim is amber").toBe("rgb(224, 169, 74)");
+    expect(parseFloat(edge.width)).toBeGreaterThanOrEqual(4);
   }
 });

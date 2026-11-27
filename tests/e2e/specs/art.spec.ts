@@ -29,8 +29,8 @@ test("the art loads on a round with no failed request, and every symbol a tile u
   expect(await page.evaluate(() => document.querySelectorAll("symbol#air-tank").length)).toBe(0);
   expect(await page.locator(".tile-tank picture img").count()).toBe(2);
   expect(tiles.filter((tile) => tile.href.startsWith("#well-")).length).toBeGreaterThan(0);
-  // The spare tanks in the head are the render of the air tank, so a Tank round draws no oxygen bottle.
-  expect(tiles.map((tile) => tile.href)).not.toContain("#bottle-full");
+  // The air left is drawn as oxygen bottles, and the spare tanks beside them are the render of the air tank.
+  expect(tiles.map((tile) => tile.href)).toContain("#bottle-full");
   expect(await page.locator(".pips .tank-pip img").count()).toBe(3);
   expect(tiles.map((tile) => tile.href)).toContain("#medal-grand");
   expect(tiles.every((tile) => tile.drawn)).toBe(true);
@@ -126,9 +126,9 @@ test("the title, the favicon and the mark in the header all come from the game",
 });
 
 for (const colorScheme of ["dark", "light"] as const) {
-  test(`the spare tanks of a Tank round are drawn as the air tank of the ${colorScheme} theme, and the words say the same`, async ({ page }) => {
+  test(`the spare tanks of a Tank round are drawn as the air tank of the ${colorScheme} theme, the air as bottles, and the words say the same`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
-    await open(page, "/?seed=4");
+    await open(page, "/?seed=4", { maths: true });
     await page.keyboard.press("3");
     await page.getByRole("button", { name: "Dive", exact: true }).click();
     await expect(page.locator(".spin")).toHaveText(/^Spin [1-9]/, { timeout: 15_000 });
@@ -147,8 +147,9 @@ for (const colorScheme of ["dark", "light"] as const) {
     expect(found.count).toBe(3);
     expect(found.spent, "two of the three tanks are not spare after the first spin").toBe(2);
     expect(new Set(found.sources)).toEqual(new Set([`air-tank-${colorScheme}.webp`]));
-    expect(found.bottles, "no oxygen bottle stands for a tank").toBe(0);
     expect(found.text.join(" ")).toContain("Spare tanks 1 of 3");
+    expect(found.text.join(" ")).toContain("Air 6");
+    expect(found.bottles, "a bottle for each breath of air").toBe(6);
     expect(found.size, "large enough to read as a tank").toBeGreaterThanOrEqual(32);
   });
 }

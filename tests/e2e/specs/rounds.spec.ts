@@ -11,12 +11,12 @@ test("the live region says something for every spin and for the result, and it i
     }).observe(document, { subtree: true, childList: true, characterData: true });
   });
 
-  await open(page, "/?seed=11");
+  await open(page, "/?seed=11", { maths: true });
   await page.keyboard.press("2");
   await diveButton(page).click();
   await expect(summary(page)).toBeVisible({ timeout: 20_000 });
 
-  const spinsRow = summary(page).locator("div").filter({ has: page.getByText("Spins", { exact: true }) });
+  const spinsRow = page.locator(".round-facts div").filter({ has: page.getByText("Spins", { exact: true }) });
   const spins = Number(await spinsRow.locator("dd").textContent());
   const heard: string[] = await page.evaluate(() => (window as any).heard);
 
@@ -27,9 +27,9 @@ test("the live region says something for every spin and for the result, and it i
 });
 
 // Seed 4 is the first Tank seed whose first spin lands two air tanks (+1 and +2), found with
-// "lab play --dive tank --seed 4". Its second spin lands a +2, and the round pays 0.45 over 9 spins.
+// "lab play --dive tank --seed 4". Its second spin lands a +2, and the round pays 0.45 over 9 spins. The words of the clock are in the maths view.
 test("a Tank round that lands tanks shows the +n effect and counts the spare tanks down", async ({ page }) => {
-  await open(page, "/?seed=4");
+  await open(page, "/?seed=4", { maths: true });
   await page.keyboard.press("3");
   await diveButton(page).click();
 
