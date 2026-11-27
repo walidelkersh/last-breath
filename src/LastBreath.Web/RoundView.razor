@@ -91,23 +91,28 @@
                                     }
                                     break;
                                 default:
-                                    // Tank air has no fixed top, so it is drawn as the bottles there are, with the spare tanks beside them.
+                                    // Tank air has no fixed top, so it is drawn as the bottles there are.
                                     for (var i = 0; i < clock; i++)
                                     {
                                         <svg class="pip bottle @(lastBreath && !ReduceMotion ? "pulse" : "")" aria-hidden="true" focusable="false"><use href="#@(Bottle(true, lastBreath))" /></svg>
                                     }
-                                    <span class="tanks">
-                                        @for (var i = 0; i < dive.TankLimit; i++)
-                                        {
-                                            <AirTankImage Class="@(i < tanksLeft ? "pip tank-pip" : "pip tank-pip spent")" />
-                                        }
-                                    </span>
                                     break;
                             }
                         </span>
                         @if (gain > 0)
                         {
                             <span class="gain @(ReduceMotion ? "" : "anim-fly")" data-testid="gain" @key="shown">+@gain</span>
+                        }
+                        @* The spare tanks are a group of their own behind a divider, so they never read as breaths. *@
+                        @if (DiveId == "Tank")
+                        {
+                            <span class="tanks" aria-hidden="true">
+                                <span class="tanks-name">Tanks</span>
+                                @for (var i = 0; i < dive.TankLimit; i++)
+                                {
+                                    <AirTankImage Class="@(i < tanksLeft ? "pip tank-pip" : "pip tank-pip spent")" />
+                                }
+                            </span>
                         }
                     </div>
                     <p class="total" title="@(Format.Multiple(units))× bet">Board <strong @ref="totalValue">@Format.Credits(Settlement.Credits(units, Bet))</strong><span class="sr-only"> credits, @(Format.Multiple(units)) times the bet</span></p>

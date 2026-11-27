@@ -189,3 +189,38 @@ test("on a phone a Tank clock with seven breaths and its spare tanks stays clear
   });
   expect(found.right).toBeLessThanOrEqual(found.total);
 });
+
+test("the Tank clock reads in order: the breaths as bottles, the +n beside them, then the spare tanks set apart under their name", async ({ page }) => {
+  await open(page, "/?seed=4");
+  await page.keyboard.press("3");
+  await diveButton(page).click();
+  // Seed 4 lands +1 and +2 on its first spin, which leaves six breaths and one spare tank.
+  await expect(page.getByTestId("gain")).toHaveText("+3");
+
+  const found = await page.evaluate(() => {
+    const right = (selector: string) => Math.max(...[...document.querySelectorAll(selector)].map((element) => element.getBoundingClientRect().right));
+    const left = (selector: string) => Math.min(...[...document.querySelectorAll(selector)].map((element) => element.getBoundingClientRect().left));
+    const tanks = document.querySelector(".clock .tanks")!;
+    return {
+      bottles: document.querySelectorAll(".clock .pips .bottle").length,
+      bottlesEnd: right(".clock .pips .bottle"),
+      gainStart: left("[data-testid=gain]"),
+      gainEnd: right("[data-testid=gain]"),
+      tanksStart: tanks.getBoundingClientRect().left,
+      rule: parseFloat(getComputedStyle(tanks).borderLeftWidth),
+      name: tanks.querySelector(".tanks-name")!.textContent,
+      tankSize: (tanks.querySelector(".tank-pip") as HTMLElement).getBoundingClientRect().height,
+      bottleSize: (document.querySelector(".clock .bottle") as Element).getBoundingClientRect().height,
+      hidden: tanks.getAttribute("aria-hidden"),
+      words: document.querySelector(".clock .sr-only")!.textContent!.replace(/\s+/g, " ").trim(),
+    };
+  });
+  expect(found.bottles).toBe(6);
+  expect(found.gainStart, "the +n follows the bottles").toBeGreaterThanOrEqual(found.bottlesEnd);
+  expect(found.tanksStart, "the tanks come after the +n").toBeGreaterThanOrEqual(found.gainEnd);
+  expect(found.rule, "a rule sets the tanks apart").toBeGreaterThanOrEqual(2);
+  expect(found.name).toBe("Tanks");
+  expect(found.hidden).toBe("true");
+  expect(found.words).toContain("Spare tanks 1 of 3");
+  expect(found.words).toContain("Air 6");
+});

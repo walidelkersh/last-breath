@@ -31,7 +31,7 @@ test("the art loads on a round with no failed request, and every symbol a tile u
   expect(tiles.filter((tile) => tile.href.startsWith("#well-")).length).toBeGreaterThan(0);
   // The air left is drawn as oxygen bottles, and the spare tanks beside them are the render of the air tank.
   expect(tiles.map((tile) => tile.href)).toContain("#bottle-full");
-  expect(await page.locator(".pips .tank-pip img").count()).toBe(3);
+  expect(await page.locator(".tanks .tank-pip img").count()).toBe(3);
   expect(tiles.map((tile) => tile.href)).toContain("#medal-grand");
   expect(tiles.every((tile) => tile.drawn)).toBe(true);
   expect(plates).toEqual(["+1", "+2"]);
@@ -134,7 +134,7 @@ for (const colorScheme of ["dark", "light"] as const) {
     await expect(page.locator(".spin")).toHaveText(/^Spin [1-9]/, { timeout: 15_000 });
 
     const found = await page.evaluate(() => {
-      const pips = [...document.querySelectorAll(".pips .tank-pip")];
+      const pips = [...document.querySelectorAll(".tanks .tank-pip")];
       return {
         count: pips.length,
         spent: pips.filter((pip) => pip.classList.contains("spent")).length,
