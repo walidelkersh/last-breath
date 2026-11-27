@@ -20,7 +20,11 @@
             <button type="button" class="switch" role="switch" aria-checked="@(maths ? "true" : "false")" aria-label="Show the maths" @onclick="ToggleMaths">
                 <span class="switch-track" aria-hidden="true"></span><span class="switch-text"><span class="switch-long">Show the </span>maths</span>
             </button>
-            <button type="button" @ref="mathButton" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
+            @* A player sees one maths control, the switch. The Math panel has its button in the maths view, and the M key opens it in both. *@
+            @if (maths)
+            {
+                <button type="button" @ref="mathButton" @onclick="OpenMath" aria-keyshortcuts="M">Math</button>
+            }
         </header>
 
         <main>
@@ -201,7 +205,7 @@
 
     private async Task OpenMath()
     {
-        if (math is not null) await math.Open(mathButton);
+        if (math is not null) await math.Open(maths ? mathButton : null);
     }
 
     [JSInvokable]

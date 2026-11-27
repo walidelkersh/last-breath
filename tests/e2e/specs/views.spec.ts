@@ -110,8 +110,16 @@ test("the switch is reached and turned with the keyboard, and says its state", a
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 800 });
     await expect(mathsSwitch(page)).toHaveAccessibleName("Show the maths");
-    expect((await mathsSwitch(page).innerText()).trim()).toMatch(/maths$/);
+    expect((await mathsSwitch(page).innerText()).trim()).toMatch(/maths$/i);
   }
+  // On a phone it reads Maths beside its track.
+  expect((await mathsSwitch(page).innerText()).trim()).toBe("Maths");
+  const parts = await mathsSwitch(page).evaluate((element) => {
+    const track = element.querySelector(".switch-track")!.getBoundingClientRect();
+    const word = element.querySelector(".switch-text")!.getBoundingClientRect();
+    return { besideTrack: word.left >= track.right - 1 && Math.abs((word.top + word.bottom) / 2 - (track.top + track.bottom) / 2) < 6 };
+  });
+  expect(parts.besideTrack).toBe(true);
 });
 
 const screens = [
@@ -162,7 +170,7 @@ async function expectFit(page: Page, controls: string[], label: string, player: 
   }
 }
 
-const always = ["header .switch", "header button[aria-keyshortcuts=M]", "footer button", "footer .toggle"];
+const always = ["header .switch", "footer button", "footer .toggle"];
 
 for (const maths of [false, true]) {
   for (const viewport of screens) {
@@ -170,7 +178,9 @@ for (const maths of [false, true]) {
       await page.setViewportSize(viewport);
       await open(page, "/?seed=4", { maths });
       const label = `${maths ? "maths" : "player"} ${viewport.width} by ${viewport.height}`;
-      await expectFit(page, [...always, ".chip span", ".dive"], `${label}, selection`, !maths);
+      const header = maths ? [...always, "header button[aria-keyshortcuts=M]"] : always;
+      await expect(page.locator("header button[aria-keyshortcuts=M]")).toHaveCount(maths ? 1 : 0);
+      await expectFit(page, [...header, ".chip span", ".dive"], `${label}, selection`, !maths);
       const cards = await page.evaluate(() => [...document.querySelectorAll(".card-body")].map((card) => [card.getBoundingClientRect().left, card.getBoundingClientRect().right]));
       for (const [left, right] of cards) {
         expect(left, `${label}: a card starts on the screen`).toBeGreaterThanOrEqual(0);
@@ -188,12 +198,12 @@ for (const maths of [false, true]) {
       await page.keyboard.press("3");
       await diveButton(page).click();
       await expect(page.getByTestId("gain")).toBeVisible();
-      await expectFit(page, [...always, ".board-foot button"], `${label}, in play`, !maths);
+      await expectFit(page, [...header, ".board-foot button"], `${label}, in play`, !maths);
 
       await page.keyboard.press("s");
       await expect(summary(page)).toBeVisible();
       await atRest(page);
-      await expectFit(page, [...always, ".board-foot button"], `${label}, at the end`, !maths);
+      await expectFit(page, [...header, ".board-foot button"], `${label}, at the end`, !maths);
       await expect(page.getByRole("button", { name: "Dive again" })).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole("button", { name: "Change dive" })).toBeInViewport({ ratio: 1 });
     });

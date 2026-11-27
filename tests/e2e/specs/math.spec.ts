@@ -50,8 +50,24 @@ test("M opens the Math panel with the frozen figures, and Escape closes it", asy
   await expect(panel).toBeHidden();
 });
 
+test("in the player view the switch is the one maths control, the Math button comes with the maths view, and M opens the panel in both", async ({ page }) => {
+  await open(page);
+  const panel = page.getByRole("dialog", { name: "Math" });
+  await expect(page.locator("header button")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Math", exact: true })).toHaveCount(0);
+  await page.keyboard.press("m");
+  await expect(panel).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+
+  await page.getByRole("switch", { name: "Show the maths" }).click();
+  await expect(page.getByRole("button", { name: "Math", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Math", exact: true }).click();
+  await expect(panel).toBeVisible();
+});
+
 test("the Math button opens it on both screens and a round carries on behind it", async ({ page }) => {
-  await open(page, "/?seed=7");
+  await open(page, "/?seed=7", { maths: true });
   const panel = page.getByRole("dialog", { name: "Math" });
 
   await page.getByRole("button", { name: "Math" }).click();
@@ -108,7 +124,7 @@ test("the replay command is whole and uses the name of the dive on the page, and
 
 test("on a phone the command does not break in the middle, it scrolls, and Close is a plain button", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 });
-  await open(page, "/?seed=1234567890123");
+  await open(page, "/?seed=1234567890123", { maths: true });
   await page.keyboard.press("2");
   await diveButton(page).click();
   await page.getByRole("button", { name: "Math" }).click();
@@ -137,7 +153,7 @@ test("on a phone the command does not break in the middle, it scrolls, and Close
 });
 
 test("closing the Math panel gives focus back to the Math button, in every engine, with the Close button and with Escape", async ({ page }) => {
-  await open(page);
+  await open(page, "/", { maths: true });
   const panel = page.getByRole("dialog", { name: "Math" });
   const mathButton = page.getByRole("button", { name: "Math", exact: true });
 

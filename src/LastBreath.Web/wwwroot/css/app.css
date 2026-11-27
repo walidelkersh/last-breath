@@ -2104,7 +2104,7 @@ code {
     }
 }
 
-/* Phones held upright. The header keeps one row: in a round the bet takes the room of the name, and the switch shows its last word. The cards
+/* Phones held upright. The header keeps one row: in a round the bet takes the room of the name, and the switch says Maths. The cards
    lie flat, picture beside words, so the three dives and the bet fit on the screen at once. */
 
 @media (max-width: 39.99rem) {
@@ -2123,7 +2123,6 @@ code {
         height: 2rem;
     }
 
-    .app.staged .brand-name,
     .switch-long {
         display: none;
     }
@@ -2147,15 +2146,17 @@ code {
         padding-inline: 0.6rem;
     }
 
-    /* On a phone the word sits under the track, so the switch takes the width of the track. */
+    /* On a phone the switch says Maths beside its track. In the maths view the Math button comes back, and the mark stands for the name. */
     .switch {
-        flex-direction: column;
-        gap: 0;
-        min-height: 2.75rem;
-        padding: 0 2px;
-        font-size: var(--text-xs);
-        line-height: 1.2;
+        gap: var(--s1);
+        padding-inline: var(--s1);
+        font-size: var(--text-sm);
     }
+
+    .switch-text {
+        text-transform: capitalize;
+    }
+
 
 
     main {
@@ -2283,12 +2284,41 @@ code {
     .switch-long {
         display: none;
     }
+
+    .switch-text {
+        text-transform: capitalize;
+    }
 }
 
-/* A phone narrower than 24rem has no room for the name beside the balance, the switch and Math, so the mark stands for it. */
+/* A screen with touch and no pointer that hovers has no keyboard to speak of, so the list of keys is left out. */
+@media (hover: none) and (pointer: coarse) {
+    .keys {
+        display: none;
+    }
+}
+
+/* Where there is no room for the name, the mark stands for it on the screen, and the heading keeps the name for a screen reader: on a phone
+   narrower than 24rem, in a round, where the bet takes its room, and in the maths view, where the Math button does. */
 @media (max-width: 23.99rem) {
     .brand-name {
-        display: none;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 39.99rem) {
+    .app.staged .brand-name,
+    .app.maths .brand-name {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
     }
 }
 

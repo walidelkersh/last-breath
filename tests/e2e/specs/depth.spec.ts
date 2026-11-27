@@ -184,6 +184,8 @@ async function worstContrast(page: Page, selectors: string[]) {
         const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
         for (let node = walker.nextNode(); node && found.length < 2; node = walker.nextNode()) {
           if (!node.textContent?.trim()) continue;
+          // Text kept for a screen reader only is not on the screen to read.
+          if (node.parentElement!.closest(".sr-only") || node.parentElement!.getBoundingClientRect().width <= 1) continue;
           const range = document.createRange();
           range.selectNodeContents(node);
           const box = range.getBoundingClientRect();

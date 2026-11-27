@@ -200,6 +200,17 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
   });
 }
 
+test.describe("on a touch screen with no pointer that hovers", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test("there is no list of keys, which the phone tests with a pointer still find", async ({ page, browserName }) => {
+    test.skip(browserName === "firefox", "Firefox cannot emulate a phone");
+    await open(page);
+    expect(await page.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches)).toBe(true);
+    await expect(keys(page)).toBeHidden();
+  });
+});
+
 test("on a phone on its side there is no list of keys to open", async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await open(page);

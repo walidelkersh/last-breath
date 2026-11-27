@@ -193,8 +193,8 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => [scrollY, document.querySelector("main")!.scrollTop])).toEqual([0, 0]);
   });
 
-  test("the header is one row, with the title, the balance and Math, and Reset balance is in the footer", async ({ page }) => {
-    await open(page);
+  test("the header is one row, with the mark, the balance, the switch and Math in the maths view, and Reset balance is in the footer", async ({ page }) => {
+    await open(page, "/", { maths: true });
     const box = async (target: Locator) => (await target.boundingBox())!;
     const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
     const title = await box(page.getByRole("heading", { name: "Last Breath" }));
