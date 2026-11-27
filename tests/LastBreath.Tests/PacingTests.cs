@@ -35,20 +35,20 @@ public sealed class PacingTests
     {
         var cells = OnBoard((3, new Cell(CellKind.Jackpot, 20_000)), (4, new Cell(CellKind.Cash, 250)));
 
-        Assert.Equal(1300, Pacing.Pause(Spin(3, cells, [3, 4])));
+        Assert.Equal(1600, Pacing.Pause(Spin(3, cells, [3, 4])));
     }
 
     [Fact]
     public void TheLastBreathStaysEvenWhenNothingLands()
     {
-        Assert.Equal(1100, Pacing.Pause(Spin(1, OnBoard(), [])));
-        Assert.Equal(1100, Pacing.Pause(Spin(1, OnBoard((3, new Cell(CellKind.Cash, 100))), [3])));
+        Assert.Equal(1500, Pacing.Pause(Spin(1, OnBoard(), [])));
+        Assert.Equal(1500, Pacing.Pause(Spin(1, OnBoard((3, new Cell(CellKind.Cash, 100))), [3])));
     }
 
     [Fact]
     public void AJackpotOnTheLastBreathIsStillTheLongest()
     {
-        Assert.Equal(1300, Pacing.Pause(Spin(1, OnBoard((3, new Cell(CellKind.Jackpot, 5_000))), [3])));
+        Assert.Equal(1600, Pacing.Pause(Spin(1, OnBoard((3, new Cell(CellKind.Jackpot, 5_000))), [3])));
     }
 
     [Fact]

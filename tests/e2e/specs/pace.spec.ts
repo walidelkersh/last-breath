@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { diveButton, open, sawAnimation, summary, watchAnimations } from "./play";
 
-// How long each spin stays, by what it held: 450 ms for nothing, 800 for crates, 1,300 for a jackpot, and 1,100 on the
+// How long each spin stays, by what it held: 450 ms for nothing, 800 for crates, 1,600 for a jackpot, and 1,500 on the
 // last breath. Seed 154 is a Classic round of 18 spins that lands a Minor, so it has all four kinds. Seed 33 is a sparse
 // Classic round whose clock runs down to its last breath more than once.
 
@@ -32,8 +32,8 @@ test("each spin stays for as long as what it held deserves", async ({ page }) =>
   const log: { n: number; at: number; what: string; last: boolean }[] = await page.evaluate(() => (window as any).spinLog);
   expect(log).toHaveLength(18);
   const expected = (what: string, last: boolean) => {
-    const base = /Mini|Minor|Major/.test(what) ? 1300 : what === "Nothing landed" ? 450 : 800;
-    return last ? Math.max(base, 1100) : base;
+    const base = /Mini|Minor|Major/.test(what) ? 1600 : what === "Nothing landed" ? 450 : 800;
+    return last ? Math.max(base, 1500) : base;
   };
   const kinds = new Set<number>();
   for (let index = 0; index + 1 < log.length; index++) {
@@ -42,10 +42,10 @@ test("each spin stays for as long as what it held deserves", async ({ page }) =>
     kinds.add(want);
     expect(Math.abs(pause - want), `spin ${log[index].n} (${log[index].what}${log[index].last ? ", last breath" : ""}) stayed ${Math.round(pause)} ms, not about ${want}`).toBeLessThan(tolerance);
   }
-  expect([...kinds].sort((a, b) => a - b)).toEqual([450, 800, 1100, 1300]);
+  expect([...kinds].sort((a, b) => a - b)).toEqual([450, 800, 1500, 1600]);
 });
 
-test("on the last breath the rim of the board turns amber and the band shows, the band does not move, and only the beat of the rim and the breath of the last bottle run on the board", async ({ page }) => {
+test("on the last breath the rim of the board turns amber and the band shows, the band does not move, and only the beat of the rim, the breath of the last bottle and the shimmer of the empty wells run on the board", async ({ page }) => {
   test.setTimeout(60_000);
   await open(page, "/?seed=33");
   await diveButton(page).click();
@@ -64,13 +64,13 @@ test("on the last breath the rim of the board turns amber and the band shows, th
       amber,
       bandAnimation: getComputedStyle(band).animationName,
       boardAnimation: getComputedStyle(board).animationName,
-      // The fade of the depth is a transition and is allowed. The only keyframe animations on the board or in it are the beat of the rim and the breath of the last bottle.
-      running: board.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).map((animation) => (animation as CSSAnimation).animationName).sort().join(","),
+      // The fade of the depth is a transition and is allowed. The only keyframe animations on the board or in it are the beat of the rim, the breath of the last bottle and the shimmer of the wells.
+      running: board.getAnimations({ subtree: true }).filter((animation) => animation instanceof CSSAnimation).map((animation) => (animation as CSSAnimation).animationName).filter((name, index, all) => all.indexOf(name) === index).sort().join(","),
     };
   });
   expect(look.amber).toBe("#e0a94a");
   expect(look.edge).toBe("rgb(224, 169, 74)");
-  expect([look.bandAnimation, look.boardAnimation, look.running]).toEqual(["none", "none", "breathe,heartbeat"]);
+  expect([look.bandAnimation, look.boardAnimation, look.running]).toEqual(["none", "none", "breathe,heartbeat,shimmer"]);
 
   // The band goes with the last breath: a spin later the clock has gone or been refilled, and the board is plain again.
   await expect(page.locator(".breath-band")).toBeHidden({ timeout: 15_000 });

@@ -3,17 +3,17 @@
 @inject IJSRuntime JS
 @inject IReadOnlyList<DiveInfo> Dives
 
-<section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves") @(Celebrates ? "celebrate" : "")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
+<section class="round @(finished ? "over" : "") @(ReduceMotion ? "" : "moves") @(Celebrates ? "celebrate" : "") @(cut ? "cut" : "")" style="--air: @Format.Number(Air, 3)" aria-labelledby="round-title">
     <h2 id="round-title" class="sr-only">@dive.Name</h2>
     <div class="stage">
-        <div class="board @(showsBreathBand ? "last-breath" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows" style="--step: @(LightStepMs)ms">
+        <div class="board @(showsBreathBand ? "last-breath" : "") @(Moment is not null && !finished ? "spotlit" : "")" @ref="boardRef" role="group" aria-label="Board, five columns by three rows" style="--step: @(LightStepMs)ms">
             <svg class="panel" aria-hidden="true" focusable="false"><use href="#panel" /></svg>
             @if (DiveId != "Static") { <p class="breath-band @(showsBreathBand ? "" : "off")" aria-hidden="true">Last breath</p> }
             @for (var index = 0; index < Board.Size; index++)
             {
                 var tile = TileAt(index);
                 var rich = tile.Art?.StartsWith("crate-high", StringComparison.Ordinal) == true || tile.Kind is "mini" or "minor" or "major";
-                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew)" role="img" aria-label="@tile.Name" title="@tile.Tip"
+                <div class="tile tile-@tile.Kind @(tile.Kind == "empty" ? "" : "tile-drawn") @RingClass(tile.Kind is "mini" or "minor" or "major", tile.IsNew) @(rich && tile.IsNew && tile.Kind != "crate" ? "spotlight" : "")" role="img" aria-label="@tile.Name" title="@tile.Tip"
                      style="@(Celebrates && tile.Kind != "empty" ? $"--order: {LitBefore(index)}" : null)">
                     <svg class="well" viewBox="0 0 115 100" aria-hidden="true" focusable="false"><use href="#well-@WellPattern[index]" /></svg>
                     @if (tile.IsNew && !ReduceMotion)
@@ -44,6 +44,19 @@
             {
                 <span class="burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
             }
+            @* A jackpot that lands, or a big win that plays out, takes the board for a moment under a title. A click ends it, and so does S. *@
+            @if (Moment is { } title)
+            {
+                <div class="moment @(finished ? "big" : "")" @key="@($"{shown}{finished}")" aria-hidden="true" @onclick="EndMoment">
+                    <div class="moment-band">
+                        <p class="moment-title">@title</p>
+                        @if (finished)
+                        {
+                            <p class="moment-figure"><strong @ref="bandValue">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> credits</p>
+                        }
+                    </div>
+                </div>
+            }
             <div class="board-foot @(finished ? $"result-plate {outcome.Kind}" : "console")">
                 @if (finished)
                 {
@@ -59,7 +72,7 @@
                             }
                             else
                             {
-                                <p class="plate-win"><strong data-testid="win" @ref="winValue">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
+                                <p class="plate-win"><strong data-testid="win">@Format.Credits(Settlement.Credits(outcome.Units, Bet))</strong> <span>credits</span></p>
                                 @if (Maths) { <p class="plate-times">@PlateTimes</p> }
                             }
                             @if (!CanDiveAgain) { <p class="note">Not enough credits for another dive at this bet.</p> }
@@ -222,7 +235,11 @@
     private ElementReference summary;
     private ElementReference boardRef;
     private ElementReference totalValue;
-    private ElementReference winValue;
+    private ElementReference bandValue;
+    private bool momentEnded;
+    private bool skippedEnd;
+    private bool cut;
+    private bool disposed;
 
     [Parameter, EditorRequired] public Round Round { get; set; } = default!;
     [Parameter, EditorRequired] public string DiveId { get; set; } = "";
@@ -279,6 +296,16 @@
 
     private bool Celebrates => finished && outcome.BigWin && !ReduceMotion;
 
+    // The title over the board for this spin, if any: the jackpot that has just landed, or Big win at the end of a round that was not skipped.
+    private string? Moment => momentEnded ? null
+        : finished ? (outcome.BigWin && !skippedEnd ? "Big win" : null)
+        : current is { } spin ? spin.NewCells.Where(index => spin.Cells[index].Kind == CellKind.Jackpot).Select(index => $"{Narration.Label(Config, spin.Cells[index])} jackpot").FirstOrDefault()
+        : null;
+
+    // How long the big win keeps the board before it settles into the plate: the count and a beat more, or a still moment with reduced motion.
+    private const int BigMomentMs = 2500;
+    private const int StillMomentMs = 1500;
+
     // The coins light in board order, closer together when there are more of them, so that the last one lights before the count ends.
     private int Coins => current?.Cells.Count(cell => !cell.IsEmpty) ?? 0;
     private int LightStepMs => Math.Clamp((CelebrationMs - 500) / Math.Max(1, Coins), 60, 160);
@@ -333,7 +360,7 @@
         if (countWin)
         {
             countWin = false;
-            await JS.InvokeVoidAsync("lastBreath.countUp", winValue, 0, Settlement.Credits(outcome.Units, Bet), CelebrationMs);
+            await JS.InvokeVoidAsync("lastBreath.countUp", bandValue, 0, Settlement.Credits(outcome.Units, Bet), CelebrationMs);
         }
     }
 
@@ -345,6 +372,7 @@
             while (shown < spins.Length)
             {
                 shown++;
+                momentEnded = false;
                 StateHasChanged();
                 await Announce.InvokeAsync(Narration.Landing(Config, DiveId, Bet, spins[shown - 1]));
                 await Task.Delay(Pacing.Pause(spins[shown - 1]), stop.Token);
@@ -358,7 +386,11 @@
 
     public async Task Skip()
     {
-        if (finished) return;
+        if (finished)
+        {
+            await EndMoment();
+            return;
+        }
         await stop.CancelAsync();
         shown = spins.Length;
         await Finish(skipped: true);
@@ -368,15 +400,42 @@
     {
         finished = true;
         focusSummary = true;
+        skippedEnd = skipped;
         // Skip asks for the result now, so the number of a skipped round is there at once and only the lights play.
         countWin = Celebrates && !skipped;
         WinCountMs = countWin ? CelebrationMs : 0;
         StateHasChanged();
         await Announce.InvokeAsync(Narration.Result(Config, Bet, outcome, skipped));
         await Finished.InvokeAsync(Settlement.Credits(outcome.Units, Bet));
+        if (Moment is not null) _ = SettleMoment(ReduceMotion ? StillMomentMs : BigMomentMs);
     }
 
-    public void Dispose() => stop.Dispose();
+    private async Task SettleMoment(int ms)
+    {
+        await Task.Delay(ms);
+        if (disposed || momentEnded) return;
+        momentEnded = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Ends the moment on the board now. At the end of a round it also cuts the celebration short: the counts finish and the plate shows at once.
+    private async Task EndMoment()
+    {
+        if (Moment is null) return;
+        momentEnded = true;
+        if (finished)
+        {
+            cut = true;
+            await JS.InvokeVoidAsync("lastBreath.finishCounts");
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        stop.Dispose();
+    }
 
     private sealed record Tile(string Kind, string Value, string Name, string Tip, bool IsNew, string? Art = null);
 

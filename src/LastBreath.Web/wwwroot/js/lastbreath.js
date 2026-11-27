@@ -1,3 +1,7 @@
+const credits = (value) => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// The counts that are running, each with the value it ends on.
+const counting = new Map();
+
 // Everything the page needs from the browser. Storage can throw (blocked cookies, private windows),
 // so every access is caught and the game carries on without it.
 window.lastBreath = {
@@ -30,16 +34,26 @@ window.lastBreath = {
     countUp(element, from, to, ms) {
         cancelAnimationFrame(element.countFrame);
         const text = element.firstChild;
-        const credits = (value) => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         // A frame's timestamp can be older than this call, so the clock is clamped.
         const started = performance.now();
         text.nodeValue = credits(from);
+        counting.set(element, to);
         const step = (now) => {
             const done = Math.min(1, Math.max(0, (now - started) / ms));
             text.nodeValue = credits(from + (to - from) * (1 - (1 - done) ** 3));
             if (done < 1) element.countFrame = requestAnimationFrame(step);
+            else counting.delete(element);
         };
         element.countFrame = requestAnimationFrame(step);
+    },
+
+    // Ends every count at once on its last value, for a celebration that is cut short.
+    finishCounts() {
+        for (const [element, to] of counting) {
+            cancelAnimationFrame(element.countFrame);
+            if (element.firstChild) element.firstChild.nodeValue = credits(to);
+        }
+        counting.clear();
     },
 
     // The page itself never scrolls. What sits between the header and the footer does, on a small screen in the maths view, so a new round

@@ -2051,6 +2051,129 @@ code {
 .burst i:nth-child(7) { left: 81%; width: 2.4cqw; animation-delay: 0.4s; }
 .burst i:nth-child(8) { left: 92%; width: 1.4cqw; animation-delay: 0.8s; }
 
+/* A moment on the board: a band across the tiles with a title in the display face. For a jackpot the rest of the board steps back and the
+   jackpot shines, for about a second, and play goes on. For a big win the band carries the number as it counts up and then settles down into
+   the plate. It leaves the console clear, so Skip and Dive again can always be pressed. With reduced motion the band is there and still. */
+.moment {
+    position: absolute;
+    inset: 0 0 calc(var(--foot) + var(--cell-gap) * 2) 0;
+    z-index: 4;
+    display: grid;
+    align-items: center;
+    cursor: pointer;
+}
+
+.moment-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(0.6rem, 2cqw, 1.75rem) 1rem;
+    color: var(--on-board);
+    background: color-mix(in srgb, var(--board-well) 90%, transparent);
+    border-block: 3px solid var(--amber);
+    box-shadow: 0 -2px 0 var(--rim-ink), 0 2px 0 var(--rim-ink);
+    text-align: center;
+}
+
+.moment-title {
+    color: var(--amber);
+    font-family: var(--serif);
+    font-size: clamp(var(--text-2xl), 6cqw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+}
+
+.moment-figure {
+    font-size: clamp(var(--text-base), 2.2cqw, 2rem);
+}
+
+.moment-figure strong {
+    margin-right: 0.2em;
+    font-size: 2em;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-weight: 800;
+}
+
+.board.spotlit .tile:not(.spotlight) {
+    filter: brightness(0.6) saturate(0.85);
+}
+
+@keyframes moment {
+    0% { opacity: 0; transform: scaleY(0.4); }
+    15%, 82% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: none; }
+}
+
+@keyframes settle {
+    0% { opacity: 0; transform: scale(0.94); }
+    10%, 76% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(60%) scale(0.92); }
+}
+
+@keyframes dim {
+    0%, 100% { filter: none; }
+    15%, 82% { filter: brightness(0.55) saturate(0.85); }
+}
+
+@keyframes shine {
+    0% { opacity: 0; transform: translateY(-20%) scale(1.06); filter: none; }
+    30% { opacity: 1; transform: scale(1.16); filter: brightness(1.4); }
+    75% { transform: scale(1.1); filter: brightness(1.25); }
+    100% { transform: none; filter: none; }
+}
+
+.round.moves .moment-band {
+    animation: moment 1.2s ease-out both;
+}
+
+.round.moves .moment.big .moment-band {
+    animation: settle 2.5s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.round.moves .board.spotlit .tile:not(.spotlight) {
+    filter: none;
+    animation: dim 1.2s ease-out both;
+}
+
+.round.moves .board.spotlit .spotlight .coin {
+    animation: shine 1.2s ease-out backwards;
+}
+
+/* The plate waits for the big win to settle into it, unless the moment was cut short. */
+.round.moves.over.celebrate:not(.cut) .summary,
+.round.moves.over.celebrate:not(.cut) .plate-medal {
+    animation-delay: 2.1s;
+}
+
+.round.moves.over.celebrate:not(.cut) .board-foot .actions {
+    animation-delay: 2.25s;
+}
+
+/* Until then the plate is plain, so no empty amber box waits under the band. */
+@keyframes edge-in {
+    from { box-shadow: inset 0 0 0 1px var(--board-line); }
+}
+
+.round.moves.over.celebrate:not(.cut) .result-plate.big {
+    animation: edge-in 0.3s ease-out 2.1s backwards;
+}
+
+/* On the last breath the empty wells catch a faint shimmer just before the spin that may end the round shows what it holds. */
+@keyframes shimmer {
+    from { background-position: 130% 0; }
+    to { background-position: -30% 0; }
+}
+
+.round.moves .board.last-breath .tile-empty::after {
+    content: "";
+    position: absolute;
+    inset: 6%;
+    border-radius: inherit;
+    background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--on-board) 16%, transparent) 50%, transparent 60%) 130% 0 / 250% 100% no-repeat;
+    animation: shimmer 0.6s ease-in-out 0.85s backwards;
+    pointer-events: none;
+}
+
 /* One ring, 700 ms, out from the edge and fading: it is not repeated and it does not flash. */
 .anim-ring::after {
     content: "";

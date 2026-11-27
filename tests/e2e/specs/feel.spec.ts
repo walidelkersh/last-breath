@@ -37,8 +37,10 @@ test("a coin drops into its well and settles, with a ring on the water and bubbl
 
   const seen = await named(page);
   const by = (name: string) => seen.filter((animation) => animation.name === name);
-  expect(by("tile-in").length, "every new coin drops in").toBeGreaterThan(3);
-  expect(by("ripple").length).toBe(by("tile-in").filter((animation) => animation.target.includes("coin")).length);
+  expect(by("tile-in").length + by("shine").length, "every new coin drops or shines in").toBeGreaterThan(3);
+  // A jackpot coin shines in on its moment instead of dropping, and its water rings all the same.
+  const coins = [...by("tile-in"), ...by("shine")].filter((animation) => animation.target.includes("coin")).length;
+  expect(by("ripple").length).toBe(coins);
   expect(by("fizz").length).toBe(by("ripple").length * 3);
   expect(by("glint").length, "the Minor catches the light").toBeGreaterThanOrEqual(1);
   for (const animation of seen.filter((item) => ["tile-in", "ripple", "fizz", "glint"].includes(item.name))) {
@@ -85,14 +87,14 @@ test("on the last breath the last bottle breathes and the rim beats twice and re
   expect(found.peaks / (found.beat / 1000), "peaks a second").toBeLessThan(3);
 });
 
-test("a big win that plays out lights each coin once, one after another, counts the number up from nothing, and sends bubbles up", async ({ page }) => {
+test("a big win that plays out lights each coin once, one after another, counts the number up from nothing under its title, and sends bubbles up", async ({ page }) => {
   test.setTimeout(60_000);
   await watchNames(page);
   await page.addInitScript(() => {
     const seen: string[] = [];
     (window as any).winTexts = seen;
     const sample = () => {
-      const text = document.querySelector("[data-testid=win]")?.textContent;
+      const text = document.querySelector(".moment-figure strong")?.textContent;
       if (text && seen.at(-1) !== text) seen.push(text);
       requestAnimationFrame(sample);
     };
@@ -103,7 +105,8 @@ test("a big win that plays out lights each coin once, one after another, counts 
   await expect(page.locator(".round.celebrate")).toBeVisible({ timeout: 40_000 });
 
   await expect(page.locator(".burst i")).toHaveCount(8);
-  await expect(page.getByTestId("win")).toHaveText("21.65", { timeout: 5_000 });
+  await expect(page.locator(".moment.big .moment-title")).toHaveText("Big win");
+  await expect(page.locator(".moment-figure strong")).toHaveText("21.65", { timeout: 5_000 });
   await page.waitForTimeout(1200);
   const lights = (await named(page)).filter((animation) => animation.name === "light");
   const coins = await page.locator(".tile-drawn").count();
@@ -182,7 +185,7 @@ test("on a big win that plays out the balance counts up with the result and neve
     };
     const sample = () => {
       const balance = number("[data-testid=balance]");
-      if (balance !== null) seen.push({ balance, win: number("[data-testid=win]") });
+      if (balance !== null) seen.push({ balance, win: number(".moment-figure strong") ?? number("[data-testid=win]") });
       requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -211,3 +214,114 @@ test("on Skip the result and the balance are both final at once", async ({ page 
   expect(await page.getByTestId("win").textContent()).toBe("21.65");
   expect(await page.getByTestId("balance").textContent()).toBe("1,020.65");
 });
+
+// Seed 154 lands a Minor on its fourth spin. The jackpot takes the board for about a second: a band names it, the other tiles step back and
+// the Minor shines. Then play goes on.
+test("a jackpot that lands takes the board for a moment under its name, and play goes on", async ({ page }) => {
+  test.setTimeout(60_000);
+  await watchNames(page);
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await expect(page.locator(".moment .moment-title")).toHaveText("Minor jackpot", { timeout: 30_000 });
+
+  await expect(page.locator(".board.spotlit")).toHaveCount(1);
+  await expect(page.locator(".tile.spotlight")).toHaveCount(1);
+  await expect(page.locator(".tile.spotlight")).toHaveClass(/tile-minor/);
+  const band = await page.locator(".moment").evaluate((moment) => {
+    const box = moment.getBoundingClientRect();
+    const foot = document.querySelector(".board-foot")!.getBoundingClientRect();
+    return { clearOfConsole: box.bottom <= foot.top, hidden: moment.getAttribute("aria-hidden"), face: getComputedStyle(moment.querySelector(".moment-title")!).fontFamily };
+  });
+  expect(band.clearOfConsole, "Skip can still be pressed").toBe(true);
+  expect(band.hidden).toBe("true");
+  expect(band.face).toContain("Georgia");
+
+  // The next spin takes the moment away.
+  await expect(page.locator(".moment")).toHaveCount(0, { timeout: 5_000 });
+  await expect(page.locator(".board.spotlit")).toHaveCount(0);
+  const seen = await named(page);
+  for (const name of ["moment", "dim", "shine"]) {
+    const run = seen.find((animation) => animation.name === name)!;
+    expect(run, name).toBeTruthy();
+    expect(run.iterations, name).toBe(1);
+    expect(run.duration, name).toBe(1200);
+  }
+  await expect(page.locator("[aria-live]")).toHaveCount(1);
+});
+
+test("a click ends the moment of a jackpot at once", async ({ page }) => {
+  test.setTimeout(60_000);
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await expect(page.locator(".moment")).toBeVisible({ timeout: 30_000 });
+  await page.locator(".moment").click();
+  await expect(page.locator(".moment")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Skip" })).toBeVisible();
+});
+
+test("a big win takes the board under its title while the number counts, then settles into the plate with Dive again", async ({ page }) => {
+  test.setTimeout(60_000);
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await expect(page.locator(".moment.big")).toBeVisible({ timeout: 40_000 });
+
+  const early = await page.locator(".summary").evaluate((summary) => Number(getComputedStyle(summary).opacity));
+  expect(early, "the plate waits for the moment").toBeLessThan(0.5);
+  await expect(page.locator(".moment")).toHaveCount(0, { timeout: 4_000 });
+  await expect(page.locator(".result-plate .big-win")).toBeVisible();
+  await expect(page.getByTestId("win")).toHaveText("21.65");
+  await expect(page.getByRole("button", { name: "Dive again" })).toBeInViewport({ ratio: 1 });
+});
+
+for (const how of ["key", "click"] as const) {
+  test(`a big win can be cut short with ${how === "key" ? "S" : "a click"}: the title goes, and the number, the balance and Dive again are there at once`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await open(page, "/?seed=154");
+    await diveButton(page).click();
+    await expect(page.locator(".moment.big")).toBeVisible({ timeout: 40_000 });
+    if (how === "key") await page.keyboard.press("s");
+    else await page.locator(".moment").click();
+
+    await expect(page.locator(".moment")).toHaveCount(0);
+    expect(await page.getByTestId("balance").textContent()).toBe("1,020.65");
+    expect(await page.getByTestId("win").textContent()).toBe("21.65");
+    await expect(page.locator(".round.cut")).toHaveCount(1);
+    await expect.poll(() => page.locator(".summary").evaluate((summary) => Number(getComputedStyle(summary).opacity))).toBe(1);
+  });
+}
+
+test.describe("with reduced motion", () => {
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
+  test("the jackpot and the big win show their titles still, for a moment, and nothing moves", async ({ page }) => {
+    test.setTimeout(60_000);
+    await watchAnimations(page);
+    await open(page, "/?seed=154");
+    await diveButton(page).click();
+    await expect(page.locator(".moment .moment-title")).toHaveText("Minor jackpot", { timeout: 30_000 });
+    await expect(page.locator(".moment.big .moment-title")).toHaveText("Big win", { timeout: 40_000 });
+    await expect(page.locator(".moment-figure strong")).toHaveText("21.65");
+    await expect(page.locator(".moment")).toHaveCount(0, { timeout: 4_000 });
+    await expect(page.getByTestId("balance")).toHaveText("1,020.65");
+    expect(await sawAnimation(page)).toBe(false);
+  });
+});
+
+// The last breath holds for 1,500 ms before the spin that can end the round, and in the last part of that the empty wells catch a shimmer.
+test("on the last breath the empty wells shimmer once before the next spin shows, and only with motion", async ({ page }) => {
+  test.setTimeout(60_000);
+  await watchNames(page);
+  await open(page, "/?seed=33");
+  await diveButton(page).click();
+  await expect(page.locator(".breath-band")).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(1600);
+
+  const shimmer = (await named(page)).filter((animation) => animation.name === "shimmer");
+  expect(shimmer.length, "every empty well").toBeGreaterThan(5);
+  for (const run of shimmer) {
+    expect(run.target).toContain("::after");
+    expect(run.iterations).toBe(1);
+    expect(run.delay + run.duration, "it ends before the next spin shows").toBeLessThanOrEqual(1500);
+  }
+});
+

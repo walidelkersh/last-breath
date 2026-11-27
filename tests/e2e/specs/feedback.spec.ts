@@ -54,12 +54,24 @@ test("a jackpot that lands marks its card as landed with a badge, and no other c
   expect(await hit.evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe("2px");
 });
 
-test("a jackpot pops in on the spin that lands it", async ({ page }) => {
+test("a jackpot pops in on the spin that lands it, its card and its coin", async ({ page }) => {
+  // Every animation name is noted on the frame it runs, since the pop of the card is over in half a second.
+  await page.addInitScript(() => {
+    const seen = new Set<string>();
+    (window as any).seenNames = seen;
+    const frame = () => {
+      for (const animation of document.getAnimations()) seen.add((animation as CSSAnimation).animationName);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
   await playClassic(page, bigWin);
 
   await expect(page.locator(".prize.hit")).toHaveCount(1, { timeout: 30_000 });
   await expect(page.locator(".prize.hit")).toHaveClass(/anim-in/);
-  await expect.poll(() => page.evaluate(() => document.getAnimations().some((animation) => (animation as CSSAnimation).animationName === "tile-in"))).toBe(true);
+  const seen = () => page.evaluate(() => [...((window as any).seenNames as Set<string>)]);
+  await expect.poll(seen).toContain("card-in");
+  await expect.poll(seen).toContain("shine");
 });
 
 test("a round of ten times the bet or more says Big win, and a smaller one does not", async ({ page }) => {
