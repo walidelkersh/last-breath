@@ -38,9 +38,9 @@ test("every cell is a well, a landed coin sits in it, and a plate shows only the
 });
 
 test("a well has no pill and no side glint, and it is dimmed at the end of a round", async ({ page }) => {
-  await page.goto("/");
+  // The files are read straight from the server. Opening the page first only to leave it at once could leave WebKit with a game that never started.
   for (const variant of ["a", "b", "c"]) {
-    const art = await page.request.get(new URL(`art/well-${variant}.svg`, page.url()).href);
+    const art = await page.request.get(`art/well-${variant}.svg`);
     expect(await art.text(), `well ${variant} has no glint`).not.toContain('<path class="g"');
   }
 
