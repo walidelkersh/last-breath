@@ -168,3 +168,46 @@ for (const how of ["system", "setting"] as const) {
     });
   });
 }
+
+// Seed 154 starts on a balance of 999.00 after its bet and pays 21.65. The balance in the header counts up with the number of the result and
+// starts just after it, so at no frame does it show more than 999.00 plus the win on show.
+test("on a big win that plays out the balance counts up with the result and never runs ahead of it", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => {
+    const seen: { balance: number; win: number | null }[] = [];
+    (window as any).pairs = seen;
+    const number = (selector: string) => {
+      const text = document.querySelector(selector)?.textContent;
+      return text ? Number(text.replace(/,/g, "")) : null;
+    };
+    const sample = () => {
+      const balance = number("[data-testid=balance]");
+      if (balance !== null) seen.push({ balance, win: number("[data-testid=win]") });
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await expect(page.locator(".round.celebrate")).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByTestId("balance")).toHaveText("1,020.65", { timeout: 5_000 });
+  await expect(page.getByTestId("win")).toHaveText("21.65");
+
+  const pairs: { balance: number; win: number | null }[] = await page.evaluate(() => (window as any).pairs);
+  const atTheEnd = pairs.filter((pair) => pair.win !== null);
+  const counting = atTheEnd.filter((pair) => pair.balance < 1020.65);
+  expect(counting.length, "the balance counted up over several frames").toBeGreaterThan(5);
+  for (const pair of atTheEnd) expect(pair.balance, `the balance at a win of ${pair.win}`).toBeLessThanOrEqual(Math.round((999 + pair.win!) * 100) / 100 + 0.001);
+  const balances = atTheEnd.map((pair) => pair.balance);
+  expect(balances).toEqual([...balances].sort((a, b) => a - b));
+});
+
+test("on Skip the result and the balance are both final at once", async ({ page }) => {
+  await open(page, "/?seed=154");
+  await diveButton(page).click();
+  await page.keyboard.press("s");
+  await expect(summary(page)).toBeVisible();
+
+  expect(await page.getByTestId("win").textContent()).toBe("21.65");
+  expect(await page.getByTestId("balance").textContent()).toBe("1,020.65");
+});

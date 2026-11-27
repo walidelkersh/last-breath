@@ -226,6 +226,9 @@
     [Parameter] public bool ReduceMotion { get; set; }
     [Parameter] public bool Maths { get; set; }
     [Parameter] public bool CanDiveAgain { get; set; }
+
+    // How long the number of the result counts up, which the header follows with the balance. Zero when it is shown at once.
+    public int WinCountMs { get; private set; }
     [Parameter] public EventCallback<string> Announce { get; set; }
     [Parameter] public EventCallback<decimal> Finished { get; set; }
     [Parameter] public EventCallback DiveAgain { get; set; }
@@ -362,6 +365,7 @@
         focusSummary = true;
         // Skip asks for the result now, so the number of a skipped round is there at once and only the lights play.
         countWin = Celebrates && !skipped;
+        WinCountMs = countWin ? CelebrationMs : 0;
         StateHasChanged();
         await Announce.InvokeAsync(Narration.Result(Config, Bet, outcome, skipped));
         await Finished.InvokeAsync(Settlement.Credits(outcome.Units, Bet));

@@ -11,7 +11,7 @@
         }
         <header class="top">
             <h1 class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><use href="#mark" /></svg><span class="brand-name">Last Breath</span></h1>
-            <p class="balance">Balance <strong data-testid="balance">@Format.Credits(balance)</strong></p>
+            <p class="balance">Balance <strong data-testid="balance" @ref="balanceValue">@Format.Credits(balance)</strong></p>
             @if (round is not null)
             {
                 <p class="balance">Bet <strong>@Format.Credits(roundBet)</strong></p>
@@ -86,6 +86,9 @@
     private RoundView? roundView;
     private MathPanel? math;
     private ElementReference mathButton;
+    private ElementReference balanceValue;
+    private decimal countedFrom;
+    private int balanceCountMs;
 
     private bool reduceMotion => systemReducesMotion || reduceMotionChoice;
 
@@ -123,6 +126,14 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (balanceCountMs == 0) return;
+        var ms = balanceCountMs;
+        balanceCountMs = 0;
+        await JS.InvokeVoidAsync("lastBreath.countUp", balanceValue, countedFrom, balance, ms);
+    }
+
     private async Task Pick(string id)
     {
         selectedDive = id;
@@ -152,8 +163,12 @@
         roundNumber++;
     }
 
+    // A big win that plays out counts the balance up with its number, so the header never runs ahead of the result. A skipped round and
+    // reduced motion credit it at once.
     private void Settle(decimal win)
     {
+        balanceCountMs = roundView?.WinCountMs ?? 0;
+        countedFrom = balance;
         balance += win;
         roundActive = false;
         session.Add(Dives.First(dive => dive.Id == selectedDive).Name, roundBet, win);
