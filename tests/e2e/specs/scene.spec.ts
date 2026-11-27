@@ -24,7 +24,7 @@ test("the water scene is one small SVG that sits behind the page and is not in t
   const scene = await page.request.get(new URL("art/scene.svg", page.url()).href);
   expect(scene.ok()).toBe(true);
   expect(scene.headers()["content-type"]).toContain("image/svg+xml");
-  expect((await scene.body()).length).toBeLessThan(8000);
+  expect((await scene.body()).length).toBeLessThan(10_000);
 
   const behind = await page.evaluate(() => {
     const style = getComputedStyle(document.body, "::before");

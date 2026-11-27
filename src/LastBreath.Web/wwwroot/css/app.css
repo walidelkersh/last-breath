@@ -425,9 +425,12 @@ button.quiet:disabled {
     flex-direction: column;
 }
 
+/* The premise and the cards sit in the middle of the water between the header and the bet bar, so a tall screen shows the scene round them. */
 .select-body {
     display: flex;
+    flex: 1 0 auto;
     flex-direction: column;
+    justify-content: center;
     gap: var(--s4);
     padding-bottom: var(--s5);
 }
@@ -509,7 +512,7 @@ button.quiet:disabled {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 300 / 120;
+    aspect-ratio: 300 / 150;
     background: var(--board);
     border-radius: var(--r2);
 }
@@ -519,21 +522,14 @@ button.quiet:disabled {
     display: block;
 }
 
-/* The air tank is a picture laid over the drawing, 88 by 76 at 118, 14 of 300 by 120. The render has margins of its own, and this box sits it midway between the bottles and the crate. */
+/* The air tank is a picture laid over the drawing, 88 by 88 at 108, 36 of 300 by 150. The render has margins of its own, and this box rests it on the
+   seabed between the bottles and the crate. */
 .pic-tank {
     position: absolute;
-    left: 39.3%;
-    top: 11.7%;
+    left: 36%;
+    top: 24%;
     width: 29.3%;
-    height: 63.3%;
-}
-
-.pic-arrow {
-    fill: none;
-    stroke: var(--on-board);
-    stroke-width: 3.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    height: 58.7%;
 }
 
 .card-top {
@@ -2489,11 +2485,15 @@ code {
 
     .select-body {
         gap: var(--s2);
-        padding-bottom: var(--s2);
+        padding-bottom: var(--s1);
     }
 
     main:has(> .select) {
         padding-top: var(--s2);
+    }
+
+    .card-top {
+        padding-top: 0;
     }
 
     .cards,

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chooseBet, diveButton, open } from "./play";
 
-test("each card draws its rule from symbols that are in the sprite", async ({ page }) => {
+test("each card is a place on the seabed, drawn from symbols that are in the sprite", async ({ page }) => {
   await open(page);
   await page.waitForFunction(() => document.querySelector("symbol#panel") !== null);
 
@@ -21,9 +21,11 @@ test("each card draws its rule from symbols that are in the sprite", async ({ pa
 
   expect(drawn.flatMap((card) => card.missing)).toEqual([]);
   expect(drawn).toHaveLength(3);
-  expect([count(drawn[0].hrefs, "#crate"), count(drawn[0].hrefs, "#bottle")]).toEqual([1, 3]);
-  expect(count(drawn[1].hrefs, "#well")).toBe(6);
-  expect([count(drawn[2].hrefs, "#air-tank"), count(drawn[2].hrefs, "#crate")]).toEqual([0, 1]);
+  for (const card of drawn) expect(count(card.hrefs, "#seabed"), "every card has its seabed").toBe(1);
+  // Classic is a wreck with a crate and three breaths, Drift a current that carries three crates, and Tank a weed bed with four breaths, a crate and the air tank.
+  expect([count(drawn[0].hrefs, "#hull"), count(drawn[0].hrefs, "#crate"), count(drawn[0].hrefs, "#bottle")]).toEqual([1, 1, 3]);
+  expect([count(drawn[1].hrefs, "#current"), count(drawn[1].hrefs, "#crate")]).toEqual([1, 3]);
+  expect([count(drawn[2].hrefs, "#frond"), count(drawn[2].hrefs, "#bottle"), count(drawn[2].hrefs, "#air-tank"), count(drawn[2].hrefs, "#crate")]).toEqual([2, 4, 0, 1]);
   expect(drawn.map((card) => card.renders)).toEqual([0, 0, 1]);
 });
 
@@ -80,12 +82,17 @@ test("one line says what the game is, and each card says its dive in one short l
   await expect(page.getByRole("radio", { name: "Classic Dive" })).toHaveAccessibleDescription(/Volatility medium/);
 });
 
-test("the selection starts at the top of the page, under the header, and does not centre itself in a tall window", async ({ page }) => {
-  for (const height of [800, 1440]) {
+test("the premise and the cards sit in the middle of the water between the header and the bet bar, a little above the centre", async ({ page }) => {
+  for (const height of [800, 1080, 1440]) {
     await page.setViewportSize({ width: 1280, height });
     await open(page);
-    const gap = await page.evaluate(() => document.querySelector(".select h2")!.getBoundingClientRect().top - document.querySelector(".top")!.getBoundingClientRect().bottom);
-    expect(gap, `${height} high`).toBeLessThan(80);
+    const gaps = await page.evaluate(() => ({
+      above: document.querySelector(".select h2")!.getBoundingClientRect().top - document.querySelector(".top")!.getBoundingClientRect().bottom,
+      below: document.querySelector(".stake")!.getBoundingClientRect().top - document.querySelector(".cards")!.getBoundingClientRect().bottom,
+    }));
+    expect(gaps.above, `${height} high`).toBeGreaterThanOrEqual(20);
+    expect(gaps.below - gaps.above, `${height} high`).toBeGreaterThanOrEqual(0);
+    expect(gaps.below - gaps.above, `${height} high`).toBeLessThan(60);
   }
 });
 

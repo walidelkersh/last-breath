@@ -35,9 +35,10 @@ WOBBLE = {"warp": 0.45, "wavelength": 36.0, "jitter": 0.2, "step": 7.0}
 TILE = (115, 100)             # the aspect of a tile on the board, so a symbol fills it
 PANEL = (600, 330)
 SCENE = (1600, 900)
-# The scene is one picture the size of a screen, so it has a budget of its own. The total counts every file here
-# and both renders, although a page loads the sprite, the scene and only one render.
-BUDGET = {"file_bytes": 6000, "scene_bytes": 8000, "render_bytes": 20_000, "total_bytes": 150_000}
+# The scene is one picture the size of a screen, so it has a budget of its own, raised from 8 to 10 KB for the wreck and the fish.
+# The total counts every file here and both renders, although a page loads the sprite, the scene and only one render. It was
+# raised from 150 to 160 KB for the seabed, the hull, the current and the kelp that make the dive cards into places.
+BUDGET = {"file_bytes": 6000, "scene_bytes": 10_000, "render_bytes": 20_000, "total_bytes": 160_000}
 # The text colours of the page in app.css. The scene sits under text, so the audit keeps every tone of it readable under these.
 PAGE = {"dark": {"text": "#e8eff3", "muted": "#a7bbc7"}, "light": {"text": "#18252e", "muted": "#47565f"}}
 SCENE_MATERIALS = ("deep", "seabed", "rock", "kelp")
@@ -62,6 +63,9 @@ BOARD = {
     "gem": ("#35c9d6", "#1c8b9c", "#a5f2f7"),
     "amber": ("#f0a63a", "#a2661a", "#ffd27a"),
     "empty": ("#31566d", "#1f3f52", "#4c748c"),
+    # The seabed and the wreck of the dive cards: a sand that the water has turned grey-green, and a hull a little darker than the water.
+    "sand": ("#3d6670", "#2b505b", "#5b8890"),
+    "hull": ("#0c3346", "#082738", "#174a63"),
 }
 
 PALETTE = {
@@ -89,7 +93,7 @@ PALETTE = {
 NOT_MATERIALS = {"ink", "plate", "plate-ink", "shaft"}
 # New materials go at the end, so that the class names in a file already drawn do not change.
 MATERIALS = ("gold", "steel", "tank", "water", "well", "wood-high", "wood-low", "wood-mid", "verdigris", "gem", "amber", "empty",
-             *SCENE_MATERIALS)
+             *SCENE_MATERIALS, "sand", "hull")
 CODES = {name: f"m{index}" for index, name in enumerate(MATERIALS)}
 
 
@@ -527,18 +531,111 @@ def panel():
     return art
 
 
-def kelp(art, x, base, height, sway):
+# The dive cards are small scenes: the water panel, a strip of seabed along the bottom, and on it what the dive is about. They are
+# drawn on a card 300 by 150, and these pieces are sized for it.
+CARD = (300, 150)
+
+
+def seabed():
+    """A strip of sand with a lighter crest, two stones and a few tufts of weed, laid along the bottom of a card."""
+    art = Art("seabed", (300, 40), scale=1.6)
+    wave = lambda base, lift, phase: [(x, base + lift * math.sin(x / 34 + phase) + lift * 0.4 * math.sin(x / 13 + phase * 2)) for x in range(-10, 321, 30)]
+    art.shape(wave(12, 3.5, 0.6) + [(320, 50), (-10, 50)], "sand", "h", outline=False)
+    art.shape(wave(17, 3.0, 2.1) + [(320, 50), (-10, 50)], "sand", "b", outline=False)
+    art.shape(wave(29, 2.0, 4.0) + [(320, 50), (-10, 50)], "sand", "s", outline=False)
+    for cx, cy, rx, ry in ((92, 22, 13, 7), (238, 27, 10, 5.5)):
+        art.blob(cx, cy, rx, ry, "hull", "h", corners=7)
+        art.blob(cx - rx * 0.2, cy - ry * 0.35, rx * 0.5, ry * 0.4, "sand", "h", corners=6)
+    for x, lean in ((22, -4), (30, 3), (160, 4), (282, -3), (289, 4)):
+        art.strip((x, 18), (x + lean, 6), 2.2, "verdigris", "b")
+    return art
+
+
+def hull():
+    """The wreck behind the Classic card: a hull lying bow up, a cabin with dark windows and a broken mast, all a shade off the water."""
+    art = Art("hull", (200, 110), scale=1.4)
+    art.shape([(4, 108), (10, 52), (70, 48), (150, 38), (196, 22), (192, 50), (176, 80), (150, 102), (90, 112)], "hull", "b", outline=False)
+    art.shape([(4, 108), (8, 78), (100, 70), (184, 58), (176, 80), (150, 102), (90, 112)], "hull", "s", outline=False)
+    art.strip((10, 52), (194, 23), 4, "hull", "h")
+    art.shape([(40, 50), (42, 26), (92, 21), (94, 44)], "hull", "b", outline=False)
+    art.strip((42, 27), (92, 22), 3.5, "hull", "h")
+    for x in (50, 64, 78):
+        art.shape(box(x, 31 - (x - 50) * 0.1, x + 8, 39 - (x - 50) * 0.1), "hull", "s", outline=False)
+    art.strip((124, 42), (134, -4), 5, "hull", "b")
+    art.strip((133, -2), (160, -14), 4, "hull", "b")
+    for cx in (60, 88, 116, 144):
+        art.shape(disc(cx, 64 - (cx - 60) * 0.17, 4, 10), "hull", "s", outline=False)
+    return art
+
+
+def current():
+    """The Drift card: long, thin streaks of lighter water running across it, as a current that carries the crates along."""
+    art = Art("current", CARD, scale=2.0)
+    for y, x0, x1, thickness, phase in ((22, -10, 210, 3.0, 0.2), (40, 150, 312, 2.4, 1.4), (62, -10, 130, 2.0, 2.2), (78, 90, 312, 3.2, 3.1), (100, -10, 190, 2.4, 4.0)):
+        line = [(x, y + 5 * math.sin(x / 40 + phase)) for x in range(x0, x1 + 1, 20)]
+        top = [(x, yy - thickness / 2) for x, yy in line]
+        bottom = [(x, yy + thickness / 2) for x, yy in reversed(line)]
+        art.shape(top + bottom, "water", "h", outline=False)
+    return art
+
+
+def frond():
+    """Two kelp fronds for the edge of a card, the same stalks as the scene in the colours of the board."""
+    art = Art("frond", (40, 110), scale=1.2)
+    for x, height, sway, foot in ((14, 104, 6, 9), (28, 76, -5, 7)):
+        centre = [(x + sway * math.sin(t / 6 * math.pi * 1.5), 110 - height * t / 6) for t in range(7)]
+        widths = [foot - (foot - 2) * t / 6 for t in range(7)]
+        left = [(cx - w / 2, cy) for (cx, cy), w in zip(centre, widths)]
+        art.shape(left + [(cx + w / 2, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "verdigris", "s", outline=False)
+        art.shape(left + [(cx - w / 2 + w * 0.35, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "verdigris", "b", outline=False)
+    return art
+
+
+def kelp(art, x, base, height, sway, foot=15):
     """A stalk that leans one way and back, thick at the foot and thin at the tip, with a lighter strip down its left."""
     steps = 7
     centre = [(x + sway * math.sin(t / steps * math.pi * 1.5), base - height * t / steps) for t in range(steps + 1)]
-    widths = [15 - 12 * t / steps for t in range(steps + 1)]
+    widths = [foot - (foot - 3) * t / steps for t in range(steps + 1)]
     art.shape([(cx - w / 2, cy) for (cx, cy), w in zip(centre, widths)] + [(cx + w / 2, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "kelp", "b", outline=False)
     art.shape([(cx - w / 2, cy) for (cx, cy), w in zip(centre, widths)] + [(cx - w / 2 + w * 0.3, cy) for (cx, cy), w in reversed(list(zip(centre, widths)))], "kelp", "h", outline=False)
 
 
+def wreck(art):
+    """The hull of a sunken boat at the left of the seabed, bow up and keel buried, with a cabin, a broken mast, portholes and
+    a thread of air still rising from the bow. It is drawn in the tones of the rocks, so the audit keeps it quiet like the rest.
+    Its long edges are not cut into steps, which keeps the file small, and they only bend with the warp."""
+    def plank(start, end, thickness, tone):
+        length = math.dist(start, end)
+        nx, ny = (end[1] - start[1]) / length * thickness / 2, (start[0] - end[0]) / length * thickness / 2
+        art.flat([(start[0] + nx, start[1] + ny), (end[0] + nx, end[1] + ny), (end[0] - nx, end[1] - ny), (start[0] - nx, start[1] - ny)], "rock", tone, warp=True)
+
+    art.flat([(20, 830), (32, 662), (150, 650), (300, 631), (430, 608), (480, 586), (472, 642), (440, 702), (380, 760), (250, 806), (120, 836)], "rock", "b", warp=True)
+    art.flat([(20, 830), (28, 720), (200, 712), (440, 690), (440, 702), (380, 760), (250, 806), (120, 836)], "rock", "s", warp=True)
+    plank((34, 662), (478, 590), 7, "h")
+    plank((40, 700), (430, 650), 3, "s")
+    art.flat([(118, 653), (124, 590), (236, 580), (240, 643)], "rock", "b", warp=True)
+    plank((122, 592), (238, 582), 6, "h")
+    for x in (140, 176, 212):
+        art.flat(box(x, 602 - (x - 140) * 0.09, x + 16, 620 - (x - 140) * 0.09), "deep", "s")
+    plank((300, 634), (324, 462), 10, "b")
+    plank((322, 466), (388, 436), 8, "b")
+    for cx, cy in ((176, 690), (236, 682), (296, 672), (356, 660)):
+        art.flat(disc(cx, cy, 9, 10), "deep", "s")
+    for cx, cy, radius in ((470, 556, 5), (482, 520, 8), (466, 474, 5), (486, 430, 10), (470, 372, 7), (490, 318, 5)):
+        art.flat(disc(cx, cy, radius, 10), "deep", "h")
+
+
+def school(art, x, y, size, count, rng):
+    """A few small fish heading the same way, as flat silhouettes a shade darker than the water."""
+    fish = [(-10, -6), (-2, -1), (8, -6), (22, -5), (30, 0), (22, 5), (8, 6), (-2, 1), (-10, 6)]
+    for _ in range(count):
+        fx, fy, k = x + rng.uniform(0, 260), y + rng.uniform(0, 110), size * rng.uniform(0.75, 1.15)
+        art.flat([(fx + px * k, fy + py * k) for px, py in fish], "deep", "s")
+
+
 def scene():
-    """The water behind the whole page: bands of tone with wavy edges, a few light shafts, and a seabed with rocks and kelp.
-    It sits under text, so it is quiet by rule: no outlines, and the audit keeps every tone readable under the page text."""
+    """The water behind the whole page: bands of tone with wavy edges, a few light shafts, a school of fish, and a seabed with a
+    wreck, rocks and kelp. It sits under text, so it is quiet by rule: no outlines, and the audit keeps every tone readable under the page text."""
     art = Art("scene", SCENE, scale=4.0)
     w, h = SCENE
     rng = art.rng
@@ -553,10 +650,13 @@ def scene():
     art.flat(ridge(520, 26), "deep", "s", warp=True)
     for x, width, lean in ((140, 70, 120), (520, 110, 160), (880, 60, 100), (1240, 120, 170), (1500, 70, 110)):
         art.flat([(x, -20), (x + width, -20), (x + width + lean + 90, 780), (x + lean, 780)], None, "v")
+    school(art, 1110, 300, 1.3, 7, rng)
     art.flat(ridge(715, 34), "seabed", "h", warp=True)
+    wreck(art)
     art.flat(ridge(790, 28), "seabed", "b", warp=True)
-    for x, base, height, sway in ((70, 800, 250, 16), (104, 810, 190, -14), (148, 800, 300, 18), (1450, 805, 280, -16), (1488, 810, 200, 14), (1534, 800, 260, -18), (840, 815, 150, 12)):
-        kelp(art, x, base, height, sway)
+    for x, base, height, sway, foot in ((540, 805, 260, 16, 18), (576, 812, 190, -14, 14), (1400, 800, 330, -20, 22), (1450, 805, 280, -16, 18),
+                                       (1488, 810, 220, 14, 15), (1534, 800, 300, -18, 20), (1574, 812, 180, 12, 14), (840, 815, 150, 12, 15)):
+        kelp(art, x, base, height, sway, foot)
     art.flat(ridge(852, 18), "seabed", "s", warp=True)
     for cx, cy, rx, ry in ((250, 800, 70, 34), (620, 838, 54, 26), (1090, 826, 84, 38), (1330, 790, 46, 24), (1560, 848, 60, 30), (420, 862, 38, 18)):
         art.blob(cx, cy, rx, ry, "rock", "b", corners=7)
@@ -602,6 +702,7 @@ def symbols():
     drawn.update({f"bottle-{state}": bottle(state) for state in ("full", "empty", "low")})
     drawn["mark"] = mark()
     drawn["panel"] = panel()
+    drawn.update(seabed=seabed(), hull=hull(), current=current(), frond=frond())
     return drawn
 
 

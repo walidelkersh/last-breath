@@ -13,31 +13,36 @@
                            aria-keyshortcuts="@key" />
                     <span class="card-body">
                         <span class="pic-frame">
-                            <svg class="pic" viewBox="0 0 300 120" aria-hidden="true" focusable="false">
+                            @* Each card is a place on the seabed: a wreck for Classic, a current for Drift and a weed bed for Tank. *@
+                            <svg class="pic" viewBox="0 0 300 150" aria-hidden="true" focusable="false">
                                 <use href="#panel" />
                                 @switch (dive.Id)
                                 {
                                     case "Classic":
-                                        <use href="#crate-mid-a" x="10" y="12" width="115" height="100" />
-                                        <path class="pic-arrow" d="M132 64h26m-8-8l8 8l-8 8" />
-                                        <use href="#bottle-full" x="172" y="26" width="34" height="68" />
-                                        <use href="#bottle-full" x="212" y="26" width="34" height="68" />
-                                        <use href="#bottle-full" x="252" y="26" width="34" height="68" />
+                                        <use href="#hull" x="112" y="12" width="188" height="103" />
+                                        <use href="#seabed" x="0" y="110" width="300" height="40" />
+                                        <use href="#crate-mid-a" x="6" y="40" width="115" height="100" />
+                                        for (var breath = 0; breath < 3; breath++)
+                                        {
+                                            <use href="#bottle-full" x="@(146 + breath * 34)" y="66" width="30" height="60" />
+                                        }
                                         break;
                                     case "Static":
-                                        for (var cell = 0; cell < 6; cell++)
-                                        {
-                                            <use href="#well-@("abcabc"[cell])" x="@(6 + cell * 48)" y="40" width="44" height="38.3" />
-                                        }
-                                        <use href="#crate-low-a" x="@(6 + 48 - 6)" y="34" width="56" height="48.7" />
-                                        <use href="#crate-low-b" x="@(6 + 4 * 48 - 6)" y="34" width="56" height="48.7" />
+                                        <use href="#current" width="300" height="150" />
+                                        <use href="#seabed" x="0" y="110" width="300" height="40" />
+                                        <use href="#crate-low-a" x="8" y="20" width="92" height="80" transform="rotate(-10 54 60)" />
+                                        <use href="#crate-low-b" x="106" y="44" width="86" height="75" transform="rotate(7 149 81)" />
+                                        <use href="#crate-mid-b" x="196" y="10" width="96" height="84" transform="rotate(-5 244 52)" />
                                         break;
                                     default:
+                                        <use href="#frond" x="0" y="34" width="34" height="94" />
+                                        <use href="#frond" x="262" y="18" width="40" height="110" />
+                                        <use href="#seabed" x="0" y="110" width="300" height="40" />
                                         for (var breath = 0; breath < 4; breath++)
                                         {
-                                            <use href="#bottle-full" x="@(14 + breath * 27)" y="38" width="24" height="48" />
+                                            <use href="#bottle-full" x="@(30 + breath * 22)" y="76" width="22" height="44" />
                                         }
-                                        <use href="#crate-mid-b" x="200" y="20" width="92" height="80" />
+                                        <use href="#crate-mid-b" x="184" y="50" width="88" height="77" />
                                         break;
                                 }
                             </svg>
