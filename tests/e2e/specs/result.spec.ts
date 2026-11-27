@@ -191,11 +191,12 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 1920, height: 108
 
 const sizes = [{ width: 1024, height: 700 }, { width: 1280, height: 800 }, { width: 1366, height: 768 }, { width: 1600, height: 900 }, { width: 1920, height: 1080 }, { width: 2560, height: 1440 }];
 
+// One test per size, because a Big win plays its whole moment before the plate comes to rest.
 for (const colorScheme of ["dark", "light"] as const) {
   for (const seed of [154, 2]) {
-    test(`the text on the plate stays inside it at every size, ${seed === 154 ? "Big win" : "nothing"}, ${colorScheme} theme`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
-      for (const viewport of sizes) {
+    for (const viewport of sizes) {
+      test(`the text on the plate stays inside it, ${seed === 154 ? "Big win" : "nothing"}, ${colorScheme} theme, ${viewport.width} by ${viewport.height}`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
         await page.setViewportSize(viewport);
         await finish(page, seed);
         await atRest(page);
@@ -212,10 +213,10 @@ for (const colorScheme of ["dark", "light"] as const) {
               .map((line) => line.className),
           };
         });
-        expect(found.outside, `${viewport.width} by ${viewport.height}`).toEqual([]);
-        expect(found.clipped, `${viewport.width} by ${viewport.height}`).toBe(false);
-      }
-    });
+        expect(found.outside).toEqual([]);
+        expect(found.clipped).toBe(false);
+      });
+    }
   }
 }
 
