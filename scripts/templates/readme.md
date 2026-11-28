@@ -1,8 +1,12 @@
-# Last Breath
+<p align="center"><img src="src/LastBreath.Web/wwwroot/art/mark.svg" width="96" height="96" alt="The Last Breath mark: a bottle of air with three bubbles rising beside it"></p>
+
+<h1 align="center">Last Breath</h1>
 
 [Play it in the browser](https://walidelkersh.github.io/last-breath/)
 
 Last Breath is a hold-and-spin game with no base game. Each bet buys one dive, which is a full round on an empty 5x3 board, and the coins that land stay in their cell while a clock of breaths decides when the round ends. I have built three dives, Classic, Drift and Tank, with the engines, an exact solver and a simulator written in C#. The client is a Blazor WebAssembly app that runs the same engine in the browser, and it is a demo with play money.
+
+![A Classic dive in the dark theme after it has ended. Nine wooden crates and the Minor jackpot coin sit on the five by three board, and the plate under it reads Big win, 21.65 credits.](docs/images/last-breath.png)
 
 Every dive returns about 96% of the bet. The exact figures come from the solver, and a Python script recomputes them in fractions and agrees to 1e-12. Classic returns {{classic.rtp}} with a standard deviation of {{classic.sd}} bets per round, a hit frequency of {{classic.hit}} and {{classic.spins}} spins on average, and its Grand lands about once in {{classic.grand_odds}} rounds. Drift returns {{drift.rtp}} with a standard deviation of {{drift.sd}}, a hit frequency of {{drift.hit}}, {{drift.spins}} spins and a Grand once in {{drift.grand_odds}} rounds. Tank returns {{tank.rtp}} with a standard deviation of {{tank.sd}}, a hit frequency of {{tank.hit}}, {{tank.spins}} spins and a Grand once in {{tank.grand_odds}} rounds.
 
